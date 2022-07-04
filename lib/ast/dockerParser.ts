@@ -36,7 +36,6 @@ import {
   Position,
 } from "./type";
 
-const COMMAND_MAP = createEnrichers();
 
 export function parseDocker(filepath: string): DockerFile {
   const dockerfileAST: DockerFile = new DockerFile();

@@ -25,7 +25,7 @@ program
     const data = readFileSync(file, "utf8");
     const dockerfile = parseDocker(data);
     // console.log(JSON.stringify(dockerfile, ["type", "children", "value"], 2));
-    console.log(print(dockerfile));
+    console.log(print(dockerfile.enrich().abstract()));
     // dockerfile.traverse((node) => {
     //   const copy = {};
     //   for (const i in node) {

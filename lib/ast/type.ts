@@ -1,4 +1,5 @@
 import { print } from "./ASTPrinter";
+import { createEnrichers } from "./commands";
 
 export type DockerOpsNodeType =
   | AsString
@@ -150,8 +151,18 @@ export class Position {
 
 export abstract class DockerOpsNode {
   type: Extract<DockerOpsNodeType["type"], {}>;
+  /**
+   * The children nodes
+   */
   children: DockerOpsNodeType[] = [];
+  /**
+   * The parent node
+   */
   parent: DockerOpsNodeType | null = null;
+  /**
+   * The original node. it is used after enrich and abstract
+   */
+  original: DockerOpsNodeType | null = null;
   _position: Position;
 
   get position(): Position {
@@ -257,6 +268,7 @@ export abstract class DockerOpsNode {
     const indexInParent = this.parent.children.indexOf(
       this as DockerOpsNodeType
     );
+    element.parent = this.parent;
     this.parent.children[indexInParent] = element;
     return this;
   }
@@ -271,6 +283,40 @@ export abstract class DockerOpsNode {
 
   toString() {
     return print(this as any);
+  }
+
+  enrich() {
+    const COMMAND_MAP = createEnrichers();
+
+    this.traverse((node) => {
+      if (node instanceof MaybeSemanticCommand) {
+        const commandAST = node.getElement(BashCommandCommand);
+        const command = commandAST?.getElement(BashLiteral).value;
+        if (COMMAND_MAP[command]) {
+          const commandArgs = node
+            .getElements(BashCommandArgs)
+            .map((e) => e.children)
+            .flat();
+          const payload = COMMAND_MAP[command](
+            commandArgs.map(print),
+            commandArgs
+          );
+          payload.original = node;
+          node.replace(payload as DockerOpsNodeType);
+        }
+      }
+    });
+    return this;
+  }
+
+  abstract() {
+    return this;
+  }
+}
+
+export class GenericNode extends DockerOpsNode {
+  constructor(readonly type: any) {
+    super();
   }
 }
 

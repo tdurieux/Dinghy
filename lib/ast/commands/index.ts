@@ -1,5 +1,14 @@
 import * as fs from "fs";
 import * as yaml from "js-yaml";
+import yargs, { Argv } from "yargs";
+import { print } from "../ASTPrinter";
+import {
+  BashLiteral,
+  DockerOpsNode,
+  DockerOpsNodeType,
+  GenericNode,
+  Unknown,
+} from "../type";
 
 const YAML_DIR = __dirname;
 
@@ -46,31 +55,33 @@ interface Command {
 interface CommandFile {
   command: Command;
 }
-const getArgsFromList = (list: string[]) => {
-  return (list || [])
-    .map((arg) => {
-      if (arg.indexOf(",") === -1) {
-        return [arg.trim().replace(/^--?/, "")];
-      }
 
-      const parts = arg.split(",");
-      const short = parts[0].trim().replace(/^--?/, "");
-      const long = parts[1].trim().replace(/^--?/, "");
-      return [short, long];
-    })
-    .flat();
-};
-
-const addToYargs = (arg: string, adder: (arg: string) => any) => {
+function processArg(arg: string): [short: string, long?: string] {
   if (arg.indexOf(",") === -1) {
-    return adder(arg.trim().replace(/^--?/, ""));
+    return [arg.trim().replace(/^--?/, "")];
   }
 
   const parts = arg.split(",");
   const short = parts[0].trim().replace(/^--?/, "");
   const long = parts[1].trim().replace(/^--?/, "");
-  return adder(short).alias(short, long);
-};
+  return [short, long];
+}
+
+function getArgsFromList(list: string[] = []) {
+  return list.map(processArg).flat();
+}
+
+function addToArgv(
+  arg: string,
+  argv: yargs.Argv<{}>,
+  adder: <K extends string>(
+    key: K | ReadonlyArray<K>
+  ) => Argv<{ [key in K]: number | string | boolean }>
+) {
+  const out = processArg(arg);
+  if (out.length == 1) return adder.call(argv, out[0]);
+  return adder.call(argv, out[0]).alias(out[0], out[1]);
+}
 
 const getOptions = (scenario: Scenario) => {
   if (scenario.options.merge) {
@@ -102,16 +113,24 @@ const getOptions = (scenario: Scenario) => {
   return scenario.options;
 };
 
-const getValuedOptions = (yargs) => {
-  const theOpts = yargs.getOptions();
+function getValuedOptions(argv: yargs.Argv<{}>): string[] {
+  const theOpts: { [key: string]: any } = (argv as any).getOptions();
 
   return theOpts.string
     .concat(theOpts.array)
-    .map((opt) => (theOpts.alias[opt] ? theOpts.alias[opt].concat([opt]) : opt))
+    .map((opt: string) =>
+      theOpts.alias[opt] ? theOpts.alias[opt].concat([opt]) : opt
+    )
     .flat();
-};
+}
 
-const matchFlag = (flag: string, args: string) => {
+/**
+ * Check if flag is in args
+ * @param flag command flag
+ * @param args command passed args
+ * @returns true if the flag is in args
+ */
+function matchFlag(flag: string, args: string[]) {
   if (args.indexOf(flag.trim()) !== -1) {
     return true;
   }
@@ -126,19 +145,35 @@ const matchFlag = (flag: string, args: string) => {
   }
 
   return false;
-};
+}
 
-const buildScenarioParser = (scenario: Scenario) => {
-  return (args) => {
+type ScenarioParserOutput = {
+  $: {
+    prefix?: string;
+    args: string[];
+    captures: string[];
+    originalArgs: string[];
+    paths: string[];
+    counts: string[];
+    options: { [key: string]: any };
+    name: string;
+    cmd: string;
+  };
+  [key: string | number]: any;
+};
+function buildScenarioParser(
+  scenario: Scenario
+): (args: string[]) => ScenarioParserOutput {
+  return (args: string[]) => {
     // Save these
     const originalArgs = args;
 
-    // Dirty require.cache trickery
-    delete require.cache["/usr/local/lib/node_modules/yargs/index.js"];
-    let yargs = require("yargs");
+    // // Dirty require.cache trickery
+    // delete require.cache["/usr/local/lib/node_modules/yargs/index.js"];
+    // let yargs = require("yargs");
 
     // Look at scenario.cmd and do some checking
-    const checkScenarioValidity = (args) => {
+    const checkScenarioValidity = (args: string[]) => {
       const parts = scenario.cmd.split(/ /g);
 
       // Check early rejection
@@ -167,8 +202,8 @@ const buildScenarioParser = (scenario: Scenario) => {
     };
 
     // Set all of these properties up so we have controllable
-    // behavior from yargs
-    yargs = yargs
+    // behavior from argv
+    let argv = yargs
       .help(false)
       .version(false)
       .exitProcess(false)
@@ -180,43 +215,43 @@ const buildScenarioParser = (scenario: Scenario) => {
       .fail((a, b, c) => {
         throw new Error("Arg parsing failed.");
       })
-      .command(scenario.cmd);
+      .command(scenario.cmd, scenario.name);
 
     // Go through and add the info in the yaml to the parser
     const options = getOptions(scenario);
 
     if (options.booleans && options.booleans.length >= 1) {
-      yargs = options.booleans.reduce(
-        (yargs, arg) => addToYargs(arg, yargs.boolean),
-        yargs
+      argv = options.booleans.reduce(
+        (argv, arg) => addToArgv(arg, argv, argv.boolean),
+        argv
       );
     }
     if (options.strings && options.strings.length >= 1) {
-      yargs = options.strings.reduce(
-        (yargs, arg) => addToYargs(arg, yargs.string),
-        yargs
+      argv = options.strings.reduce(
+        (argv, arg) => addToArgv(arg, argv, argv.string),
+        argv
       );
     }
     if (options.paths && options.paths.length >= 1) {
-      yargs = options.paths.reduce(
-        (yargs, arg) => addToYargs(arg, yargs.string),
-        yargs
+      argv = options.paths.reduce(
+        (argv, arg) => addToArgv(arg, argv, argv.string),
+        argv
       );
     }
     if (options.arrays && options.arrays.length >= 1) {
-      yargs = options.arrays.reduce(
-        (yargs, arg) => addToYargs(arg, yargs.array),
-        yargs
+      argv = options.arrays.reduce(
+        (argv, arg) => addToArgv(arg, argv, argv.array),
+        argv
       );
     }
     if (options.counts && options.counts.length >= 1) {
-      yargs = options.counts.reduce(
-        (yargs, arg) => addToYargs(arg, yargs.count),
-        yargs
+      argv = options.counts.reduce(
+        (argv, arg) => addToArgv(arg, argv, argv.count),
+        argv
       );
     }
 
-    const valuedOpts = getValuedOptions(yargs)
+    const valuedOpts = getValuedOptions(argv)
       .map((opt) => [`-${opt}`, `--${opt}`])
       .flat();
 
@@ -227,23 +262,18 @@ const buildScenarioParser = (scenario: Scenario) => {
 
     // Sometimes args have no spaces... (like cmade -DTHIS_OPTION=FALSE)
     // UGH: -buildmode=pie ... this mixes bad long names and fixupNonSpace
-    // WHY WHY WHY
     if (scenario.fixupNonSpacedArgs) {
       args = args
         .map((arg) => {
-          let selections = getValuedOptions(yargs);
-
-          for (let i = 0; i < selections.length; i++) {
+          const selections = getValuedOptions(argv);
+          for (const selection of selections) {
             const matches =
-              arg !== selections[i] &&
-              (arg.startsWith(`-${selections[i]}`) ||
-                arg.startsWith(`--${selections[i]}`));
+              arg !== selection &&
+              (arg.startsWith(`-${selection}`) ||
+                arg.startsWith(`--${selection}`));
 
             if (matches) {
-              let leftovers = arg.replace(
-                new RegExp(`^--?${selections[i]}\=?`),
-                ""
-              );
+              const leftovers = arg.replace(/^--?${selection}\=?/, "");
 
               if (leftovers.length === 0) {
                 return [arg];
@@ -259,7 +289,9 @@ const buildScenarioParser = (scenario: Scenario) => {
     }
 
     // Handle this (might want to feature gate this, remains to be seen)
-    args = args.map((x) => (x.startsWith("-") ? x.replace(/\=$/, "") : x));
+    args = args.map((arg) =>
+      arg.startsWith("-") ? arg.replace(/\=$/, "") : arg
+    );
 
     // Some commands have bad long names (like find -name '*.foo')
     if (scenario.fixBadLongNames) {
@@ -268,7 +300,7 @@ const buildScenarioParser = (scenario: Scenario) => {
       });
     }
 
-    let captures = [];
+    const captures: string[] = [];
     let captureAfterN =
       scenario.captureAfterFirstNonOption ||
       scenario.captureAfterSecondNonOption ||
@@ -278,7 +310,7 @@ const buildScenarioParser = (scenario: Scenario) => {
     // of the arguments (like find -exec ...)
     if (scenario.captureAllAfter) {
       let capturing = false;
-      let newargs = [];
+      const newArgs: string[] = [];
 
       for (let i = 0; i < args.length; i++) {
         if (capturing) {
@@ -290,16 +322,16 @@ const buildScenarioParser = (scenario: Scenario) => {
           capturing = true;
         }
 
-        newargs.push(args[i]);
+        newArgs.push(args[i]);
       }
 
-      args = newargs;
+      args = newArgs;
     } else if (captureAfterN) {
       captureAfterN = captureAfterN.trim();
 
       let capturing = false;
       let skipNext = false;
-      let newargs = [];
+      const newArgs = [];
 
       for (let i = 0; i < args.length; i++) {
         if (capturing) {
@@ -308,7 +340,7 @@ const buildScenarioParser = (scenario: Scenario) => {
         }
 
         if (skipNext) {
-          newargs.push(args[i]);
+          newArgs.push(args[i]);
           skipNext = false;
           continue;
         }
@@ -320,10 +352,10 @@ const buildScenarioParser = (scenario: Scenario) => {
         }
 
         skipNext = valuedOpts.indexOf(args[i]) !== -1;
-        newargs.push(args[i]);
+        newArgs.push(args[i]);
       }
 
-      args = newargs;
+      args = newArgs;
     }
 
     // Possibly reclaim on or two args
@@ -340,7 +372,7 @@ const buildScenarioParser = (scenario: Scenario) => {
       throw new Error("Scenario not applicable.");
     }
 
-    let saveLastNonOption = undefined;
+    let saveLastNonOption: string | null = null;
 
     if (scenario.saveLastNonOption && args.length > 0) {
       if (
@@ -352,8 +384,8 @@ const buildScenarioParser = (scenario: Scenario) => {
       }
     }
 
-    // console.log(JSON.stringify(yargs.getOptions(), null, 2));
-    const results = yargs.parse(args);
+    // console.log(JSON.stringify(argv.getOptions(), null, 2));
+    const results = argv.parse(args) as any;
 
     // This validity predicate can't be checked until after we've tried the parse
     if (scenario.rejectIfIs) {
@@ -368,7 +400,7 @@ const buildScenarioParser = (scenario: Scenario) => {
       }
     }
 
-    // Array in yargs is too greedy sometimes
+    // Array in argv is too greedy sometimes
     if (
       scenario.stealFromArrayFor &&
       results[scenario.stealFromArrayFor.array] &&
@@ -421,197 +453,194 @@ const buildScenarioParser = (scenario: Scenario) => {
       originalArgs,
       paths: getArgsFromList(options.paths),
       counts: getArgsFromList(options.counts),
-      options: yargs.getOptions(),
+      options: (argv as any).getOptions(),
       name: scenario.name,
       cmd: scenario.cmd,
     };
 
-    return results;
+    return results as ScenarioParserOutput;
   };
-};
+}
 
-const buildParser = (prefix: string, scenarios: Scenario[]) => (args) => {
-  const parsers = scenarios.map(buildScenarioParser);
-
-  for (let i = 0; i < parsers.length; i++) {
-    try {
-      const result = parsers[i](args);
-      result["$"]["prefix"] = prefix;
-      return { scenario: scenarios[i], result };
-    } catch (_) {
-      continue;
+function buildParser(
+  prefix: string,
+  scenarios: Scenario[]
+): (args: string[]) =>
+  | {
+      scenario: null;
+      result: DockerOpsNodeType;
     }
-  }
+  | {
+      scenario: Scenario;
+      result: ScenarioParserOutput;
+    } {
+  return (args: string[]) => {
+    const parsers = scenarios.map(buildScenarioParser);
 
-  return { scenario: null, result: { type: "UNKNOWN", children: [] } };
-};
+    for (let i = 0; i < parsers.length; i++) {
+      try {
+        const result = parsers[i](args);
+        result.$.prefix = prefix;
+        return { scenario: scenarios[i], result };
+      } catch (e) {
+        if (e.message != "Scenario not applicable.") console.error(e);
+        continue;
+      }
+    }
 
-const nodify = (
+    return { scenario: null, result: new Unknown() };
+  };
+}
+
+function nodify(
   prefix: string,
   type: string,
-  key: string,
+  key: string | string[],
   value: string,
   opts: any,
-  paths,
-  oargs
-) => {
-  const reify = (v, def) => {
+  paths: string[],
+  oargs: {
+    [x: string]: DockerOpsNodeType;
+  }
+): DockerOpsNodeType {
+  function reify(v: string | number, def: DockerOpsNodeType[]) {
     return oargs[v] ? [oargs[v]] : def || [];
-  };
+  }
 
-  if (paths.indexOf(key) !== -1) {
-    return {
-      type: `${prefix}-${type}`,
-      children: [
-        {
-          type: `BASH-PATH`,
-          children: reify(value, [
-            {
-              type: `BASH-LITERAL`,
-              value,
-              children: [],
-            },
-          ]),
-        },
-      ],
-    };
+  if (typeof key == "string" && paths.indexOf(key) !== -1) {
+    const out = new GenericNode(`${prefix}-${type}`).addChild(
+      new GenericNode(`BASH-PATH`)
+    );
+
+    reify(value as string, [new BashLiteral(value)]).forEach((e) =>
+      out.children[0].addChild(e)
+    );
+    return out;
   } else if (opts.boolean.indexOf(key) !== -1) {
-    return { type: `${prefix}-F-${type}`, children: [] };
+    return new GenericNode(`${prefix}-F-${type}`);
   } else if (Array.isArray(value)) {
     if (value.length === 0) {
-      return null;
+      return new Unknown();
     }
     if (!type.endsWith("S")) {
       type = type + "S";
     }
-    let children = value.map((x) => ({
-      type: `${prefix}-${type.slice(0, -1)}`,
-      children: reify(x, [
-        {
-          type: `BASH-LITERAL`,
-          value: x,
-          children: [],
-        },
-      ]),
-    }));
-    return { type: `${prefix}-${type}`, children };
-  } else if (opts.string.indexOf(key) !== -1) {
-    return {
-      type: `${prefix}-${type}`,
-      children: reify(value, [
-        {
-          type: `BASH-LITERAL`,
-          value,
-          children: [],
-        },
-      ]),
-    };
-  } else if (typeof value === "string" || typeof value === "number") {
-    return {
-      type: `${prefix}-${type}`,
-      children: reify(value, [
-        {
-          type: `BASH-LITERAL`,
-          value: value.toString(),
-          children: [],
-        },
-      ]),
-    };
-  }
-
-  return { type: `${prefix}-${type}`, children: [] };
-};
-
-const buildPostProcessor = (parser) => (args, oargs) => {
-  const output = parser(args);
-
-  if (!output.scenario) {
-    return output.result;
-  }
-
-  oargs = oargs
-    .map((arg) => ({ [/* TODO: stringifyBash(arg) */ ""]: arg }))
-    .reduce((obj, cur) => ({ ...obj, ...cur }), {});
-
-  const details = output.result["$"];
-
-  let aliases = details.options.alias;
-
-  Object.keys(aliases).forEach((k1) => {
-    Object.keys(aliases).forEach((k2) => {
-      if (k1 === k2) {
-        return;
-      }
-      if (
-        aliases[k1].length === aliases[k2].length &&
-        aliases[k1].every((x, i) => x === aliases[k2][i])
-      ) {
-        aliases[k1].push(k2);
-        aliases[k2].push(k1);
-      }
+    const out = new GenericNode(`${prefix}-${type}`);
+    value.forEach((x) => {
+      const child = new GenericNode(`${prefix}-${type.slice(0, -1)}`);
+      reify(x, [new BashLiteral(x)]).forEach((e) => child.addChild(e));
+      out.addChild(child);
     });
-  });
 
-  Object.keys(aliases).forEach(
-    (k) => (aliases[k] = aliases[k].sort((a, b) => b.length - a.length))
-  );
+    return out;
+  } else if (opts.string.indexOf(key) !== -1) {
+    const out = new GenericNode(`${prefix}-${type}`);
+    reify(value, [new BashLiteral(value)]).forEach((e) => out.addChild(e));
+  } else if (typeof value === "string" || typeof value === "number") {
+    const out = new GenericNode(`${prefix}-${type}`);
+    reify(value, [new BashLiteral(value.toString())]).forEach((e) =>
+      out.addChild(e)
+    );
+  }
 
-  const subtree = { type: details.name, children: [] };
+  return new GenericNode(`${prefix}-${type}`);
+}
 
-  let ignores = details.cmd
-    .split(" ")
-    .filter((x:string) => !x.startsWith("[") && !x.startsWith("<"))
-    .concat(["$", "_"]);
+const buildPostProcessor =
+  (parser: ReturnType<typeof buildParser>) =>
+  (argsString: string[], argsAST: DockerOpsNodeType[]): DockerOpsNodeType => {
+    const output = parser(argsString);
 
-  ignores.push(...details.counts.filter((c: string) => output.result[c] === 0));
+    if (output.result instanceof DockerOpsNode) {
+      return output.result;
+    }
 
-  subtree.children = Object.keys(output.result)
-    .map((k) => {
-      // Maybe we've already processed or want to ignore this
-      // key
-      if (ignores.indexOf(k) !== -1) {
-        return null;
-      }
+    const argsASTCache = argsAST
+      .map((child) => ({ [print(child)]: child }))
+      .reduce((obj, cur) => ({ ...obj, ...cur }), {});
 
-      // Okay, get a "good" name for this key
-      // Then remove all possible aliases
-      if (aliases[k]) {
-        ignores.push(...aliases[k]);
-        return nodify(
-          details.prefix,
-          aliases[k][0].toUpperCase(),
-          k,
-          output.result[k],
-          details.options,
-          details.paths,
-          oargs
-        );
-      } else if (
-        Object.keys(aliases).some(
-          (x) => aliases[x].indexOf(k) !== -1 && output.result[x]
-        )
-      ) {
-        return null; // Just skip, we'll hit this later
-      } else {
-        ignores.push(k);
-        return nodify(
-          details.prefix,
-          k.toUpperCase(),
-          k,
-          output.result[k],
-          details.options,
-          details.paths,
-          oargs
-        );
-      }
-    })
-    .filter((x) => x);
+    const details = output.result.$;
 
-  return subtree;
-};
+    const aliases = details.options.alias;
 
-export const createEnrichers = () => {
-  return fs
+    Object.keys(aliases).forEach((k1) => {
+      Object.keys(aliases).forEach((k2) => {
+        if (k1 === k2) {
+          return;
+        }
+        if (
+          aliases[k1].length === aliases[k2].length &&
+          aliases[k1].every((x, i) => x === aliases[k2][i])
+        ) {
+          aliases[k1].push(k2);
+          aliases[k2].push(k1);
+        }
+      });
+    });
+
+    Object.keys(aliases).forEach(
+      (k) => (aliases[k] = aliases[k].sort((a, b) => b.length - a.length))
+    );
+
+    const subtree = new GenericNode(details.name);
+
+    const ignores = details.cmd
+      .split(" ")
+      .filter((x: string) => !x.startsWith("[") && !x.startsWith("<"))
+      .concat(["$", "_"]);
+
+    ignores.push(
+      ...details.counts.filter((c: string) => output.result[c] === 0)
+    );
+
+    subtree.children = Object.keys(output.result)
+      .filter(
+        (k) =>
+          // Maybe we've already processed or want to ignore this key
+          ignores.indexOf(k) === -1
+      )
+      .map((k) => {
+        // Okay, get a "good" name for this key
+        // Then remove all possible aliases
+        if (aliases[k]) {
+          ignores.push(...aliases[k]);
+          return nodify(
+            details.prefix,
+            aliases[k][0].toUpperCase(),
+            k,
+            output.result[k],
+            details.options,
+            details.paths,
+            argsASTCache
+          );
+        } else if (
+          Object.keys(aliases).some(
+            (x) => aliases[x].indexOf(k) !== -1 && output.result[x]
+          )
+        ) {
+          return null; // Just skip, we'll hit this later
+        } else {
+          ignores.push(k);
+          return nodify(
+            details.prefix,
+            k.toUpperCase(),
+            k,
+            output.result[k],
+            details.options,
+            details.paths,
+            argsASTCache
+          );
+        }
+      })
+      .filter((x) => x);
+
+    return subtree;
+  };
+
+export function createEnrichers(): {
+  [key: string]: ReturnType<typeof buildPostProcessor>;
+} {
+  const out = fs
     .readdirSync(`${YAML_DIR}`)
     .filter((x) => x.endsWith(".yml"))
     .map((fname) => {
@@ -620,8 +649,8 @@ export const createEnrichers = () => {
           fs.readFileSync(`${YAML_DIR}/${fname}`, "utf8")
         ) as CommandFile
       ).command;
-      return command.providerFor.map((name: string) => ({
-        [name]: buildPostProcessor(
+      return command.providerFor.map((commandName: string) => ({
+        [commandName]: buildPostProcessor(
           buildParser(command.prefix, command.scenarios)
         ),
       }));
@@ -630,4 +659,5 @@ export const createEnrichers = () => {
       (obj, cur) => cur.reduce((obj, cur) => ({ ...obj, ...cur }), obj),
       {}
     );
-};
+  return out;
+}

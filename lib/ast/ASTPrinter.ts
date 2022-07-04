@@ -367,7 +367,11 @@ class Printer {
         break;
       default:
         console.error("Type not supported: ", node.type);
-        node.iterate((i) => this._generate(i));
+        if (node.original !== null) {
+          node.original.iterate((i) => this._generate(i));
+        } else {
+          node.iterate((i) => this._generate(i));
+        }
     }
     return this;
   }
