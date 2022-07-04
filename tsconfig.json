@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "lib": ["es6"],
+    "target": "es5",
+    "sourceMap": true,
+    "esModuleInterop": true,
+    "noImplicitAny": false,
+    "removeComments": true,
+    "preserveConstEnums": true,
+    "outDir": "./build"
+    // "moduleResolution": "node"
+  },
+  "include": ["index.ts"],
+  "exclude": []
+}
