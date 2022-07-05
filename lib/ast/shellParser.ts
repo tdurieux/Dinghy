@@ -62,6 +62,7 @@ import {
   Position,
   BashComment,
   BashBraceGroup,
+  BashBraceExpansion,
 } from "./type";
 
 function pos(node: Node | Pos): Position {
@@ -88,7 +89,10 @@ function handleNode(node: Node): DockerOpsNodeType | DockerOpsNodeType[] {
   if (node == null) {
     throw new Error("node is null");
   }
-  const nodeType = syntax.NodeType(node);
+  if (!(node as any).$type) {
+    throw new Error("node type now found: " + node);
+  }
+  const nodeType: string = (node as any).$type.split("*").at(-1);
   switch (nodeType) {
     case "ArithmCmd":
       const ArithmCmd = node as bashAST.ArithmCmd;
@@ -305,12 +309,7 @@ function handleNode(node: Node): DockerOpsNodeType | DockerOpsNodeType[] {
     case "Loop":
       const Loop = node as bashAST.Loop;
       return handleNode(Loop.Node);
-    case "ParExpOperator":
-      const ParExpOperator = node as bashAST.ParExpOperator;
-      break;
-    case "ParNamesOperator":
-      const ParNamesOperator = node as bashAST.ParNamesOperator;
-      break;
+
     case "ParamExp":
       const ParamExp = node as bashAST.ParamExp;
       const dollar = new BashDollarParens()
@@ -337,6 +336,9 @@ function handleNode(node: Node): DockerOpsNodeType | DockerOpsNodeType[] {
       } else if (Redirect.Op === 59) {
         // 2>
         op = new BashRedirectStderr();
+      } else if (Redirect.Op === 55) {
+        // >>
+        op = new BashRedirectAppend();
       } else {
         console.log("redirect kind", Redirect.Op);
         op = new BashRedirectAppend();
@@ -439,7 +441,14 @@ function handleNode(node: Node): DockerOpsNodeType | DockerOpsNodeType[] {
     case "WordPart":
       const WordPart = node as bashAST.WordPart;
       return handleNode(WordPart.Node);
-
+    case "Expansion":
+      const Expansion = node as bashAST.Expansion;
+      return new BashBraceExpansion(Expansion.Op.toString())
+        .addChild(handleNode(Expansion.Word));
+    case "ParExpOperator":
+      const ParExpOperator = node as bashAST.ParExpOperator;
+    case "ParNamesOperator":
+      const ParNamesOperator = node as bashAST.ParNamesOperator;
     case "TestClause":
       const TestClause = node as bashAST.TestClause;
     case "TestExpr":
@@ -460,8 +469,6 @@ function handleNode(node: Node): DockerOpsNodeType | DockerOpsNodeType[] {
       const GlobOperator = node as bashAST.GlobOperator;
     case "DeclClause":
       const DeclClause = node as bashAST.DeclClause;
-    case "Expansion":
-      const Expansion = node as bashAST.Expansion;
     case "ExtGlob":
       const ExtGlob = node as bashAST.ExtGlob;
     case "CoprocClause":
@@ -482,7 +489,7 @@ function handleNode(node: Node): DockerOpsNodeType | DockerOpsNodeType[] {
       const UnaryArithm = node as bashAST.UnaryArithm;
     case "UnaryTest":
       const UnaryTest = node as bashAST.UnaryTest;
-      console.error("Unhandled type", type)
+      console.error("Unhandled type", type);
       break;
   }
   console.log(nodeType, "not handled");
@@ -498,11 +505,11 @@ export function parseShell(shString: string): DockerOpsNodeType {
     const result = parser.Parse(shString, "src.sh");
     return handleNode(result) as BashScript;
   } catch (error) {
-    console.log(error);
-    // console.log(
-    //   (error as bashAST.ParseError).Error(),
-    //   (syntax as any).IsIncomplete(error)
-    // );
+    console.log("PARSING", error);
+    console.log(
+      (error as bashAST.ParseError).Error(),
+      (syntax as any).IsIncomplete(error)
+    );
     return new Unknown().addChild(new BashLiteral(error.Message));
   }
 }

@@ -159,7 +159,9 @@ type ScenarioParserOutput = {
     name: string;
     cmd: string;
   };
-  [key: string | number]: any;
+  $0: string;
+  _: (string | number)[];6
+  [key: string]: any;
 };
 function buildScenarioParser(
   scenario: Scenario
@@ -169,7 +171,10 @@ function buildScenarioParser(
     const originalArgs = args;
 
     // // Dirty require.cache trickery
-    // delete require.cache["/usr/local/lib/node_modules/yargs/index.js"];
+    for (const i in require.cache) {
+      if (i.includes("yargs")) delete require.cache[i];
+    }
+    delete require.cache["/usr/local/lib/node_modules/yargs/index.js"];
     // let yargs = require("yargs");
 
     // Look at scenario.cmd and do some checking
@@ -203,7 +208,7 @@ function buildScenarioParser(
 
     // Set all of these properties up so we have controllable
     // behavior from argv
-    let argv = yargs
+    let argv = ((yargs as any)() as Argv)
       .help(false)
       .version(false)
       .exitProcess(false)
@@ -213,7 +218,10 @@ function buildScenarioParser(
         "camel-case-expansion": false,
       })
       .fail((a, b, c) => {
-        throw new Error("Arg parsing failed.");
+        console.error(b);
+        throw new Error(
+          "Arg parsing failed. " + originalArgs.join(" ") + "\n" + a
+        );
       })
       .command(scenario.cmd, scenario.name);
 
@@ -385,7 +393,11 @@ function buildScenarioParser(
     }
 
     // console.log(JSON.stringify(argv.getOptions(), null, 2));
-    const results = argv.parse(args) as any;
+    const results = argv.parse(args) as {
+      [x: string]: any;
+      _: (string | number)[];
+      $0: string;
+    };
 
     // This validity predicate can't be checked until after we've tried the parse
     if (scenario.rejectIfIs) {

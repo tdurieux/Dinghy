@@ -45,3 +45,4 @@ command:
         match: [ '--execdir', '--exec' ]
         name: args
       rejectIf: [ '-a', '-o', '(', ')', '!', '-and', '-or', '-not' ]
+      replaceEmptyArgsWith: [ '~' ]

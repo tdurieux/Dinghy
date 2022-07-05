@@ -1,5 +1,10 @@
-import { Argument, DockerfileParser, JSONInstruction } from "dockerfile-ast";
-import { createEnrichers } from "./commands";
+import {
+  Argument,
+  DockerfileParser,
+  From,
+  JSONInstruction,
+  Line,
+} from "dockerfile-ast";
 import { parseShell } from "./shellParser";
 import {
   DockerAdd,
@@ -19,6 +24,8 @@ import {
   DockerExpose,
   DockerFile,
   DockerFrom,
+  DockerImageAlias,
+  DockerImageDigest,
   DockerImageName,
   DockerImageRepo,
   DockerImageTag,
@@ -35,7 +42,6 @@ import {
   DockerWorkdir,
   Position,
 } from "./type";
-
 
 export function parseDocker(filepath: string): DockerFile {
   const dockerfileAST: DockerFile = new DockerFile();
@@ -55,33 +61,58 @@ export function parseDocker(filepath: string): DockerFile {
       new DockerComment(comment.getContent()).setPosition(position)
     );
   }
-  for (const line of lines.getInstructions()) {
-    const position = new Position(
-      line.getRange().start.line,
-      0,
-      line.getRange().end.line,
-      0
+  function rangeToPos(range: ReturnType<Line["getRange"]>) {
+    return new Position(
+      range.start.line,
+      range.start.character,
+      range.end.line,
+      range.end.character
     );
+  }
+  for (const line of lines.getInstructions()) {
+    const position = rangeToPos(line.getRange());
     const command = line.getKeyword().toLowerCase();
     switch (command) {
       case "from":
+        const from = line as From;
         const fromNode = new DockerFrom();
         fromNode.setPosition(position);
-        const value: string = line.getArgumentsContent();
-        let name = value;
-        if (value.includes("/")) {
-          name = value.split("/").at(-1).trim();
+        if (from.getRegistry()) {
+          fromNode.addChild(
+            new DockerImageRepo(from.getRegistry()).setPosition(
+              rangeToPos(from.getRegistryRange())
+            )
+          );
         }
-        if (value.includes(":")) {
-          name = name.split(":")[0].trim();
+        if (from.getImageName()) {
+          fromNode.addChild(
+            new DockerImageName(from.getImageName()).setPosition(
+              rangeToPos(from.getImageNameRange())
+            )
+          );
         }
-        fromNode.addChild(new DockerImageName(name));
 
-        if (value.includes("/")) {
-          fromNode.addChild(new DockerImageRepo(value.split("/")[0].trim()));
+        if (from.getImageTag()) {
+          fromNode.addChild(
+            new DockerImageTag(from.getImageTag()).setPosition(
+              rangeToPos(from.getImageTagRange())
+            )
+          );
         }
-        if (value.includes(":")) {
-          fromNode.addChild(new DockerImageTag(value.split(":").at(-1).trim()));
+        if (from.getImageDigest()) {
+          fromNode.addChild(
+            new DockerImageDigest(from.getImageDigest()).setPosition(
+              rangeToPos(from.getImageDigestRange())
+            )
+          );
+        }
+
+        if (from.getBuildStage()) {
+          fromNode.addChild(
+            new DockerImageAlias(from.getBuildStage()).setPosition(
+              rangeToPos(from.getBuildStageRange())
+            )
+          );
         }
         dockerfileAST.addChild(fromNode);
         break;
@@ -203,12 +234,22 @@ export function parseDocker(filepath: string): DockerFile {
         dockerfileAST.addChild(cmd);
         break;
       case "shell":
-        const shell = new DockerShell().addChild(
-          new DockerShellExecutable(line.getArguments()[0].getValue())
+        const shell = new DockerShell();
+        shell.setPosition(position);
+        argus = (line as JSONInstruction).getJSONStrings();
+        if (argus.length == 0) argus = line.getArguments();
+        shell.addChild(
+          new DockerShellExecutable(argus[0].getValue()).setPosition(
+            rangeToPos(argus[0].getRange())
+          )
         );
-        cmd.setPosition(position);
-        for (let i = 1; i < line.getArguments().length; i++) {
-          shell.addChild(new DockerShellArg(line.getArguments()[i].getValue()));
+        for (let index = 1; index < argus.length; index++) {
+          const arg = argus[index];
+          shell.addChild(
+            new DockerShellArg(arg.getValue()).setPosition(
+              rangeToPos(arg.getRange())
+            )
+          );
         }
         dockerfileAST.addChild(shell);
         break;

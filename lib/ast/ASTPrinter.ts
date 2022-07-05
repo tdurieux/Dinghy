@@ -1,4 +1,12 @@
-import { DockerOpsNodeType, MaybeSemanticCommand } from "./type";
+import {
+  DockerOpsNodeType,
+  DockerOpsValueNode,
+  DockerShell,
+  DockerShellArg,
+  DockerShellExecutable,
+  GenericNode,
+  MaybeSemanticCommand,
+} from "./type";
 
 class Printer {
   indentLevel = 0;
@@ -83,7 +91,11 @@ class Printer {
       case "BASH-CONDITION-OP":
       case "AS-STRING":
       case "DOCKER-ENTRYPOINT-EXECUTABLE":
+      case "DOCKER-SHELL-ARG":
         this.append(node.value);
+        break;
+      case "DOCKER-IMAGE-REPO":
+        this.append(node.value + "/");
         break;
       case "DOCKER-IMAGE-TAG":
         this.append(":" + node.value);
@@ -229,6 +241,14 @@ class Printer {
         this.append("< ");
         node.iterate((node) => this._generate(node));
         break;
+      case "BASH-BRACE-EXPANSION":
+        switch (node.value) {
+          case "76":
+            this.append("%");
+            break;
+        }
+        node.iterate((node) => this._generate(node));
+        break;
       case "BASH-OP":
         switch (node.value) {
           case "9":
@@ -296,6 +316,15 @@ class Printer {
         this.append("RUN ").indent();
         node.iterate((i) => this._generate(i));
         this.deindent().newLine();
+        break;
+      case "DOCKER-SHELL":
+        this.indentLevel = 0;
+        this.append("SHELL [").indent();
+        this._generate(node.getElement(DockerShellExecutable));
+        for (const i of node.getElements(DockerShellArg)) {
+          this.append(", ")._generate(i);
+        }
+        this.deindent().append("]").newLine();
         break;
       case "DOCKER-ADD":
         this.indentLevel = 0;
@@ -367,7 +396,9 @@ class Printer {
         break;
       default:
         console.error("Type not supported: ", node.type);
-        if (node.original !== null) {
+        if (node instanceof GenericNode) {
+          this.append(`[ENRICHED: ${node.original.children[0].toString()}] `);
+        } else if (node.original !== null) {
           node.original.iterate((i) => this._generate(i));
         } else {
           node.iterate((i) => this._generate(i));

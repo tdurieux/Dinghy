@@ -135,7 +135,7 @@ export interface DeclClause extends Node {
   Assigns: Assign[];
 }
 export interface Expansion extends Node {
-  Op: ParExpOperator;
+  Op: number;
   Word: Word;
 }
 export interface ExtGlob extends Node {

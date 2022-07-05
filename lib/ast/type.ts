@@ -102,6 +102,8 @@ export type DockerOpsNodeType =
   | DockerExpose
   | DockerFile
   | DockerFrom
+  | DockerImageDigest
+  | DockerImageAlias
   | DockerImageName
   | DockerImageRepo
   | DockerImageTag
@@ -202,7 +204,9 @@ export abstract class DockerOpsNode {
     return out;
   }
 
-  getElements<T extends DockerOpsNode>(element: new () => T): T[] | null {
+  getElements<T extends DockerOpsNode>(
+    element: new (t: string | void) => T
+  ): T[] | null {
     const type = new element().type;
     const out: T[] = [];
     this.traverse((node) => {
@@ -320,7 +324,7 @@ export class GenericNode extends DockerOpsNode {
   }
 }
 
-class DockerOpsValueNode extends DockerOpsNode {
+export class DockerOpsValueNode extends DockerOpsNode {
   value: string;
 
   constructor(value: string) {
@@ -375,7 +379,7 @@ export class BashBackticked extends DockerOpsNode {
 export class BashBanged extends DockerOpsNode {
   type: "BASH-BANGED" = "BASH-BANGED";
 }
-export class BashBraceExpansion extends DockerOpsNode {
+export class BashBraceExpansion extends DockerOpsValueNode {
   type: "BASH-BRACE-EXPANSION" = "BASH-BRACE-EXPANSION";
 }
 export class BashBraceGroup extends DockerOpsNode {
@@ -741,6 +745,12 @@ export class DockerFrom extends DockerOpsNode {
 }
 export class DockerImageName extends DockerOpsValueNode {
   type: "DOCKER-IMAGE-NAME" = "DOCKER-IMAGE-NAME";
+}
+export class DockerImageDigest extends DockerOpsValueNode {
+  type: "DOCKER-IMAGE-DIGEST" = "DOCKER-IMAGE-DIGEST";
+}
+export class DockerImageAlias extends DockerOpsValueNode {
+  type: "DOCKER-IMAGE-ALIAS" = "DOCKER-IMAGE-ALIAS";
 }
 export class DockerImageRepo extends DockerOpsValueNode {
   type: "DOCKER-IMAGE-REPO" = "DOCKER-IMAGE-REPO";
