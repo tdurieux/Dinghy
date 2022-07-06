@@ -396,7 +396,7 @@ class Printer {
         break;
       default:
         console.error("Type not supported: ", node.type);
-        if (node instanceof GenericNode) {
+        if (node instanceof GenericNode && node.original) {
           this.append(`[ENRICHED: ${node.original.children[0].toString()}] `);
         } else if (node.original !== null) {
           node.original.iterate((i) => this._generate(i));

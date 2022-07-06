@@ -1,5 +1,7 @@
 import { print } from "./ASTPrinter";
 import { createEnrichers } from "./commands";
+import { abstract } from "./abstraction";
+import { Rule, matchRule } from "./rule";
 
 export type DockerOpsNodeType =
   | AsString
@@ -166,6 +168,8 @@ export abstract class DockerOpsNode {
    */
   original: DockerOpsNodeType | null = null;
   _position: Position;
+  isAbstracted: boolean;
+  isEnriched: boolean;
 
   get position(): Position {
     return this._position;
@@ -244,6 +248,12 @@ export abstract class DockerOpsNode {
     }
   }
 
+  /**
+   * traverse all children recursively
+   *
+   * @param callback returns false to stop the traverse
+   * @returns false if not everything has been traversed
+   */
   traverse(callback: (node: DockerOpsNodeType) => boolean | void): boolean {
     this.children.sort((a, b) => {
       if (a.position === undefined) return 0;
@@ -273,6 +283,7 @@ export abstract class DockerOpsNode {
       this as DockerOpsNodeType
     );
     element.parent = this.parent;
+    if (element.position == null) element.setPosition(this._position);
     this.parent.children[indexInParent] = element;
     return this;
   }
@@ -290,6 +301,8 @@ export abstract class DockerOpsNode {
   }
 
   enrich() {
+    if (this.isEnriched) return this;
+    this.isEnriched = true;
     const COMMAND_MAP = createEnrichers();
 
     this.traverse((node) => {
@@ -306,7 +319,7 @@ export abstract class DockerOpsNode {
             commandArgs
           );
           payload.original = node;
-          node.replace(payload as DockerOpsNodeType);
+          node.replace(payload);
         }
       }
     });
@@ -314,22 +327,30 @@ export abstract class DockerOpsNode {
   }
 
   abstract() {
-    return this;
+    if (!this.isEnriched) this.enrich();
+    if (this.isAbstracted) return this;
+    this.isAbstracted = true;
+    return abstract(this as DockerOpsNodeType);
+  }
+
+  match(rule: Rule) {
+    if (!this.isAbstracted) this.abstract();
+    console.time(`Match rule: ${rule.name}`);
+    const o = matchRule(this as DockerOpsNodeType, rule);
+    console.timeEnd(`Match rule: ${rule.name}`);
+    return o;
   }
 }
 
 export class GenericNode extends DockerOpsNode {
-  constructor(readonly type: any) {
+  constructor(public type: any) {
     super();
   }
 }
 
 export class DockerOpsValueNode extends DockerOpsNode {
-  value: string;
-
-  constructor(value: string) {
+  constructor(public value: string) {
     super();
-    this.value = value;
   }
 }
 
