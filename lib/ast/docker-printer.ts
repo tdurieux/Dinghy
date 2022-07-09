@@ -3,7 +3,7 @@ import {
   DockerShellArg,
   DockerShellExecutable,
   GenericNode,
-} from "./type";
+} from "./docker-type";
 
 class Printer {
   indentLevel = 0;

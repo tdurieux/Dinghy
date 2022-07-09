@@ -1,10 +1,11 @@
-import { parseDockerFile } from "../lib/ast/dockerParser";
-import { DockerFile } from "../lib/ast/type";
+import { parseDockerFile } from "../lib/ast/docker-parser";
+import { DockerFile } from "../lib/ast/docker-type";
+import { Matcher } from "../lib/debloat";
 import {
   ruleAptGetInstallThenRemoveAptLists,
   ruleAptGetInstallUseNoRec,
   ruleAptGetUpdatePrecedesInstall,
-} from "../lib/ast/rule";
+} from "../lib/debloat/rules";
 
 function praseFile(file: string) {
   return parseDockerFile(`./tests/data/${file}.Dockerfile`);
@@ -14,32 +15,34 @@ describe("Testing docker parser", () => {
     const dockerfile = praseFile("1c11182d763188889c00d8f44a91d0df09e0147b");
     expect(dockerfile).toBeInstanceOf(DockerFile);
 
+    const matcher = new Matcher(dockerfile);
+
     expect(
-      dockerfile.match(ruleAptGetInstallThenRemoveAptLists).violations
+      matcher.match(ruleAptGetInstallThenRemoveAptLists).violations
     ).toHaveLength(0);
 
     expect(
-      dockerfile.match(ruleAptGetUpdatePrecedesInstall).violations
+      matcher.match(ruleAptGetUpdatePrecedesInstall).violations
     ).toHaveLength(0);
   });
   test("1d8c362e7043d7b78836f06256d0ae9b82561af8", () => {
     const dockerfile = praseFile("1d8c362e7043d7b78836f06256d0ae9b82561af8");
     expect(dockerfile).toBeInstanceOf(DockerFile);
 
+    const matcher = new Matcher(dockerfile);
+
     expect(
-      dockerfile.match(ruleAptGetInstallThenRemoveAptLists).violations
+      matcher.match(ruleAptGetInstallThenRemoveAptLists).violations
     ).toHaveLength(0);
 
     expect(
-      dockerfile.match(ruleAptGetUpdatePrecedesInstall).violations
+      matcher.match(ruleAptGetUpdatePrecedesInstall).violations
     ).toHaveLength(0);
 
-    expect(dockerfile.match(ruleAptGetInstallUseNoRec).violations).toHaveLength(
-      1
-    );
+    expect(matcher.match(ruleAptGetInstallUseNoRec).violations).toHaveLength(1);
     if (ruleAptGetInstallUseNoRec.repair)
       ruleAptGetInstallUseNoRec.repair(
-        dockerfile.match(ruleAptGetInstallUseNoRec).violations[0]
+        matcher.match(ruleAptGetInstallUseNoRec).violations[0]
       );
   });
 });

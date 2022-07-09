@@ -1,7 +1,4 @@
-import { print } from "./ASTPrinter";
-import { createEnrichers } from "../deloat/commands";
-import { abstract } from "./abstraction";
-import { Rule, matchRule } from "./rule";
+import { print } from "./docker-printer";
 
 export type DockerOpsNodeType =
   | AsString
@@ -145,6 +142,15 @@ export class Position {
     readonly columnEnd?: number
   ) {}
 
+  clone() {
+    return new Position(
+      this.lineStart,
+      this.columnStart,
+      this.lineEnd,
+      this.columnEnd
+    );
+  }
+
   toString() {
     return (
       `${this.lineStart}:${this.columnStart}` +
@@ -168,8 +174,6 @@ export abstract class DockerOpsNode {
    */
   original: DockerOpsNodeType | null = null;
   _position: Position;
-  isAbstracted: boolean;
-  isEnriched: boolean;
 
   get position(): Position {
     return this._position;
@@ -194,10 +198,10 @@ export abstract class DockerOpsNode {
   }
 
   getElement<T extends DockerOpsNode>(
-    element: new (t: string | void) => T
+    element: new (t: void | string) => T
   ): T | null {
     const type = new element().type;
-    let out: T;
+    let out: T = null;
     this.traverse((node) => {
       if (node.type == type) {
         out = node as T;
@@ -210,7 +214,7 @@ export abstract class DockerOpsNode {
 
   getElements<T extends DockerOpsNode>(
     element: new (t: string | void) => T
-  ): T[] | null {
+  ): T[] {
     const type = new element().type;
     const out: T[] = [];
     this.traverse((node) => {
@@ -219,7 +223,9 @@ export abstract class DockerOpsNode {
     return out;
   }
 
-  getParent<T extends DockerOpsNode>(element: new () => T): T | null {
+  getParent<T extends DockerOpsNode>(
+    element: new (t: string | void) => T
+  ): T | null {
     const type = new element().type;
     let currentParent: T = this.parent as T;
     while (currentParent != null) {
@@ -296,49 +302,35 @@ export abstract class DockerOpsNode {
     return this;
   }
 
+  public clone(): typeof this {
+    var cloneObj = new (this.constructor as any)();
+    for (const attribut in this) {
+      if (attribut == "parent") continue;
+      if (!this[attribut]) continue;
+      if (Array.isArray(this[attribut])) {
+        cloneObj[attribut] = [];
+        for (const e of this[attribut] as any) {
+          if ((e as any).clone) {
+            const c = (e as any).clone();
+            if (attribut == "children") {
+              c.parent = cloneObj;
+            }
+            cloneObj[attribut].push(c);
+          } else {
+            cloneObj[attribut].push(e);
+          }
+        }
+      } else if ((this[attribut] as any).clone) {
+        cloneObj[attribut] = (this[attribut] as any).clone();
+      } else {
+        cloneObj[attribut] = this[attribut];
+      }
+    }
+    return cloneObj;
+  }
+
   toString() {
     return print(this as any);
-  }
-
-  enrich() {
-    if (this.isEnriched) return this;
-    this.isEnriched = true;
-    const COMMAND_MAP = createEnrichers();
-
-    this.traverse((node) => {
-      if (node instanceof MaybeSemanticCommand) {
-        const commandAST = node.getElement(BashCommandCommand);
-        const command = commandAST?.getElement(BashLiteral).value;
-        if (COMMAND_MAP[command]) {
-          const commandArgs = node
-            .getElements(BashCommandArgs)
-            .map((e) => e.children)
-            .flat();
-          const payload = COMMAND_MAP[command](
-            commandArgs.map((c) => print(c)),
-            commandArgs
-          );
-          payload.original = node;
-          node.replace(payload);
-        }
-      }
-    });
-    return this;
-  }
-
-  abstract() {
-    if (!this.isEnriched) this.enrich();
-    if (this.isAbstracted) return this;
-    this.isAbstracted = true;
-    return abstract(this as DockerOpsNodeType);
-  }
-
-  match(rule: Rule) {
-    if (!this.isAbstracted) this.abstract();
-    console.time(`Match rule: ${rule.name}`);
-    const o = matchRule(this as DockerOpsNodeType, rule);
-    console.timeEnd(`Match rule: ${rule.name}`);
-    return o;
   }
 }
 

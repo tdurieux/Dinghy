@@ -4,9 +4,10 @@
   "description": "",
   "main": "index.ts",
   "scripts": {
-    "test": "jest"
+    "test": "jest --coverage",
+    "build": "tsc"
   },
-  "author": "",
+  "author": "Thomas Durieux",
   "license": "ISC",
   "dependencies": {
     "bash-parser": "^0.5.0",

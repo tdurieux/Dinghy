@@ -1,11 +1,10 @@
 import { Command } from "commander";
-import { print } from "./lib/ast/ASTPrinter";
+import { print } from "./lib/ast/docker-printer";
+import { Matcher } from "./lib/debloat";
 import * as Diff from "diff";
 
-import {
-  RULES,
-} from "./lib/ast/rule";
-import { parseDockerFile } from "./lib/ast/dockerParser";
+import { RULES } from "./lib/debloat/rules";
+import { parseDockerFile } from "./lib/ast/docker-parser";
 const program = new Command();
 
 program
@@ -28,10 +27,11 @@ program
   .action((file: string) => {
     const dockerfile = parseDockerFile(file);
     // console.log(JSON.stringify(dockerfile, ["type", "children", "value"], 2));
-    const originalOutput = print(dockerfile.abstract(), true);
+    const matcher = new Matcher(dockerfile);
+    const originalOutput = print(matcher._node, true);
     // console.log(dockerfile.match(gemUpdateNoDocument));
     for (const rule of RULES) {
-      const r = dockerfile.match(rule);
+      const r = matcher.match(rule);
       if (r.violations.length > 0)
         r.violations.map((e) => {
           console.log("[VIOLATION] -> " + e.matched.rule.description);

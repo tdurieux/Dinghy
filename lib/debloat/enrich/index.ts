@@ -1,14 +1,14 @@
 import * as fs from "fs";
 import * as yaml from "js-yaml";
 import yargs, { Argv } from "yargs";
-import { print } from "../../ast/ASTPrinter";
+import { print } from "../../ast/docker-printer";
 import {
   BashLiteral,
   DockerOpsNode,
   DockerOpsNodeType,
   GenericNode,
   Unknown,
-} from "../../ast/type";
+} from "../../ast/docker-type";
 
 const YAML_DIR = __dirname;
 

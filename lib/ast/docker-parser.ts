@@ -6,7 +6,7 @@ import {
   Line,
 } from "dockerfile-ast";
 import { readFileSync } from "fs";
-import { parseShell } from "./shellParser";
+import { parseShell } from "./docker-bash-parser";
 import {
   DockerAdd,
   DockerAddSource,
@@ -42,7 +42,7 @@ import {
   DockerVolume,
   DockerWorkdir,
   Position,
-} from "./type";
+} from "./docker-type";
 
 export function parseDockerFile(filePath: string) {
   return parseDocker(readFileSync(filePath, "utf8"));

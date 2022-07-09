@@ -1,6 +1,6 @@
 import sh, { Node, Pos } from "mvdan-sh";
 import { type } from "os";
-import * as bashAST from "./bashAST";
+import * as bashAST from "./mvdan-sh-types";
 const { syntax } = sh;
 
 import {
@@ -63,7 +63,7 @@ import {
   BashComment,
   BashBraceGroup,
   BashBraceExpansion,
-} from "./type";
+} from "./docker-type";
 
 function pos(node: Node | Pos): Position {
   if ((node as Node).Pos !== undefined) {
@@ -443,8 +443,9 @@ function handleNode(node: Node): DockerOpsNodeType | DockerOpsNodeType[] {
       return handleNode(WordPart.Node);
     case "Expansion":
       const Expansion = node as bashAST.Expansion;
-      return new BashBraceExpansion(Expansion.Op.toString())
-        .addChild(handleNode(Expansion.Word));
+      return new BashBraceExpansion(Expansion.Op.toString()).addChild(
+        handleNode(Expansion.Word)
+      );
     case "ParExpOperator":
       const ParExpOperator = node as bashAST.ParExpOperator;
     case "ParNamesOperator":

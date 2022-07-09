@@ -3,7 +3,7 @@ import {
   DockerOpsNodeType,
   DockerOpsValueNode,
   GenericNode,
-} from "./type";
+} from "../ast/docker-type";
 
 export const abtractionRegex = {
   "ABS-SINGLE-SPACE": / /,
