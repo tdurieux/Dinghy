@@ -1,4 +1,9 @@
-import { DockerOpsNodeType, DockerOpsValueNode, GenericNode } from "./type";
+import {
+  BashLiteral,
+  DockerOpsNodeType,
+  DockerOpsValueNode,
+  GenericNode,
+} from "./type";
 
 export const abtractionRegex = {
   "ABS-SINGLE-SPACE": / /,
@@ -29,13 +34,13 @@ export const abtractionRegex = {
   "ABS-EXTENSION-ASC": new RegExp(".asc"),
   "ABS-EXTENSION-TAR": new RegExp(".tar"),
   "ABS-PATH-ROOT-DIR": new RegExp("/root"),
-  "ABS-URL-POOL": new RegExp("pool."),
+  "ABS-URL-POOL": new RegExp("pool\\."),
   "ABS-URL-HA-POOL": new RegExp("ha.pool."),
   "ABS-PATH-ABSOLUTE": new RegExp("^/"),
   "ABS-PATH-RELATIVE": new RegExp("^([^/])+/"),
   "ABS-PATH-HOME": new RegExp("^~"),
   "ABS-PATH-VAR": new RegExp("/var"),
-  "ABS-GLOB-STAR": new RegExp("^\\*$"),
+  "ABS-GLOB-STAR": new RegExp("\\*$"),
   "ABS-APT-LISTS": new RegExp("apt/lists"),
   "ABS-TRUE": new RegExp("(t|T)rue"),
   "ABS-FALSE": new RegExp("(t|F)rue"),
@@ -64,24 +69,29 @@ const typesReplacement = {
 export function abstract(node: DockerOpsNodeType) {
   node.traverse((node: DockerOpsNodeType) => {
     if (typesReplacement[node.type]) {
-      node.type = typesReplacement[node.type];
+      const t = new BashLiteral((node as any).value);
+      t.children = node.children;
+      t.original = node;
+      node.replace(t);
     }
     if (KEEP_TYPES.includes(node.type as string)) {
       if (
         node.children.length == 1 &&
         node.children[0] instanceof DockerOpsValueNode
       ) {
-        node.replace(
+        const t = new GenericNode(
           // WHY uppercase here
-          new GenericNode(
-            `${node.type}:${node.children[0].value.toUpperCase()}`
-          )
+          `${node.type}:${node.children[0].value.toUpperCase()}`
         );
+        t.original = node;
+        node.replace(t);
       } else if (node instanceof DockerOpsValueNode) {
-        node.replace(new GenericNode(`${node.type}:${node.value}`));
+        const t = new GenericNode(`${node.type}:${node.value}`);
+        t.original = node;
+        node.replace(t);
       }
       if (node instanceof DockerOpsValueNode) {
-        node.value = null;
+        // node.value = null;
       }
     } else if (node instanceof DockerOpsValueNode) {
       const value = node.value;

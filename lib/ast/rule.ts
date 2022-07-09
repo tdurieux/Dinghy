@@ -1,15 +1,27 @@
-import { DockerOpsNodeType } from "./type";
+import { parseShell } from "./shellParser";
+import {
+  BashCommandArgs,
+  BashLiteral,
+  BashScript,
+  BashWord,
+  DockerFile,
+  DockerOpsNodeType,
+  DockerRun,
+  MaybeSemanticCommand,
+  Position,
+} from "./type";
 
-interface Antecedent {
+interface SubTree<T extends SubTree<T>> {
   type: string;
+  children?: T[];
+}
+
+interface Antecedent extends SubTree<Antecedent> {
   bindHere?: boolean;
-  children?: Antecedent[];
 }
 
-interface Match {
-  type: string;
-  children?: Match[];
-}
+interface Match extends SubTree<Match> {}
+
 export interface Rule {
   scope: "INTRA-DIRECTIVE" | "INTER-DIRECTIVE";
   kind:
@@ -24,6 +36,13 @@ export interface Rule {
   consequent: {
     matchAnyBound: Match;
   };
+  repair?: (violation: {
+    description: string;
+    matched: {
+      node: DockerOpsNodeType;
+      rule: Rule;
+    };
+  }) => void;
 }
 
 export const curlUseFlagF: Rule = {
@@ -42,6 +61,16 @@ export const curlUseFlagF: Rule = {
   },
   source:
     "https://github.com/docker-library/python/pull/73/commits/033320b278e78732e5739f19bca5f8f29573b553",
+  repair: (violation) => {
+    const node = violation.matched.node.original
+      ? violation.matched.node.original
+      : violation.matched.node;
+    node.addChild(
+      new BashCommandArgs()
+        .setPosition(node.children[0].position)
+        .addChild(new BashWord().addChild(new BashLiteral("-f")))
+    );
+  },
 };
 
 export const npmCacheCleanAfterInstall: Rule = {
@@ -59,6 +88,21 @@ export const npmCacheCleanAfterInstall: Rule = {
   },
   source:
     "https://github.com/docker-library/ghost/pull/186/commits/c3bac502046ed5bea16fee67cc48ba993baeaea8",
+  repair: (violation: {
+    description: string;
+    matched: {
+      node: DockerOpsNodeType;
+      rule: Rule;
+    };
+  }) => {
+    // add at the end of the command
+    const run = violation.matched.node.getParent(DockerRun);
+    run.addChild(
+      parseShell("npm cache clean --force;").setPosition(
+        new Position(run.position.lineEnd - 1, 0)
+      )
+    );
+  },
 };
 
 export const npmCacheCleanUseForce: Rule = {
@@ -79,6 +123,18 @@ export const npmCacheCleanUseForce: Rule = {
     "https://github.com/docker-library/ghost/pull/186/commits/c3bac502046ed5bea16fee67cc48ba993baeaea8",
   notes:
     "Had to split into two rules to describe both adding npm cache clean and using the --force flag",
+  repair: (violation: {
+    description: string;
+    matched: {
+      node: DockerOpsNodeType;
+      rule: Rule;
+    };
+  }) => {
+    const node = violation.matched.node.original
+      ? violation.matched.node.original
+      : violation.matched.node;
+    node.replace(parseShell("npm cache clean --force;"));
+  },
 };
 
 export const rmRecursiveAfterMktempD: Rule = {
@@ -105,6 +161,23 @@ export const rmRecursiveAfterMktempD: Rule = {
     },
   },
   source: "IMPLICIT --- you should remove temporary dirs in docker images",
+  repair: (violation: {
+    description: string;
+    matched: {
+      node: DockerOpsNodeType;
+      rule: Rule;
+    };
+  }) => {
+    const node = violation.matched.node.original
+      ? violation.matched.node.original
+      : violation.matched.node;
+    const run = violation.matched.node.getParent(DockerRun);
+    run.addChild(
+      parseShell(
+        "rm -rf " + node.getElement(BashLiteral).toString()
+      ).setPosition(new Position(run.position.lineEnd + 1, 0))
+    );
+  },
 };
 
 export const curlUseHttpsUrl: Rule = {
@@ -138,6 +211,18 @@ export const curlUseHttpsUrl: Rule = {
   },
   source:
     "https://github.com/docker-library/php/pull/293/commits/2f96a00aaa90ee1c503140724936ca7005273df5",
+  repair: (violation: {
+    description: string;
+    matched: {
+      node: DockerOpsNodeType;
+      rule: Rule;
+    };
+  }) => {
+    const node = violation.matched.node.original
+      ? violation.matched.node.original
+      : violation.matched.node;
+    node.getElement(BashLiteral).value.replace("http:", "https:");
+  },
 };
 
 export const wgetUseHttpsUrl: Rule = {
@@ -171,6 +256,18 @@ export const wgetUseHttpsUrl: Rule = {
   },
   source:
     "https://github.com/docker-library/php/pull/293/commits/2f96a00aaa90ee1c503140724936ca7005273df5",
+  repair: (violation: {
+    description: string;
+    matched: {
+      node: DockerOpsNodeType;
+      rule: Rule;
+    };
+  }) => {
+    const node = violation.matched.node.original
+      ? violation.matched.node.original
+      : violation.matched.node;
+    node.getElement(BashLiteral).value.replace("http:", "https:");
+  },
 };
 
 export const pipUseNoCacheDir: Rule = {
@@ -189,6 +286,22 @@ export const pipUseNoCacheDir: Rule = {
   },
   source:
     "https://github.com/docker-library/python/pull/50/commits/7663560df7547e69d13b1b548675502f4e0917d1",
+  repair: (violation: {
+    description: string;
+    matched: {
+      node: DockerOpsNodeType;
+      rule: Rule;
+    };
+  }) => {
+    const node = violation.matched.node.original
+      ? violation.matched.node.original
+      : violation.matched.node;
+    node.addChild(
+      new BashCommandArgs()
+        .setPosition(node.children[0].position)
+        .addChild(new BashWord().addChild(new BashLiteral("--no-cache-dir")))
+    );
+  },
 };
 
 export const mkdirUsrSrcThenRemove: Rule = {
@@ -252,6 +365,21 @@ export const mkdirUsrSrcThenRemove: Rule = {
   },
   source:
     "https://github.com/docker-library/python/pull/20/commits/ce7da0b874784e6b69e3966b5d7ba995e873163e",
+  repair: (violation: {
+    description: string;
+    matched: {
+      node: DockerOpsNodeType;
+      rule: Rule;
+    };
+  }) => {
+    // add at the end of the command
+    const run = violation.matched.node.getParent(DockerRun);
+    run.addChild(
+      parseShell(
+        "rm -rf " + violation.matched.node.getElement(BashLiteral).toString()
+      ).setPosition(new Position(run.position.lineEnd, 0))
+    );
+  },
 };
 
 export const configureShouldUseBuildFlag: Rule = {
@@ -270,6 +398,28 @@ export const configureShouldUseBuildFlag: Rule = {
   },
   source:
     "https://github.com/docker-library/ruby/pull/127/commits/be55938d970a392e7d41f17131a091b0a9f4bebc",
+  repair: (violation: {
+    description: string;
+    matched: {
+      node: DockerOpsNodeType;
+      rule: Rule;
+    };
+  }) => {
+    const node = violation.matched.node.original
+      ? violation.matched.node.original
+      : violation.matched.node;
+    node.addChild(
+      new BashCommandArgs()
+        .setPosition(node.children[1].position)
+        .addChild(
+          new BashWord().addChild(
+            new BashLiteral(
+              '--build="$(dpkg-architecture --query DEB_BUILD_GNU_TYPE)"'
+            )
+          )
+        )
+    );
+  },
 };
 
 export const gemUpdateSystemRmRootGem: Rule = {
@@ -314,6 +464,21 @@ export const gemUpdateSystemRmRootGem: Rule = {
   },
   source:
     "https://github.com/docker-library/ruby/pull/185/commits/c9a4472a019d18aba1fdab6a63b96474b40ca191",
+  repair: (violation: {
+    description: string;
+    matched: {
+      node: DockerOpsNodeType;
+      rule: Rule;
+    };
+  }) => {
+    // add at the end of the command
+    const run = violation.matched.node.getParent(BashScript);
+    run.addChild(
+      parseShell("rm -rf /root/.gem;").setPosition(
+        new Position(run.position.lineEnd, 0)
+      )
+    );
+  },
 };
 
 export const sha256sumEchoOneSpaces: Rule = {
@@ -402,6 +567,32 @@ export const gemUpdateNoDocument: Rule = {
   source: "https://github.com/docker-library/ruby/pull/49/files",
   notes:
     "Either gem update or gem install leads us to wanting the --no-document/--no-rdoc flag to be set.",
+  repair: (violation: {
+    description: string;
+    matched: {
+      node: DockerOpsNodeType;
+      rule: Rule;
+    };
+  }) => {
+    violation.matched.node.getElement(DockerRun).position;
+    violation.matched.node
+      .getElement(DockerFile)
+      .addChild(
+        new DockerRun()
+          .setPosition(
+            new Position(
+              violation.matched.node.getElement(DockerRun).position.lineStart -
+                1,
+              99
+            )
+          )
+          .addChild(
+            parseShell(
+              "echo 'install: --no-document\nupdate: --no-document' > \"$HOME/.gemrc\""
+            )
+          )
+      );
+  },
 };
 
 export const gpgVerifyAscRmAsc: Rule = {
@@ -473,6 +664,16 @@ export const yumInstallForceYes: Rule = {
     },
   },
   source: "IMPLICIT -- based on apt-get install -y rule",
+  repair: (violation) => {
+    const node = violation.matched.node.original
+      ? violation.matched.node.original
+      : violation.matched.node;
+    node.addChild(
+      new BashCommandArgs()
+        .setPosition(node.children[1].position)
+        .addChild(new BashWord().addChild(new BashLiteral("-y")))
+    );
+  },
 };
 
 export const yumInstallRmVarCacheYum: Rule = {
@@ -516,6 +717,18 @@ export const yumInstallRmVarCacheYum: Rule = {
     "https://github.com/docker-library/ruby/pull/7/commits/950a673e59df846608f624ee55321d36ba1f89ba",
   notes:
     "The source here is for apt-get. This rule is the natural translation to yum.",
+  repair: (violation) => {
+    // add at the end of the command
+    const run =
+      violation.matched.node.original instanceof MaybeSemanticCommand
+        ? violation.matched.node.original
+        : violation.matched.node.getParent(MaybeSemanticCommand);
+    run.addChild(
+      parseShell("rm -rf /var/cache/yum").setPosition(
+        new Position(run.position.lineEnd + 1, 0)
+      )
+    );
+  },
 };
 
 export const tarSomethingRmTheSomething: Rule = {
@@ -591,6 +804,16 @@ export const gpgUseBatchFlag: Rule = {
   },
   source:
     "https://github.com/docker-library/php/pull/747/commits/b99209cc078ebb7bf4614e870c2d69e0b3bed399",
+  repair: (violation) => {
+    const node = violation.matched.node.original
+      ? violation.matched.node.original
+      : violation.matched.node;
+    node.addChild(
+      new BashCommandArgs()
+        .setPosition(node.children[0].position)
+        .addChild(new BashWord().addChild(new BashLiteral("--batch")))
+    );
+  },
 };
 
 export const gpgUseHaPools: Rule = {
@@ -619,6 +842,15 @@ export const gpgUseHaPools: Rule = {
   },
   source:
     "https://github.com/docker-library/httpd/pull/5/commits/63cd0ad57a12c76ff70d0f501f6c2f1580fa40f5",
+  repair: (violation) => {
+    const node = violation.matched.node.original
+      ? violation.matched.node.original
+      : violation.matched.node;
+    node
+      .getElements(BashLiteral)
+      .filter((e) => e.value.includes("pool."))
+      .forEach((e) => e.value.replace("pool.", "ha.pool."));
+  },
 };
 
 export const ruleAptGetInstallUseY: Rule = {
@@ -638,6 +870,16 @@ export const ruleAptGetInstallUseY: Rule = {
   },
   source:
     "IMPLICIT --- need to use non-interactive mode during image build except for very rare exceptions.",
+  repair: (violation) => {
+    const node = violation.matched.node.original
+      ? violation.matched.node.original
+      : violation.matched.node;
+    node.addChild(
+      new BashCommandArgs()
+        .setPosition(node.children[1].position)
+        .addChild(new BashWord().addChild(new BashLiteral("-y")))
+    );
+  },
 };
 
 export const ruleAptGetUpdatePrecedesInstall: Rule = {
@@ -675,6 +917,18 @@ export const ruleAptGetInstallUseNoRec: Rule = {
   },
   source:
     "https://github.com/docker-library/openjdk/pull/193/commits/1d6fa42735002d61625d18378f1ca2df39cb26a0",
+  repair: (violation) => {
+    const node = violation.matched.node.original
+      ? violation.matched.node.original
+      : violation.matched.node;
+    node.addChild(
+      new BashCommandArgs()
+        .setPosition(node.children[1].position)
+        .addChild(
+          new BashWord().addChild(new BashLiteral("--no-install-recommends"))
+        )
+    );
+  },
 };
 
 export const ruleAptGetInstallThenRemoveAptLists: Rule = {
@@ -682,7 +936,7 @@ export const ruleAptGetInstallThenRemoveAptLists: Rule = {
   kind: "CONSEQUENT-FOLLOWS-ANTECEDENT",
   name: "ruleAptGetInstallThenRemoveAptLists",
   description:
-    "rm -r /var/lib/apt/lists/* after apt-get install to save layer space.",
+    "rm -rf /var/lib/apt/lists/* after apt-get install to save layer space.",
   antecedent: {
     type: "SC-APT-GET-INSTALL",
   },
@@ -691,27 +945,27 @@ export const ruleAptGetInstallThenRemoveAptLists: Rule = {
       type: "SC-RM",
       children: [
         {
-          type: "SC-RM-PATH",
+          type: "SC-RM-PATHS",
           children: [
             {
-              type: "BASH-CONCAT",
+              type: "SC-RM-PATH",
               children: [
                 {
-                  type: "BASH-LITERAL",
+                  type: "BASH-WORD",
                   children: [
                     {
-                      type: "ABS-APT-LISTS",
-                    },
-                    {
-                      type: "ABS-PATH-VAR",
-                    },
-                  ],
-                },
-                {
-                  type: "BASH-GLOB",
-                  children: [
-                    {
-                      type: "ABS-GLOB-STAR",
+                      type: "BASH-LITERAL",
+                      children: [
+                        {
+                          type: "ABS-GLOB-STAR",
+                        },
+                        {
+                          type: "ABS-APT-LISTS",
+                        },
+                        {
+                          type: "ABS-PATH-VAR",
+                        },
+                      ],
                     },
                   ],
                 },
@@ -724,6 +978,18 @@ export const ruleAptGetInstallThenRemoveAptLists: Rule = {
   },
   source:
     "https://github.com/docker-library/ruby/pull/7/commits/950a673e59df846608f624ee55321d36ba1f89ba",
+  repair: (violation) => {
+    // add at the end of the command
+    const run =
+      violation.matched.node.original instanceof MaybeSemanticCommand
+        ? violation.matched.node.original
+        : violation.matched.node.getParent(MaybeSemanticCommand);
+    run.addChild(
+      parseShell("rm -rf /var/lib/apt/lists/*").setPosition(
+        new Position(run.position.lineEnd + 1, 0)
+      )
+    );
+  },
 };
 
 export const apkAddUseNoCache: Rule = {
@@ -742,6 +1008,16 @@ export const apkAddUseNoCache: Rule = {
   },
   source:
     "https://github.com/docker-library/php/pull/228/commits/85d48c88b3e3dae303118275202327f14a8106f4",
+  repair: (violation) => {
+    const node = violation.matched.node.original
+      ? violation.matched.node.original
+      : violation.matched.node;
+    node.addChild(
+      new BashCommandArgs()
+        .setPosition(node.children[1].position)
+        .addChild(new BashWord().addChild(new BashLiteral("--no-cache")))
+    );
+  },
 };
 
 export const RULES: Rule[] = [
@@ -805,7 +1081,9 @@ export function matchRule(node: DockerOpsNodeType, rule: Rule) {
         if (
           !env.bound.some((candidate) => {
             // check the top level and then check the children
-            if (isRuleMatchNode(candidate, rule.consequent.matchAnyBound, env)) {
+            if (
+              isRuleMatchNode(candidate, rule.consequent.matchAnyBound, env)
+            ) {
               return true;
             }
             // if not everything has be traversed it means that a match has been found
@@ -848,9 +1126,7 @@ function isRuleMatchNode(
   env: { bound: DockerOpsNodeType[] }
 ) {
   if (node.type !== rule.type) {
-    // if (node.children.length == 0)
     return false;
-    return node.children.some((child) => isRuleMatchNode(child, rule, env));
   }
   if ((rule as Antecedent).bindHere === true) {
     env.bound = node.children;
@@ -873,15 +1149,16 @@ function getAllParentBeforeOrAfterOfNode(
   const candidates: DockerOpsNodeType[] = [];
   const STOPPER = intra ? "BASH-SCRIPT" : "DOCKER-FILE";
 
-  let current = node.parent?.parent;
-  let previous = node.parent;
-  while (current != null && previous.type != STOPPER && previous != null) {
+  let current = node.parent;
+  let previous = node;
+  while (current != null) {
     if (current.children.length > 1) {
       const parentIndex = current.children.indexOf(previous);
       current.children
         .filter((_, i) => (before ? i < parentIndex : i > parentIndex))
         .forEach((node) => candidates.push(node));
     }
+    if (current.type == STOPPER) break;
     previous = current;
     current = current.parent;
   }

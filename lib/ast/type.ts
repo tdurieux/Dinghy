@@ -1,5 +1,5 @@
 import { print } from "./ASTPrinter";
-import { createEnrichers } from "./commands";
+import { createEnrichers } from "../deloat/commands";
 import { abstract } from "./abstraction";
 import { Rule, matchRule } from "./rule";
 
@@ -315,7 +315,7 @@ export abstract class DockerOpsNode {
             .map((e) => e.children)
             .flat();
           const payload = COMMAND_MAP[command](
-            commandArgs.map(print),
+            commandArgs.map((c) => print(c)),
             commandArgs
           );
           payload.original = node;

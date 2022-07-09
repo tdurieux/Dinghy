@@ -1,11 +1,8 @@
 import {
   DockerOpsNodeType,
-  DockerOpsValueNode,
-  DockerShell,
   DockerShellArg,
   DockerShellExecutable,
   GenericNode,
-  MaybeSemanticCommand,
 } from "./type";
 
 class Printer {
@@ -13,7 +10,7 @@ class Printer {
   indentChar = "    ";
   output: string = "";
   _previousNode: DockerOpsNodeType | null = null;
-  constructor(readonly root: DockerOpsNodeType) {}
+  constructor(readonly root: DockerOpsNodeType, public original = false) {}
 
   newLine() {
     this.output += "\n" + this.indentChar.repeat(this.indentLevel);
@@ -45,6 +42,9 @@ class Printer {
 
   _generate(node: DockerOpsNodeType) {
     if (node == null) return this;
+    if (this.original && node.original) {
+      node = node.original;
+    }
 
     if (this._previousNode?.position?.lineEnd < node.position?.lineStart) {
       const nbLines =
@@ -300,7 +300,6 @@ class Printer {
         this.deindent();
         this.trim();
         if (node.semicolon === true) this.append(";");
-        // if (node.position.lineStart < node.position.lineEnd) this.newLine();
         break;
       case "DOCKER-COMMENT":
         this.append("# " + node.value);
@@ -413,6 +412,6 @@ class Printer {
   }
 }
 
-export function print(node: DockerOpsNodeType) {
-  return new Printer(node).print();
+export function print(node: DockerOpsNodeType, original = false) {
+  return new Printer(node, original).print();
 }

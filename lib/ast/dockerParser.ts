@@ -5,6 +5,7 @@ import {
   JSONInstruction,
   Line,
 } from "dockerfile-ast";
+import { readFileSync } from "fs";
 import { parseShell } from "./shellParser";
 import {
   DockerAdd,
@@ -43,10 +44,14 @@ import {
   Position,
 } from "./type";
 
-export function parseDocker(filepath: string): DockerFile {
+export function parseDockerFile(filePath: string) {
+  return parseDocker(readFileSync(filePath, "utf8"));
+}
+
+export function parseDocker(fileContent: string): DockerFile {
   const dockerfileAST: DockerFile = new DockerFile();
 
-  const lines = DockerfileParser.parse(filepath);
+  const lines = DockerfileParser.parse(fileContent);
   dockerfileAST.setPosition(
     new Position(lines.getRange().start.line, 0, lines.getRange().end.line, 0)
   );

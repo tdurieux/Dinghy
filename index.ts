@@ -1,12 +1,11 @@
 import { Command } from "commander";
-import { readFileSync } from "fs";
-import { parseDocker } from "./lib/ast";
 import { print } from "./lib/ast/ASTPrinter";
+import * as Diff from "diff";
+
 import {
-  gemUpdateNoDocument,
-  mkdirUsrSrcThenRemove,
   RULES,
 } from "./lib/ast/rule";
+import { parseDockerFile } from "./lib/ast/dockerParser";
 const program = new Command();
 
 program
@@ -27,10 +26,9 @@ program
   .description("The Dockerfile to debloat")
   .argument("<file>", "The filepath to the Dockerfile")
   .action((file: string) => {
-    const data = readFileSync(file, "utf8");
-    const dockerfile = parseDocker(data);
+    const dockerfile = parseDockerFile(file);
     // console.log(JSON.stringify(dockerfile, ["type", "children", "value"], 2));
-    console.log(print(dockerfile));
+    const originalOutput = print(dockerfile.abstract(), true);
     // console.log(dockerfile.match(gemUpdateNoDocument));
     for (const rule of RULES) {
       const r = dockerfile.match(rule);
@@ -39,14 +37,33 @@ program
           console.log("[VIOLATION] -> " + e.matched.rule.description);
           console.log(
             "               " +
-              (e.matched.node.original
-                ? e.matched.node.original.toString()
-                : e.matched.node.toString()) +
+              print(e.matched.node, true) +
               " at " +
               e.matched.node.position
           );
+
+          if (e.matched.rule.repair) {
+            e.matched.rule.repair(e);
+          }
         });
     }
+    const repairedOutput = print(dockerfile, true);
+    const diff = Diff.diffLines(originalOutput, repairedOutput);
+    diff.forEach((part) => {
+      // green for additions, red for deletions
+      // grey for common parts
+      const color = part.added ? "green" : part.removed ? "red" : "grey";
+      part.value.split("\n").forEach((line) => {
+        if (part.added) {
+          console.log("+ " + line);
+        } else if (part.removed) {
+          console.log("- " + line);
+        } else {
+          console.log(" " + line);
+        }
+      });
+    });
+
     // console.log(print(dockerfile.enrich().abstract()));
     // dockerfile.traverse((node) => {
     //   const copy = {};
