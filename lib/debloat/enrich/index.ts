@@ -171,13 +171,6 @@ function buildScenarioParser(
     // Save these
     const originalArgs = args;
 
-    // // Dirty require.cache trickery
-    for (const i in require.cache) {
-      if (i.includes("yargs")) delete require.cache[i];
-    }
-    delete require.cache["/usr/local/lib/node_modules/yargs/index.js"];
-    // let yargs = require("yargs");
-
     // Look at scenario.cmd and do some checking
     const checkScenarioValidity = (args: string[]) => {
       const parts = scenario.cmd.split(/ /g);

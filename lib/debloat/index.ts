@@ -23,7 +23,7 @@ export class Matcher {
       if (node instanceof MaybeSemanticCommand) {
         const commandAST = node.getElement(BashCommandCommand);
         if (!commandAST) return true;
-        
+
         const command = commandAST.getElement(BashLiteral)?.value;
         if (COMMAND_MAP[command]) {
           const commandArgs = node
@@ -31,8 +31,10 @@ export class Matcher {
             .map((e) => e.children)
             .flat();
           const payload = COMMAND_MAP[command](
-            commandArgs.map((c) => c.toString()),
             commandArgs
+              .filter((e) => e.toString() != "--")
+              .map((c) => c.toString()),
+            commandArgs.filter((e) => e.toString() != "--")
           );
           payload.original = node;
           node.replace(payload);

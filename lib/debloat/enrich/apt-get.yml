@@ -25,7 +25,7 @@ command:
       - -C, --config
     counts:
       - -q, --quiet
-    arrays:
+    strings:
       - -o, --option
   optionsInstall: &optionsInstall
     booleans:
@@ -55,7 +55,7 @@ command:
   scenarios:
     - cmd: $0 install [packages...]
       options:
-        merge: [ *optionsAll, *optionsInstall ]
+        merge: [*optionsAll, *optionsInstall]
       name: SC-APT-GET-INSTALL
     - cmd: $0 purge [packages...]
       options: *optionsAll
