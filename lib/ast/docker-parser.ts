@@ -6,7 +6,7 @@ import {
   Line,
 } from "dockerfile-ast";
 import { readFileSync } from "fs";
-import { parseShell } from "./docker-bash-parser";
+import { parseShell, ShellParser } from "./docker-bash-parser";
 import {
   DockerAdd,
   DockerAddSource,
@@ -131,7 +131,7 @@ export function parseDocker(fileContent: string): DockerFile {
           .substring(doc.offsetAt(argsRange.start), doc.offsetAt(argsRange.end))
           // required to consider that the comments are in the bash AST otherwise they will break lines and make the AST invalid
           .replace(/#([^\\\n]*)$/gm, "#$1\\");
-        dockerRun.addChild(parseShell(shellString));
+        dockerRun.addChild(new ShellParser(shellString, position).parse());
         dockerfileAST.addChild(dockerRun);
         break;
       case "copy":
