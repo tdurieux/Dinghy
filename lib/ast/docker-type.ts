@@ -218,7 +218,8 @@ export abstract class DockerOpsNode {
     const type = new element().type;
     const out: T[] = [];
     this.traverse((node) => {
-      if (node.type == type) out.push(node as T);
+      if (node.type == type) 
+        out.push(node as T);
     });
     return out;
   }
@@ -289,6 +290,11 @@ export abstract class DockerOpsNode {
       this as DockerOpsNodeType
     );
     element.parent = this.parent;
+    if (indexInParent === -1) {
+      this.parent.children.filter((e) => e.original == this)[0].original =
+        element;
+      return this;
+    }
     if (element.position == null) element.setPosition(this._position);
     this.parent.children[indexInParent] = element;
     return this;
@@ -305,8 +311,12 @@ export abstract class DockerOpsNode {
   public clone(): typeof this {
     var cloneObj = new (this.constructor as any)();
     for (const attribut in this) {
-      if (attribut == "parent") continue;
-      if (!this[attribut]) continue;
+      if (
+        attribut == "parent" ||
+        typeof this[attribut] === "function" ||
+        !this[attribut]
+      )
+        continue;
       if (Array.isArray(this[attribut])) {
         cloneObj[attribut] = [];
         for (const e of this[attribut] as any) {

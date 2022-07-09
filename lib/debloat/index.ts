@@ -16,14 +16,14 @@ export class Matcher {
     this._node = Matcher.abstract(node.clone());
   }
 
-  private static enrich(root: DockerOpsNodeType) {
+  public static enrich(root: DockerOpsNodeType) {
     const COMMAND_MAP = createEnrichers();
 
     root.traverse((node) => {
       if (node instanceof MaybeSemanticCommand) {
         const commandAST = node.getElement(BashCommandCommand);
         if (!commandAST) return true;
-        commandAST.getElement(BashLiteral);
+        
         const command = commandAST.getElement(BashLiteral)?.value;
         if (COMMAND_MAP[command]) {
           const commandArgs = node

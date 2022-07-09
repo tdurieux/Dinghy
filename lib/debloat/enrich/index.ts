@@ -160,7 +160,8 @@ type ScenarioParserOutput = {
     cmd: string;
   };
   $0: string;
-  _: (string | number)[];6
+  _: (string | number)[];
+  6;
   [key: string]: any;
 };
 function buildScenarioParser(
@@ -548,11 +549,13 @@ function nodify(
   } else if (opts.string.indexOf(key) !== -1) {
     const out = new GenericNode(`${prefix}-${type}`);
     reify(value, [new BashLiteral(value)]).forEach((e) => out.addChild(e));
+    return out;
   } else if (typeof value === "string" || typeof value === "number") {
     const out = new GenericNode(`${prefix}-${type}`);
     reify(value, [new BashLiteral(value.toString())]).forEach((e) =>
       out.addChild(e)
     );
+    return out;
   }
 
   return new GenericNode(`${prefix}-${type}`);
@@ -605,7 +608,7 @@ const buildPostProcessor =
       ...details.counts.filter((c: string) => output.result[c] === 0)
     );
 
-    subtree.children = Object.keys(output.result)
+    Object.keys(output.result)
       .filter(
         (k) =>
           // Maybe we've already processed or want to ignore this key
@@ -644,7 +647,8 @@ const buildPostProcessor =
           );
         }
       })
-      .filter((x) => x);
+      .filter((x) => x)
+      .forEach((c) => subtree.addChild(c));
 
     return subtree;
   };
