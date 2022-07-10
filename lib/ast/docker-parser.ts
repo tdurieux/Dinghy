@@ -60,7 +60,7 @@ export class DockerParser {
   public filename: string;
   constructor(public readonly fileContent: string) {}
 
-  parse(): DockerFile {
+  async parse(): Promise<DockerFile> {
     const dockerfileAST: DockerFile = new DockerFile();
 
     const lines = DockerfileParser.parse(this.fileContent);
@@ -139,7 +139,7 @@ export class DockerParser {
             // required to consider that the comments are in the bash AST otherwise they will break lines and make the AST invalid
             .replace(/#([^\\\n]*)$/gm, "#$1\\");
           const shellParser = new ShellParser(shellString, position);
-          dockerRun.addChild(shellParser.parse());
+          dockerRun.addChild(await shellParser.parse());
           // happen all errors
           shellParser.errors.forEach((v) => this.errors.push(v));
           dockerfileAST.addChild(dockerRun);
@@ -291,13 +291,13 @@ export class DockerParser {
   }
 }
 
-export function parseDockerFile(filePath: string) {
+export async function parseDockerFile(filePath: string) {
   const parser = new DockerParser(readFileSync(filePath, "utf8"));
   parser.filename = filePath;
   return parser.parse();
 }
 
-export function parseDocker(fileContent: string): DockerFile {
+export async function parseDocker(fileContent: string) {
   const parser = new DockerParser(fileContent);
   return parser.parse();
 }

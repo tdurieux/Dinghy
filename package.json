@@ -17,6 +17,7 @@
     "dockerfile-ast": "^0.4.2",
     "js-yaml": "^4.1.0",
     "mvdan-sh": "^0.10.1",
+    "sh-syntax": "^0.3.6",
     "yargs": "^17.5.1"
   },
   "devDependencies": {

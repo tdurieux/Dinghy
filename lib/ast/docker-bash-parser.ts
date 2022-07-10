@@ -1,3 +1,4 @@
+// import * as sh from "sh-syntax";
 import sh, { Node, Pos } from "mvdan-sh";
 import { type } from "os";
 import * as bashAST from "./mvdan-sh-types";
@@ -73,9 +74,9 @@ export class ShellParser {
     readonly originalPosition: Position = new Position(0, 0)
   ) {}
 
-  private pos(node: Node | Pos): Position {
-    if ((node as Node).Pos !== undefined) {
-      const n: Node = node as Node;
+  private pos(node: bashAST.Node | bashAST.Pos): Position {
+    if ((node as bashAST.Node).Pos !== undefined) {
+      const n: bashAST.Node = node as bashAST.Node;
       // Dockerfile position start at line 0
       return new Position(
         n.Pos().Line() - 1 + this.originalPosition.lineStart,
@@ -85,21 +86,23 @@ export class ShellParser {
       );
     }
 
-    const p: Pos = node as Pos;
+    const p: bashAST.Pos = node as bashAST.Pos;
     return new Position(
       p.Line() - 1 + this.originalPosition.lineStart,
       p.Col()
     );
   }
 
-  private handleNodes(node: Node[], current: DockerOpsNodeType) {
+  private handleNodes(node: bashAST.Node[], current: DockerOpsNodeType) {
     for (const child of node) {
       current.addChild(this.handleNode(child));
     }
     return current;
   }
 
-  private handleNode(node: Node): DockerOpsNodeType | DockerOpsNodeType[] {
+  private handleNode(
+    node: bashAST.Node
+  ): DockerOpsNodeType | DockerOpsNodeType[] {
     if (node == null) {
       throw new Error("node is null");
     }
@@ -524,7 +527,7 @@ export class ShellParser {
     return new Unknown().addChild(new BashLiteral(nodeType));
   }
 
-  parse(): DockerOpsNodeType {
+  async parse(): Promise<DockerOpsNodeType> {
     const parser: bashAST.Parser = syntax.NewParser(
       syntax.KeepComments(true),
       syntax.Variant(syntax.LangPOSIX)
@@ -532,7 +535,11 @@ export class ShellParser {
 
     try {
       const result = parser.Parse(this.shString, "src.sh");
-      return this.handleNode(result) as BashScript;
+      // const result = await sh.parse(this.shString, {
+      //   keepComments: true,
+      //   variant: sh.LangVariant.LangPOSIX,
+      // });
+      return this.handleNode(result as any) as BashScript;
     } catch (error) {
       this.errors.push(error);
       console.log(
@@ -546,6 +553,6 @@ export class ShellParser {
   }
 }
 
-export function parseShell(shString: string): DockerOpsNodeType {
+export async function parseShell(shString: string) {
   return new ShellParser(shString).parse();
 }

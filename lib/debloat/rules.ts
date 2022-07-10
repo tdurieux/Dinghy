@@ -2,7 +2,6 @@ import { parseShell } from "../ast/docker-bash-parser";
 import {
   BashCommandArgs,
   BashLiteral,
-  BashScript,
   BashWord,
   DockerFile,
   DockerOpsNodeType,
@@ -42,7 +41,7 @@ export interface Rule {
       node: DockerOpsNodeType;
       rule: Rule;
     };
-  }) => void;
+  }) => Promise<void>;
 }
 
 export const curlUseFlagF: Rule = {
@@ -61,7 +60,7 @@ export const curlUseFlagF: Rule = {
   },
   source:
     "https://github.com/docker-library/python/pull/73/commits/033320b278e78732e5739f19bca5f8f29573b553",
-  repair: (violation) => {
+  repair: async (violation) => {
     const node = violation.matched.node.original
       ? violation.matched.node.original
       : violation.matched.node;
@@ -88,7 +87,7 @@ export const npmCacheCleanAfterInstall: Rule = {
   },
   source:
     "https://github.com/docker-library/ghost/pull/186/commits/c3bac502046ed5bea16fee67cc48ba993baeaea8",
-  repair: (violation: {
+  repair: async (violation: {
     description: string;
     matched: {
       node: DockerOpsNodeType;
@@ -98,7 +97,7 @@ export const npmCacheCleanAfterInstall: Rule = {
     // add at the end of the command
     const run = violation.matched.node.getParent(DockerRun);
     run.addChild(
-      parseShell("npm cache clean --force;").setPosition(
+      (await parseShell("npm cache clean --force;")).setPosition(
         new Position(violation.matched.node.position.lineEnd + 1, 0)
       )
     );
@@ -123,17 +122,11 @@ export const npmCacheCleanUseForce: Rule = {
     "https://github.com/docker-library/ghost/pull/186/commits/c3bac502046ed5bea16fee67cc48ba993baeaea8",
   notes:
     "Had to split into two rules to describe both adding npm cache clean and using the --force flag",
-  repair: (violation: {
-    description: string;
-    matched: {
-      node: DockerOpsNodeType;
-      rule: Rule;
-    };
-  }) => {
+  repair: async (violation) => {
     const node = violation.matched.node.original
       ? violation.matched.node.original
       : violation.matched.node;
-    const e = parseShell("npm cache clean --force");
+    const e = await parseShell("npm cache clean --force");
     node.replace(e);
   },
 };
@@ -162,21 +155,15 @@ export const rmRecursiveAfterMktempD: Rule = {
     },
   },
   source: "IMPLICIT --- you should remove temporary dirs in docker images",
-  repair: (violation: {
-    description: string;
-    matched: {
-      node: DockerOpsNodeType;
-      rule: Rule;
-    };
-  }) => {
+  repair: async (violation) => {
     const node = violation.matched.node.original
       ? violation.matched.node.original
       : violation.matched.node;
     const run = violation.matched.node.getParent(DockerRun);
     run.addChild(
-      parseShell("rm -rf " + node.children.at(-1).toString()).setPosition(
-        new Position(run.position.lineEnd + 1, 0)
-      )
+      (
+        await parseShell("rm -rf " + node.children.at(-1).toString())
+      ).setPosition(new Position(run.position.lineEnd + 1, 0))
     );
   },
 };
@@ -217,7 +204,7 @@ export const curlUseHttpsUrl: Rule = {
   },
   source:
     "https://github.com/docker-library/php/pull/293/commits/2f96a00aaa90ee1c503140724936ca7005273df5",
-  repair: (violation) => {
+  repair: async (violation) => {
     const node = violation.matched.node.original
       ? violation.matched.node.original
       : violation.matched.node;
@@ -264,7 +251,7 @@ export const wgetUseHttpsUrl: Rule = {
   },
   source:
     "https://github.com/docker-library/php/pull/293/commits/2f96a00aaa90ee1c503140724936ca7005273df5",
-  repair: (violation: {
+  repair: async (violation: {
     description: string;
     matched: {
       node: DockerOpsNodeType;
@@ -297,7 +284,7 @@ export const pipUseNoCacheDir: Rule = {
   },
   source:
     "https://github.com/docker-library/python/pull/50/commits/7663560df7547e69d13b1b548675502f4e0917d1",
-  repair: (violation: {
+  repair: async (violation: {
     description: string;
     matched: {
       node: DockerOpsNodeType;
@@ -381,7 +368,7 @@ export const mkdirUsrSrcThenRemove: Rule = {
   },
   source:
     "https://github.com/docker-library/python/pull/20/commits/ce7da0b874784e6b69e3966b5d7ba995e873163e",
-  repair: (violation: {
+  repair: async (violation: {
     description: string;
     matched: {
       node: DockerOpsNodeType;
@@ -391,8 +378,10 @@ export const mkdirUsrSrcThenRemove: Rule = {
     // add at the end of the command
     const run = violation.matched.node.getParent(DockerRun);
     run.addChild(
-      parseShell(
-        "rm -rf " + violation.matched.node.getElement(BashLiteral).toString()
+      (
+        await parseShell(
+          "rm -rf " + violation.matched.node.getElement(BashLiteral).toString()
+        )
       ).setPosition(
         new Position(violation.matched.node.position.lineEnd + 1, 0)
       )
@@ -416,7 +405,7 @@ export const configureShouldUseBuildFlag: Rule = {
   },
   source:
     "https://github.com/docker-library/ruby/pull/127/commits/be55938d970a392e7d41f17131a091b0a9f4bebc",
-  repair: (violation: {
+  repair: async (violation: {
     description: string;
     matched: {
       node: DockerOpsNodeType;
@@ -482,7 +471,7 @@ export const gemUpdateSystemRmRootGem: Rule = {
   },
   source:
     "https://github.com/docker-library/ruby/pull/185/commits/c9a4472a019d18aba1fdab6a63b96474b40ca191",
-  repair: (violation: {
+  repair: async (violation: {
     description: string;
     matched: {
       node: DockerOpsNodeType;
@@ -492,7 +481,7 @@ export const gemUpdateSystemRmRootGem: Rule = {
     // add at the end of the command
     const run = violation.matched.node.getParent(DockerRun);
     run.addChild(
-      parseShell("rm -rf /root/.gem;").setPosition(
+      (await parseShell("rm -rf /root/.gem;")).setPosition(
         new Position(violation.matched.node.position.lineEnd + 1, 0)
       )
     );
@@ -588,7 +577,7 @@ export const gemUpdateNoDocument: Rule = {
   source: "https://github.com/docker-library/ruby/pull/49/files",
   notes:
     "Either gem update or gem install leads us to wanting the --no-document/--no-rdoc flag to be set.",
-  repair: (violation: {
+  repair: async (violation: {
     description: string;
     matched: {
       node: DockerOpsNodeType;
@@ -607,7 +596,7 @@ export const gemUpdateNoDocument: Rule = {
             )
           )
           .addChild(
-            parseShell(
+            await parseShell(
               "echo 'install: --no-document\nupdate: --no-document' > \"$HOME/.gemrc\""
             )
           )
@@ -687,7 +676,7 @@ export const yumInstallForceYes: Rule = {
     },
   },
   source: "IMPLICIT -- based on apt-get install -y rule",
-  repair: (violation) => {
+  repair: async (violation) => {
     const node = violation.matched.node.original
       ? violation.matched.node.original
       : violation.matched.node;
@@ -740,11 +729,11 @@ export const yumInstallRmVarCacheYum: Rule = {
     "https://github.com/docker-library/ruby/pull/7/commits/950a673e59df846608f624ee55321d36ba1f89ba",
   notes:
     "The source here is for apt-get. This rule is the natural translation to yum.",
-  repair: (violation) => {
+  repair: async (violation) => {
     // add at the end of the command
     const run = violation.matched.node.getParent(DockerRun);
     run.addChild(
-      parseShell("rm -rf /var/cache/yum").setPosition(
+      (await parseShell("rm -rf /var/cache/yum")).setPosition(
         new Position(violation.matched.node.position.lineEnd + 1, 0)
       )
     );
@@ -827,7 +816,7 @@ export const gpgUseBatchFlag: Rule = {
   },
   source:
     "https://github.com/docker-library/php/pull/747/commits/b99209cc078ebb7bf4614e870c2d69e0b3bed399",
-  repair: (violation) => {
+  repair: async (violation) => {
     const node = violation.matched.node.original
       ? violation.matched.node.original
       : violation.matched.node;
@@ -877,7 +866,7 @@ export const gpgUseHaPools: Rule = {
   },
   source:
     "https://github.com/docker-library/httpd/pull/5/commits/63cd0ad57a12c76ff70d0f501f6c2f1580fa40f5",
-  repair: (violation) => {
+  repair: async (violation) => {
     const node = violation.matched.node.original
       ? violation.matched.node.original
       : violation.matched.node;
@@ -905,7 +894,7 @@ export const ruleAptGetInstallUseY: Rule = {
   },
   source:
     "IMPLICIT --- need to use non-interactive mode during image build except for very rare exceptions.",
-  repair: (violation) => {
+  repair: async (violation) => {
     const node = violation.matched.node.original
       ? violation.matched.node.original
       : violation.matched.node;
@@ -955,7 +944,7 @@ export const ruleAptGetInstallUseNoRec: Rule = {
   },
   source:
     "https://github.com/docker-library/openjdk/pull/193/commits/1d6fa42735002d61625d18378f1ca2df39cb26a0",
-  repair: (violation) => {
+  repair: async (violation) => {
     const node = violation.matched.node.original
       ? violation.matched.node.original
       : violation.matched.node;
@@ -1016,7 +1005,7 @@ export const ruleAptGetInstallThenRemoveAptLists: Rule = {
   },
   source:
     "https://github.com/docker-library/ruby/pull/7/commits/950a673e59df846608f624ee55321d36ba1f89ba",
-  repair: (violation) => {
+  repair: async (violation) => {
     // add at the end of the command
     const run =
       violation.matched.node.original instanceof MaybeSemanticCommand
@@ -1025,7 +1014,7 @@ export const ruleAptGetInstallThenRemoveAptLists: Rule = {
     run
       .getParent(DockerRun)
       .addChild(
-        parseShell("rm -rf /var/lib/apt/lists/*;").setPosition(
+        (await parseShell("rm -rf /var/lib/apt/lists/*;")).setPosition(
           new Position(run.position.lineEnd + 1, 0)
         )
       );
@@ -1048,7 +1037,7 @@ export const apkAddUseNoCache: Rule = {
   },
   source:
     "https://github.com/docker-library/php/pull/228/commits/85d48c88b3e3dae303118275202327f14a8106f4",
-  repair: (violation) => {
+  repair: async (violation) => {
     const node = violation.matched.node.original
       ? violation.matched.node.original
       : violation.matched.node;
