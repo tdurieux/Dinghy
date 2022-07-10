@@ -1,4 +1,4 @@
-import { Command } from "commander";
+import { Command, Option } from "commander";
 import { print } from "./lib/ast/docker-printer";
 import { Matcher } from "./lib/debloat";
 import * as Diff from "diff";
@@ -13,20 +13,12 @@ program
   .version("1.0.0");
 
 program
-  .command("debloat")
+  .command("refactor")
   .description("The Dockerfile to debloat")
   .argument("<file>", "The filepath to the Dockerfile")
-  .action((file: string) => {
-    console.log(file);
-  });
-
-program
-  .command("parse")
-  .description("The Dockerfile to debloat")
-  .argument("<file>", "The filepath to the Dockerfile")
-  .action((file: string) => {
+  .option("-o, --output <output>", "the output destination of the repair")
+  .action(function (file: string, options: { output: string }) {
     const dockerfile = parseDockerFile(file);
-    // console.log(JSON.stringify(dockerfile, ["type", "children", "value"], 2));
     const matcher = new Matcher(dockerfile);
     const originalOutput = print(matcher._node, true);
     // console.log(dockerfile.match(gemUpdateNoDocument));
@@ -37,7 +29,7 @@ program
           console.log("[VIOLATION] -> " + e.matched.rule.description);
           console.log(
             "               " +
-              print(e.matched.node, true) +
+              print(e.matched.node, true).replace(/\n */g, " ") +
               " at " +
               e.matched.node.position
           );
@@ -47,8 +39,10 @@ program
           }
         });
     }
-    const repairedOutput = print(dockerfile, true);
+    const repairedOutput = print(matcher.node, true);
     const diff = Diff.diffLines(originalOutput, repairedOutput);
+
+    console.log("The changes:\n");
     diff.forEach((part) => {
       // green for additions, red for deletions
       // grey for common parts
@@ -59,21 +53,47 @@ program
         } else if (part.removed) {
           console.log("- " + line);
         } else {
-          console.log(" " + line);
+          // console.log(" " + line);
         }
       });
     });
+  });
 
-    // console.log(print(dockerfile.enrich().abstract()));
-    // dockerfile.traverse((node) => {
-    //   const copy = {};
-    //   for (const i in node) {
-    //     if (["parent", "children"].includes(i) || typeof node[i] == "function")
-    //       continue;
-    //     copy[i] = node[i];
-    //   }
-    //   console.log(copy);
-    // });
+program
+  .command("analyze")
+  .description("Analyze a Dockerfile file for rule violation")
+  .argument("<file>", "The filepath to the Dockerfile")
+  .action((file: string) => {
+    const dockerfile = parseDockerFile(file);
+    const matcher = new Matcher(dockerfile);
+    for (const rule of RULES) {
+      const r = matcher.match(rule);
+      if (r.violations.length > 0)
+        r.violations.map((e) => {
+          console.log("[VIOLATION] -> " + e.matched.rule.description);
+          console.log(
+            "               " +
+              print(e.matched.node, true).replace(/ *\n */g, " ") +
+              " at " +
+              e.matched.node.position
+          );
+
+          if (e.matched.rule.repair) {
+            e.matched.rule.repair(e);
+          }
+        });
+    }
+  });
+
+program
+  .command("parse")
+  .description("Generate the AST of the dockerfile")
+  .argument("<file>", "The filepath to the Dockerfile")
+  .action((file: string) => {
+    const dockerfile = parseDockerFile(file);
+    console.log(
+      JSON.stringify(dockerfile, ["type", "children", "value", "position"], 2)
+    );
   });
 
 program.parse();
