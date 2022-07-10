@@ -66,6 +66,8 @@ import {
 } from "./docker-type";
 
 export class ShellParser {
+  readonly errors = [];
+
   constructor(
     readonly shString: string,
     readonly originalPosition: Position = new Position(0, 0)
@@ -96,6 +98,7 @@ export class ShellParser {
     }
     return current;
   }
+
   private handleNode(node: Node): DockerOpsNodeType | DockerOpsNodeType[] {
     if (node == null) {
       throw new Error("node is null");
@@ -513,10 +516,11 @@ export class ShellParser {
         const UnaryArithm = node as bashAST.UnaryArithm;
       case "UnaryTest":
         const UnaryTest = node as bashAST.UnaryTest;
-        console.error("Unhandled type", type);
-        break;
     }
-    console.log(nodeType, "not handled");
+    console.error("Unhandled type", type);
+    const e = new Error(`Unhandled bash type: ${type}`);
+    (e as any).node = node;
+    this.errors.push(e);
     return new Unknown().addChild(new BashLiteral(nodeType));
   }
 
@@ -530,12 +534,14 @@ export class ShellParser {
       const result = parser.Parse(this.shString, "src.sh");
       return this.handleNode(result) as BashScript;
     } catch (error) {
-      console.log("PARSING", error);
+      this.errors.push(error);
       console.log(
         (error as bashAST.ParseError).Error(),
-        (syntax as any).IsIncomplete(error)
+        (error as bashAST.ParseError).Incomplete
       );
-      return new Unknown().addChild(new BashLiteral(error.Message));
+      return new Unknown().addChild(
+        new BashLiteral((error as bashAST.ParseError).Error())
+      );
     }
   }
 }
