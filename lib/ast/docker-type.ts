@@ -134,6 +134,12 @@ export type DockerOpsNodeType =
   | BashComment
   | DockerComment;
 
+interface TreeSignatureI {
+  type: (new (t: void | string) => DockerOpsNode) | string;
+  value?: string;
+  children?: TreeSignatureI[];
+}
+
 export class Position {
   constructor(
     readonly lineStart: number,
@@ -305,6 +311,38 @@ export abstract class DockerOpsNode {
     );
     delete this.parent.children[indexInParent];
     return this;
+  }
+
+  public match(query: TreeSignatureI) {
+    const type =
+      typeof query.type === "string" ? query.type : new query.type().type;
+
+    if (this.type !== type) return false;
+    if (query.value !== undefined && (this as any).value !== query.value)
+      return false;
+
+    // if the type and value match, check that all the sub-queries match the children
+    if (query.children) {
+      return query.children.every((toMatchChild) =>
+        this.children.some((currentChild) => currentChild.match(toMatchChild))
+      );
+    }
+    return true;
+  }
+
+  /**
+   * Find all the nodes that match the query
+   * @param query
+   * @returns the list of nodes that match query
+   */
+  public find(query: TreeSignatureI) {
+    const out: DockerOpsNode[] = [];
+    if (this.match(query)) out.push(this);
+
+    this.traverse((child) => {
+      if (child.match(query)) out.push(child);
+    });
+    return out;
   }
 
   public clone(): typeof this {
@@ -849,4 +887,51 @@ export class BashArithmeticBinaryLhs extends DockerOpsNode {
 }
 export class BashArithmeticBinaryRhs extends DockerOpsNode {
   type: "BASH-ARITHMETIC-BINARY-RHS" = "BASH-ARITHMETIC-BINARY-RHS";
+}
+
+type TypeOfDockerOpsNode = new (t: void | string) => DockerOpsNode;
+
+/** Factory for queries */
+export const Q = (
+  type: TypeOfDockerOpsNode | string,
+  child?: string | TreeSignature | TypeOfDockerOpsNode,
+  ...children: TreeSignature[] | TypeOfDockerOpsNode[]
+) => {
+  let parent: TreeSignature = null;
+  const oC: TreeSignature[] = [];
+  let value: string = undefined;
+  if (typeof child === "string") value = child;
+  else if (child instanceof TreeSignature) oC.push(child);
+  else if (child !== undefined) {
+    parent = Q(child);
+    oC.push(parent);
+  }
+  for (const child of children) {
+    if (child instanceof TreeSignature) oC.push(child);
+    else if (child !== undefined) {
+      if (parent == null) {
+        parent = Q(child);
+        oC.push(parent);
+      } else {
+        const n = Q(child);
+        parent.children.push(n);
+        parent = n;
+      }
+    }
+  }
+  return new TreeSignature(type, value, ...oC);
+};
+
+/**
+ * Implementation of TreeSignatureI that simplify queries
+ */
+export class TreeSignature implements TreeSignatureI {
+  children: TreeSignature[] = [];
+  constructor(
+    readonly type: TypeOfDockerOpsNode | string,
+    readonly value: string,
+    ...children: TreeSignature[]
+  ) {
+    children.forEach((c) => this.children.push(c));
+  }
 }

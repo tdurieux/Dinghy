@@ -1,8 +1,8 @@
-// import * as sh from "sh-syntax";
-import sh, { Node, Pos } from "mvdan-sh";
+// import * as sh2 from "sh-syntax";
+import sh from "mvdan-sh";
+const { syntax } = sh;
 import { type } from "os";
 import * as bashAST from "./mvdan-sh-types";
-const { syntax } = sh;
 
 import {
   BashArithmeticBinary,
@@ -106,7 +106,7 @@ export class ShellParser {
     if (node == null) {
       throw new Error("node is null");
     }
-    if (!(node as any).$type) {
+    if (!node.$type) {
       throw new Error("node type now found: " + node);
     }
     const nodeType: string = (node as any).$type.split("*").at(-1);
@@ -535,9 +535,9 @@ export class ShellParser {
 
     try {
       const result = parser.Parse(this.shString, "src.sh");
-      // const result = await sh.parse(this.shString, {
+      // const result2 = await sh2.parse(this.shString, {
       //   keepComments: true,
-      //   variant: sh.LangVariant.LangPOSIX,
+      //   variant: sh2.LangVariant.LangPOSIX,
       // });
       return this.handleNode(result as any) as BashScript;
     } catch (error) {
