@@ -348,7 +348,7 @@ export abstract class DockerOpsNode {
       if (
         attribut == "parent" ||
         typeof this[attribut] === "function" ||
-        !this[attribut]
+        this[attribut] == null
       )
         continue;
       if (Array.isArray(this[attribut])) {

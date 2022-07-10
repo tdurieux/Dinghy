@@ -1,4 +1,5 @@
 import { parseShell } from "../ast/docker-bash-parser";
+import { parseDocker } from "../ast/docker-parser";
 import {
   BashCommandArgs,
   BashLiteral,
@@ -320,13 +321,17 @@ export const gemUpdateNoDocument: Rule = {
     if (dFile == null || dRun == null) return;
 
     dFile.addChild(
-      new DockerRun()
-        .setPosition(new Position(dRun.position.lineStart - 1, 99))
-        .addChild(
-          await parseShell(
-            "echo 'install: --no-document\nupdate: --no-document' > \"$HOME/.gemrc\""
-          )
+      (
+        await parseDocker(
+          `RUN mkdir -p /usr/local/etc \\
+    && { \\
+      echo 'install: --no-document'; \\
+      echo 'update: --no-document'; \\
+    } >> /usr/local/etc/gemrc;\n`
         )
+      )
+        .getElement(DockerRun)
+        .setPosition(new Position(dRun.position.lineStart - 1, 99))
     );
   },
 };

@@ -1,19 +1,36 @@
 import {
+  BashCaseKind,
   DockerOpsNodeType,
+  DockerRun,
   DockerShellArg,
   DockerShellExecutable,
   GenericNode,
+  MaybeSemanticCommand,
 } from "./docker-type";
 
 class Printer {
   indentLevel = 0;
   indentChar = "    ";
   output: string = "";
+  _inCommand: boolean = false;
   _previousNode: DockerOpsNodeType | null = null;
+
   constructor(readonly root: DockerOpsNodeType, public original = false) {}
 
+  inCommand() {
+    this._inCommand = true;
+    return this;
+  }
+  outCommand() {
+    this._inCommand = false;
+    return this;
+  }
   newLine() {
-    this.output += "\n" + this.indentChar.repeat(this.indentLevel);
+    if (this.inCommand) {
+      this.output += "\\";
+    }
+    this.output += "\n";
+    this.output += this.indentChar.repeat(this.indentLevel);
     return this;
   }
   space() {
@@ -47,8 +64,12 @@ class Printer {
     }
 
     if (this._previousNode?.position?.lineEnd < node.position?.lineStart) {
-      const nbLines =
-        node.position?.lineStart - this._previousNode?.position?.lineEnd;
+      const nbLines = Math.abs(
+        Math.abs(node.position?.lineStart) -
+          this._previousNode?.position?.lineEnd
+      );
+      for (let i = 0; i < nbLines; i++) this.newLine();
+    } else if (node instanceof DockerRun && this.output.length > 0) {
       this.newLine();
     }
     this._previousNode = node;
@@ -92,10 +113,16 @@ class Printer {
       case "AS-STRING":
       case "DOCKER-ENTRYPOINT-EXECUTABLE":
       case "DOCKER-SHELL-ARG":
-        this.append(node.value);
+        this.append(node.value.replace(/\n/g, "\\\n"));
         break;
       case "DOCKER-IMAGE-REPO":
         this.append(node.value + "/");
+        break;
+      case "DOCKER-IMAGE-DIGEST":
+        this.append("@" + node.value);
+        break;
+      case "DOCKER-IMAGE-ALIAS":
+        this.append(" as " + node.value);
         break;
       case "DOCKER-IMAGE-TAG":
         this.append(":" + node.value);
@@ -146,10 +173,6 @@ class Printer {
           .append("done");
         if (node.semicolon === true) this.append(";");
         break;
-      case "BASH-CASE-EXPRESSIONS":
-        node.iterate((node) => this._generate(node));
-        this.trim().newLine().append(";;");
-        break;
       case "BASH-FUNCTION":
         this._generate(node.name).append("() {").indent().newLine();
         this._generate(node.body).deindent().newLine().append("}");
@@ -183,33 +206,34 @@ class Printer {
       case "BASH-CASE-EXPRESSION":
         this.append("case ")
           ._generate(node.target)
-          .indent()
-          .newLine()
           ._generate(node.cases)
-          .deindent()
-          .trim()
           .newLine()
           .append("esac");
+        this._previousNode = node;
         if (node.semicolon === true) this.append(";");
         break;
+      case "BASH-CASE-EXPRESSIONS":
+        node.iterate((node) => this._generate(node));
+        break;
       case "BASH-CASE-EXP-CASE":
-        this._generate(node.kind())
-          .append(" ")
-          ._generate(node.labels())
+        this._generate(node.labels())
           .indent()
           .newLine()
           ._generate(node.stmls())
+          .newLine()
+          .append(";;")
           .deindent();
+        this._previousNode = node;
         break;
       case "BASH-CASE-EXP-CASES":
-        node.iterate((i) => {
-          this._generate(i).newLine();
-        });
+        this._generate(node.getElement(BashCaseKind)).indent().newLine();
+        node.iterate((i) => this._generate(i));
+        this.deindent();
         break;
       case "BASH-CASE-KIND":
         switch (node.value) {
           case "30":
-            this.append("in");
+            this.append(" in");
             break;
 
           default:
@@ -226,25 +250,28 @@ class Printer {
         this.append(")");
         break;
       case "BASH-REDIRECT-OVERWRITE":
-        this.append("> ");
+        this.append(" > ");
         node.iterate((node) => this._generate(node));
         break;
       case "BASH-REDIRECT-STDERR":
-        this.append("2> ");
+        this.append(" 2> ");
         node.iterate((node) => this._generate(node));
         break;
       case "BASH-REDIRECT-APPEND":
-        this.append(">> ");
+        this.append(" >> ");
         node.iterate((node) => this._generate(node));
         break;
       case "BASH-REDIRECT-STDIN":
-        this.append("< ");
+        this.append(" < ");
         node.iterate((node) => this._generate(node));
         break;
       case "BASH-BRACE-EXPANSION":
         switch (node.value) {
           case "76":
             this.append("%");
+            break;
+          case "70":
+            this.append("-");
             break;
         }
         node.iterate((node) => this._generate(node));
@@ -291,13 +318,12 @@ class Printer {
           this._generate(i);
         });
         this.deindent().newLine().append("}");
+        this._previousNode = node;
         break;
       case "MAYBE-SEMANTIC-COMMAND":
-        this.indent();
         node.iterate((i) => {
           this._generate(i);
         });
-        this.deindent();
         this.trim();
         if (node.semicolon === true) this.append(";");
         break;
@@ -308,13 +334,13 @@ class Printer {
         this.indentLevel = 0;
         this.append("FROM ");
         node.iterate((i) => this._generate(i));
-        this.newLine().newLine();
         break;
       case "DOCKER-RUN":
         this.indentLevel = 0;
-        this.append("RUN ").indent();
+        this.append("RUN ").indent().inCommand();
         node.iterate((i) => this._generate(i));
-        this.deindent().newLine();
+        this.deindent().outCommand();
+        this._previousNode = node;
         break;
       case "DOCKER-SHELL":
         this.indentLevel = 0;
@@ -323,37 +349,37 @@ class Printer {
         for (const i of node.getElements(DockerShellArg)) {
           this.append(", ")._generate(i);
         }
-        this.deindent().append("]").newLine();
+        this.deindent().append("]");
         break;
       case "DOCKER-ADD":
         this.indentLevel = 0;
         this.append("ADD ").indent();
         node.iterate((i) => this._generate(i));
-        this.deindent().newLine();
+        this.deindent();
         break;
       case "DOCKER-COPY":
         this.indentLevel = 0;
         this.append("COPY ").indent();
         node.iterate((i) => this._generate(i).space());
-        this.deindent().newLine();
+        this.deindent();
         break;
       case "DOCKER-WORKDIR":
         this.indentLevel = 0;
         this.append("WORKDIR ").indent();
         node.iterate((i) => this._generate(i));
-        this.deindent().newLine();
+        this.deindent();
         break;
       case "DOCKER-ENV":
         this.indentLevel = 0;
         this.append("ENV ").indent();
         node.iterate((i) => this._generate(i).space());
-        this.deindent().newLine();
+        this.deindent();
         break;
       case "DOCKER-EXPOSE":
         this.indentLevel = 0;
         this.append("EXPOSE ").indent();
         node.iterate((i) => this._generate(i).space());
-        this.deindent().newLine();
+        this.deindent();
         break;
       case "DOCKER-ENTRYPOINT":
         this.indentLevel = 0;
@@ -362,18 +388,16 @@ class Printer {
           if (index > 0) this.append(", ");
           this._generate(i);
         });
-        this.append("]").deindent().newLine();
+        this.append("]").deindent();
         break;
       case "DOCKER-CMD":
         this.indentLevel = 0;
-        this.append("CMD ");
-        this.append("[");
+        this.append("CMD [");
         node.iterate((i, index) => {
           if (index > 0) this.append(", ");
           this._generate(i);
         });
         this.append("]");
-        this.newLine();
         break;
       case "DOCKER-VOLUME":
         this.indentLevel = 0;
@@ -382,7 +406,6 @@ class Printer {
           if (index > 0) this.append(", ");
           this._generate(i);
         });
-        this.newLine();
         break;
       case "DOCKER-USER":
         this.indentLevel = 0;
@@ -391,7 +414,6 @@ class Printer {
           if (index > 0) this.append(", ");
           this._generate(i);
         });
-        this.newLine();
         break;
       default:
         console.error("Type not supported: ", node.type);

@@ -46,7 +46,7 @@ describe("Testing rule matcher", () => {
 
     await violations[0].repair();
     expect(print(matcher.node, true)).toEqual(
-      "RUN npm i\n    npm cache clean --force;\n"
+      "RUN npm i\\\n    npm cache clean --force;"
     );
   });
   test("npmCacheCleanUseForce", async () => {
@@ -58,7 +58,7 @@ describe("Testing rule matcher", () => {
     expect(violations).toHaveLength(1);
 
     await violations[0].repair();
-    expect(print(matcher.node, true)).toEqual("RUN npm cache clean --force\n");
+    expect(print(matcher.node, true)).toEqual("RUN npm cache clean --force");
   });
   test("rmRecursiveAfterMktempD", async () => {
     const root = await parseDocker("RUN mktemp -d fold");
@@ -70,7 +70,7 @@ describe("Testing rule matcher", () => {
 
     await violations[0].repair();
     expect(print(matcher.node, true)).toEqual(
-      "RUN mktemp -d fold\n    rm -rf fold\n"
+      "RUN mktemp -d fold\\\n    rm -rf fold"
     );
   });
   test("curlUseHttpsUrl", async () => {
@@ -120,7 +120,7 @@ describe("Testing rule matcher", () => {
 
     await violations[0].repair();
     expect(print(matcher.node, true)).toEqual(
-      "RUN mkdir -p /usr/src/python\n    rm -rf /usr/src/python\n"
+      "RUN mkdir -p /usr/src/python\\\n    rm -rf /usr/src/python"
     );
   });
   test("configureShouldUseBuildFlag", async () => {
@@ -135,7 +135,7 @@ describe("Testing rule matcher", () => {
 
     await violations[0].repair();
     expect(print(matcher.node, true)).toEqual(
-      'RUN ./configure --build="$(dpkg-architecture --query DEB_BUILD_GNU_TYPE)" --disable-install-doc --enable-shared\n'
+      'RUN ./configure --build="$(dpkg-architecture --query DEB_BUILD_GNU_TYPE)" --disable-install-doc --enable-shared'
     );
   });
   test("gemUpdateSystemRmRootGem", async () => {
@@ -148,7 +148,7 @@ describe("Testing rule matcher", () => {
 
     await violations[0].repair();
     expect(print(matcher.node, true)).toEqual(
-      "RUN gem update --system\n    rm -rf /root/.gem;\n"
+      "RUN gem update --system\\\n    rm -rf /root/.gem;"
     );
   });
   test("gemUpdateNoDocument", async () => {
@@ -161,7 +161,11 @@ describe("Testing rule matcher", () => {
 
     await violations[0].repair();
     expect(print(matcher.node, true)).toEqual(
-      "RUN echo 'install: --no-document\nupdate: --no-document' > \"${HOME}/.gemrc\"\nRUN gem update --system ${RUBYGEMS_VERSION}\n"
+      `RUN mkdir -p /usr/local/etc \\
+    && {\\
+        echo 'install: --no-document';\\
+        echo 'update: --no-document';\\
+    } >> /usr/local/etc/gemrc\\\nRUN gem update --system \${RUBYGEMS_VERSION}`
     );
   });
   test("yumInstallForceYes", async () => {
@@ -173,7 +177,7 @@ describe("Testing rule matcher", () => {
     expect(violations).toHaveLength(1);
 
     await violations[0].repair();
-    expect(print(matcher.node, true)).toEqual("RUN yum install -y test\n");
+    expect(print(matcher.node, true)).toEqual("RUN yum install -y test");
   });
   test("yumInstallRmVarCacheYum", async () => {
     const root = await parseDocker("RUN yum install test");
@@ -185,7 +189,7 @@ describe("Testing rule matcher", () => {
 
     await violations[0].repair();
     expect(print(matcher.node, true)).toEqual(
-      "RUN yum install test\n    rm -rf /var/cache/yum\n"
+      "RUN yum install test\\\n    rm -rf /var/cache/yum"
     );
   });
   test("gpgUseBatchFlag", async () => {
@@ -200,7 +204,7 @@ describe("Testing rule matcher", () => {
 
     await violations[0].repair();
     expect(print(matcher.node, true)).toEqual(
-      "RUN gpg --batch --keyserver ha.pool.sks-keyservers.net\n"
+      "RUN gpg --batch --keyserver ha.pool.sks-keyservers.net"
     );
   });
   test("gpgUseHaPools", async () => {
@@ -215,7 +219,7 @@ describe("Testing rule matcher", () => {
 
     await violations[0].repair();
     expect(print(matcher.node, true)).toEqual(
-      "RUN gpg --keyserver ha.pool.sks-keyservers.net\n"
+      "RUN gpg --keyserver ha.pool.sks-keyservers.net"
     );
   });
   test("ruleAptGetInstallUseY", async () => {
@@ -227,7 +231,7 @@ describe("Testing rule matcher", () => {
     expect(violations).toHaveLength(1);
 
     await violations[0].repair();
-    expect(print(matcher.node, true)).toEqual("RUN apt-get install -y test\n");
+    expect(print(matcher.node, true)).toEqual("RUN apt-get install -y test");
   });
   test("ruleAptGetInstallUseNoRec", async () => {
     const root = await parseDocker("RUN apt-get install test");
@@ -239,7 +243,7 @@ describe("Testing rule matcher", () => {
 
     await violations[0].repair();
     expect(print(matcher.node, true)).toEqual(
-      "RUN apt-get install --no-install-recommends test\n"
+      "RUN apt-get install --no-install-recommends test"
     );
   });
   test("ruleAptGetInstallThenRemoveAptLists", async () => {
@@ -252,7 +256,7 @@ describe("Testing rule matcher", () => {
 
     await violations[0].repair();
     expect(print(matcher.node, true)).toEqual(
-      "RUN apt-get install test\n    rm -rf /var/lib/apt/lists/*;\n"
+      "RUN apt-get install test\\\n    rm -rf /var/lib/apt/lists/*;"
     );
   });
   test("apkAddUseNoCache", async () => {
@@ -267,7 +271,7 @@ describe("Testing rule matcher", () => {
 
     await violations[0].repair();
     expect(print(matcher.node, true)).toEqual(
-      "RUN apk add --no-cache --virtual .php-rundeps ${runDeps}\n"
+      "RUN apk add --no-cache --virtual .php-rundeps ${runDeps}"
     );
   });
 });

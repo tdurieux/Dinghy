@@ -134,7 +134,7 @@ export class DockerParser {
             .getText()
             .substring(
               doc.offsetAt(argsRange.start),
-              doc.offsetAt(argsRange.end)
+              doc.offsetAt(line.getRange().end)
             )
             // required to consider that the comments are in the bash AST otherwise they will break lines and make the AST invalid
             .replace(/#([^\\\n]*)$/gm, "#$1\\");
