@@ -53,9 +53,7 @@ export class Matcher {
   }
 
   public match(rule: Rule) {
-    console.time(`Match rule: ${rule.name}`);
     const o = matchRule(this._node, rule);
-    console.timeEnd(`Match rule: ${rule.name}`);
     return o;
   }
 }

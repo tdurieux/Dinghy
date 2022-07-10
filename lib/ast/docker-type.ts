@@ -153,8 +153,8 @@ export class Position {
 
   toString() {
     return (
-      `${this.lineStart}:${this.columnStart}` +
-      (this.lineEnd ? `to ${this.lineEnd}:${this.columnEnd}` : "")
+      `${this.lineStart + 1}:${this.columnStart}` +
+      (this.lineEnd ? ` to ${this.lineEnd + 1}:${this.columnEnd}` : "")
     );
   }
 }
@@ -218,8 +218,7 @@ export abstract class DockerOpsNode {
     const type = new element().type;
     const out: T[] = [];
     this.traverse((node) => {
-      if (node.type == type) 
-        out.push(node as T);
+      if (node.type == type) out.push(node as T);
     });
     return out;
   }
