@@ -1,7 +1,7 @@
 import { readFileSync } from "fs";
 import { DockerParser } from "../lib/ast/docker-parser";
 import { DockerFile } from "../lib/ast/docker-type";
-import { Matcher } from "../lib/debloat";
+import { Matcher } from "../lib/debloat/rule-matcher";
 import {
   ruleAptGetInstallThenRemoveAptLists,
   ruleAptGetInstallUseNoRec,
@@ -26,13 +26,9 @@ describe("Testing docker parser with bash", () => {
 
     const matcher = new Matcher(dockerfile);
 
-    expect(
-      matcher.match(ruleAptGetInstallThenRemoveAptLists).violations
-    ).toHaveLength(0);
+    expect(matcher.match(ruleAptGetInstallThenRemoveAptLists)).toHaveLength(0);
 
-    expect(
-      matcher.match(ruleAptGetUpdatePrecedesInstall).violations
-    ).toHaveLength(0);
+    expect(matcher.match(ruleAptGetUpdatePrecedesInstall)).toHaveLength(0);
   });
   test("1d8c362e7043d7b78836f06256d0ae9b82561af8", async () => {
     const dockerfile = await praseFile(
@@ -42,25 +38,21 @@ describe("Testing docker parser with bash", () => {
 
     const matcher = new Matcher(dockerfile);
 
-    expect(
-      matcher.match(ruleAptGetInstallThenRemoveAptLists).violations
-    ).toHaveLength(0);
+    expect(matcher.match(ruleAptGetInstallThenRemoveAptLists)).toHaveLength(0);
 
-    expect(
-      matcher.match(ruleAptGetUpdatePrecedesInstall).violations
-    ).toHaveLength(0);
+    expect(matcher.match(ruleAptGetUpdatePrecedesInstall)).toHaveLength(0);
 
-    expect(matcher.match(ruleAptGetInstallUseNoRec).violations).toHaveLength(1);
-    if (ruleAptGetInstallUseNoRec.repair)
-      ruleAptGetInstallUseNoRec.repair(
-        matcher.match(ruleAptGetInstallUseNoRec).violations[0]
-      );
+    expect(matcher.match(ruleAptGetInstallUseNoRec)).toHaveLength(1);
+    matcher.match(ruleAptGetInstallUseNoRec)[0].repair();
   });
   test("0aa1cd6a00cfe247f17e680d5e2c394b5f0d3edc", async () => {
     const dockerfile = await praseFile(
       "0aa1cd6a00cfe247f17e680d5e2c394b5f0d3edc"
     );
     expect(dockerfile).toBeInstanceOf(DockerFile);
+
+    const violations = new Matcher(dockerfile).matchAll();
+    expect(violations).toHaveLength(0);
   });
   test("0b15d39cebd7afc18eded9d4f41d932b00770eed", async () => {
     const dockerfile = await praseFile(

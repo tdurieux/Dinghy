@@ -1,6 +1,6 @@
 import { Command, Option } from "commander";
 import { print } from "./lib/ast/docker-printer";
-import { Matcher } from "./lib/debloat";
+import { Matcher } from "./lib/debloat/rule-matcher";
 import * as Diff from "diff";
 
 import { RULES } from "./lib/debloat/rules";
@@ -13,6 +13,16 @@ program
   .version("1.0.0");
 
 program
+  .command("rules")
+  .description("List the supported rules")
+  .action(async function () {
+    for (const rule of RULES) {
+      console.log(rule.name);
+      console.log(rule.description);
+    }
+  });
+
+program
   .command("refactor")
   .description("The Dockerfile to debloat")
   .argument("<file>", "The filepath to the Dockerfile")
@@ -20,25 +30,12 @@ program
   .action(async function (file: string, options: { output: string }) {
     const dockerfile = await parseDockerFile(file);
     const matcher = new Matcher(dockerfile);
-    const originalOutput = print(matcher._node, true);
+    const originalOutput = print(matcher.node, true);
     // console.log(dockerfile.match(gemUpdateNoDocument));
-    for (const rule of RULES) {
-      const r = matcher.match(rule);
-      if (r.violations.length > 0)
-        r.violations.forEach(async (e) => {
-          console.log("[VIOLATION] -> " + e.matched.rule.description);
-          console.log(
-            "               " +
-              print(e.matched.node, true).replace(/\n */g, " ") +
-              " at " +
-              e.matched.node.position
-          );
-
-          if (e.matched.rule.repair) {
-            await e.matched.rule.repair(e);
-          }
-        });
-    }
+    matcher.matchAll().forEach(async (e) => {
+      console.log(e.toString());
+      await e.repair();
+    });
     const repairedOutput = print(matcher.node, true);
     const diff = Diff.diffLines(originalOutput, repairedOutput);
 
@@ -66,19 +63,7 @@ program
   .action(async (file: string) => {
     const dockerfile = await parseDockerFile(file);
     const matcher = new Matcher(dockerfile);
-    for (const rule of RULES) {
-      const r = matcher.match(rule);
-      if (r.violations.length > 0)
-        r.violations.forEach((e) => {
-          console.log("[VIOLATION] -> " + e.matched.rule.description);
-          console.log(
-            "               " +
-              print(e.matched.node, true).replace(/ *\n */g, " ") +
-              " at " +
-              e.matched.node.position
-          );
-        });
-    }
+    matcher.matchAll().forEach((e) => console.log(e.toString()));
   });
 
 program

@@ -1,108 +1,159 @@
-import { Antecedent, Match, Rule } from "./rules";
-import { DockerOpsNodeType } from "../ast/docker-type";
+import { createEnrichers } from "./enrich";
+import {
+  BashCommandArgs,
+  BashCommandCommand,
+  BashLiteral,
+  DockerOpsNodeType,
+  MaybeSemanticCommand,
+} from "../ast/docker-type";
+import { abstract as abstraction } from "./abstraction";
+import { Rule, RULES } from "./rules";
+import { print } from "../ast/docker-printer";
 
-export function matchRule(node: DockerOpsNodeType, rule: Rule) {
-  const violations: {
-    description: string;
-    matched: {
-      node: DockerOpsNodeType;
-      rule: Rule;
-    };
-  }[] = [];
-  const stats: {
-    [key: string]: {
-      matches: number;
-      noConfirmations: number;
-      violations: number;
-    };
-  } = {};
+export class Violation {
+  constructor(readonly rule: Rule, readonly node: DockerOpsNodeType) {}
 
-  stats[rule.name] = { matches: 0, noConfirmations: 0, violations: 0 };
+  public async repair() {
+    return this.rule.repair(this.node);
+  }
 
-  node.traverse((node) => {
-    const env: { bound: DockerOpsNodeType[] } = { bound: [] };
-    if (isRuleMatchNode(node, rule.antecedent, env)) {
-      stats[rule.name].matches++;
+  public toString(): string {
+    return `[VIOLATION] -> ${this.rule.description}
+                           ${print(this.node, true).replace(/\n */g, " ")} at ${
+      this.node.position
+    }`;
+  }
+}
 
-      if (rule.kind !== "CONSEQUENT-FLAG-OF-ANTECEDENT") {
-        env.bound = getAllParentBeforeOrAfterOfNode(
-          node,
-          rule.kind === "CONSEQUENT-PRECEDES-ANTECEDENT",
+export class Matcher {
+  private _root: DockerOpsNodeType;
+
+  constructor(root: DockerOpsNodeType) {
+    this._root = Matcher.abstract(root.clone());
+  }
+
+  public static enrich(root: DockerOpsNodeType) {
+    const COMMAND_MAP = createEnrichers();
+
+    root.traverse((node) => {
+      if (node instanceof MaybeSemanticCommand) {
+        const commandAST = node.getElement(BashCommandCommand);
+        if (!commandAST) return true;
+
+        const command = commandAST.getElement(BashLiteral)?.value;
+        if (!command) return true;
+
+        if (COMMAND_MAP[command]) {
+          const commandArgs = node
+            .getElements(BashCommandArgs)
+            .map((e) => e.children)
+            .flat();
+          const payload = COMMAND_MAP[command](
+            commandArgs
+              .filter((e) => e.toString() != "--")
+              .map((c) => c.toString()),
+            commandArgs.filter((e) => e.toString() != "--")
+          );
+          payload.original = node;
+          node.replace(payload);
+        }
+      }
+    });
+    return root;
+  }
+
+  /**
+   * Get the transformed node (enriched and abstracted)
+   */
+  get node() {
+    return this._root;
+  }
+
+  /**
+   * Abstract the node as a pre-step for the matching
+   * @param root
+   * @returns
+   */
+  private static abstract(root: DockerOpsNodeType) {
+    return abstraction(Matcher.enrich(root));
+  }
+
+  /**
+   * Match a rule
+   * @param rule
+   * @returns
+   */
+  public match(rule: Rule) {
+    const violations: Violation[] = [];
+
+    // find the nodes that may contain a violation
+    const candidates = this._root.find(rule.query);
+
+    for (const candidate of candidates) {
+      if (
+        !rule.consequent.inNode &&
+        !rule.consequent.beforeNode &&
+        !rule.consequent.afterNode
+      ) {
+        // if no post-validation  add the violation and continue to the next candidate
+        violations.push(new Violation(rule, candidate));
+        continue;
+      }
+
+      if (
+        rule.consequent.inNode &&
+        candidate.find(rule.consequent.inNode).length > 0
+      ) {
+        continue;
+      }
+
+      if (rule.consequent.beforeNode !== undefined) {
+        const query = rule.consequent.beforeNode;
+        const nodeToCheck = getPreviousAndNextParentNodes(
+          candidate,
+          true,
           rule.scope === "INTRA-DIRECTIVE"
         );
-      }
-
-      if (rule.consequent.matchAnyBound) {
-        if (
-          !env.bound.some((candidate) => {
-            // check the top level and then check the children
-            if (
-              isRuleMatchNode(candidate, rule.consequent.matchAnyBound, env)
-            ) {
-              return true;
-            }
-            // if not everything has be traversed it means that a match has been found
-            return !candidate.traverse((node) => {
-              if (isRuleMatchNode(node, rule.consequent.matchAnyBound, env)) {
-                return false;
-              }
-            });
-          })
-        ) {
-          stats[rule.name].violations += 1;
-          violations.push({
-            description: rule.description,
-            matched: {
-              node,
-              rule,
-            },
-          });
-        } else {
-          stats[rule.name].noConfirmations += 1;
+        if (nodeToCheck.some((c) => c.find(query).length != 0)) {
+          continue;
         }
-      } else {
-        violations.push({
-          description: rule.description,
-          matched: {
-            node,
-            rule,
-          },
-        });
       }
+      if (rule.consequent.afterNode !== undefined) {
+        const query = rule.consequent.afterNode;
+        const nodeToCheck = getPreviousAndNextParentNodes(
+          candidate,
+          false,
+          rule.scope === "INTRA-DIRECTIVE"
+        );
+        if (nodeToCheck.some((c) => c.find(query).length != 0)) {
+          continue;
+        }
+      }
+
+      // if the 3 checks are good a violation has been found
+      violations.push(new Violation(rule, candidate));
     }
-  });
 
-  return { stats, violations };
+    return violations;
+  }
+
+  public matchAll() {
+    const output: Violation[] = [];
+    for (const rule of RULES) {
+      this.match(rule).forEach((e) => output.push(e));
+    }
+    return output;
+  }
 }
 
-function isRuleMatchNode(
+function getPreviousAndNextParentNodes(
   node: DockerOpsNodeType,
-  rule: Antecedent | Match,
-  env: { bound: DockerOpsNodeType[] }
-) {
-  if (node.type !== rule.type) {
-    return false;
-  }
-  if ((rule as Antecedent).bindHere === true) {
-    env.bound = node.children;
-  }
-  if (rule.children) {
-    return rule.children.every((toMatchChild) =>
-      node.children.some((currentChild) =>
-        isRuleMatchNode(currentChild, toMatchChild, env)
-      )
-    );
-  }
-  return true;
-}
-
-function getAllParentBeforeOrAfterOfNode(
-  node: DockerOpsNodeType,
-  before: boolean,
-  intra: boolean
+  beforeNode: boolean,
+  inScript: boolean
 ): DockerOpsNodeType[] {
+  const STOPPER = inScript ? "BASH-SCRIPT" : "DOCKER-FILE";
+
   const candidates: DockerOpsNodeType[] = [];
-  const STOPPER = intra ? "BASH-SCRIPT" : "DOCKER-FILE";
 
   let current = node.parent;
   let previous = node;
@@ -110,7 +161,7 @@ function getAllParentBeforeOrAfterOfNode(
     if (current.children.length > 1) {
       const parentIndex = current.children.indexOf(previous);
       current.children
-        .filter((_, i) => (before ? i < parentIndex : i > parentIndex))
+        .filter((_, i) => (beforeNode ? i < parentIndex : i > parentIndex))
         .forEach((node) => candidates.push(node));
     }
     if (current.type == STOPPER) break;

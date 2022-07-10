@@ -1,7 +1,7 @@
 import { parseShell } from "../lib/ast/docker-bash-parser";
 import { parseDocker } from "../lib/ast/docker-parser";
 import { print } from "../lib/ast/docker-printer";
-import { Matcher } from "../lib/debloat";
+import { Matcher } from "../lib/debloat/rule-matcher";
 import {
   apkAddUseNoCache,
   configureShouldUseBuildFlag,
@@ -30,10 +30,10 @@ describe("Testing rule matcher", () => {
     const matcher = new Matcher(root);
 
     const rule = curlUseFlagF;
-    const violations = matcher.match(rule).violations;
+    const violations = matcher.match(rule);
     expect(violations).toHaveLength(1);
 
-    await rule.repair(violations[0]);
+    await violations[0].repair();
     expect(print(matcher.node, true)).toEqual("curl -f https://");
   });
   test("npmCacheCleanAfterInstall", async () => {
@@ -41,10 +41,10 @@ describe("Testing rule matcher", () => {
     const matcher = new Matcher(root);
 
     const rule = npmCacheCleanAfterInstall;
-    const violations = matcher.match(rule).violations;
+    const violations = matcher.match(rule);
     expect(violations).toHaveLength(1);
 
-    await rule.repair(violations[0]);
+    await violations[0].repair();
     expect(print(matcher.node, true)).toEqual(
       "RUN npm i\n    npm cache clean --force;\n"
     );
@@ -54,10 +54,10 @@ describe("Testing rule matcher", () => {
     const matcher = new Matcher(root);
 
     const rule = npmCacheCleanUseForce;
-    const violations = matcher.match(rule).violations;
+    const violations = matcher.match(rule);
     expect(violations).toHaveLength(1);
 
-    await rule.repair(violations[0]);
+    await violations[0].repair();
     expect(print(matcher.node, true)).toEqual("RUN npm cache clean --force\n");
   });
   test("rmRecursiveAfterMktempD", async () => {
@@ -65,10 +65,10 @@ describe("Testing rule matcher", () => {
     const matcher = new Matcher(root);
 
     const rule = rmRecursiveAfterMktempD;
-    const violations = matcher.match(rule).violations;
+    const violations = matcher.match(rule);
     expect(violations).toHaveLength(1);
 
-    await rule.repair(violations[0]);
+    await violations[0].repair();
     expect(print(matcher.node, true)).toEqual(
       "RUN mktemp -d fold\n    rm -rf fold\n"
     );
@@ -78,10 +78,10 @@ describe("Testing rule matcher", () => {
     const matcher = new Matcher(root);
 
     const rule = curlUseHttpsUrl;
-    const violations = matcher.match(rule).violations;
+    const violations = matcher.match(rule);
     expect(violations).toHaveLength(1);
 
-    await rule.repair(violations[0]);
+    await violations[0].repair();
     expect(print(matcher.node, true)).toEqual("curl https://host.com/");
   });
   test("wgetUseHttpsUrl", async () => {
@@ -89,10 +89,10 @@ describe("Testing rule matcher", () => {
     const matcher = new Matcher(root);
 
     const rule = wgetUseHttpsUrl;
-    const violations = matcher.match(rule).violations;
+    const violations = matcher.match(rule);
     expect(violations).toHaveLength(1);
 
-    await rule.repair(violations[0]);
+    await violations[0].repair();
     expect(print(matcher.node, true)).toEqual("wget https://host.com/");
   });
   test("pipUseNoCacheDir", async () => {
@@ -102,10 +102,10 @@ describe("Testing rule matcher", () => {
     const matcher = new Matcher(root);
 
     const rule = pipUseNoCacheDir;
-    const violations = matcher.match(rule).violations;
+    const violations = matcher.match(rule);
     expect(violations).toHaveLength(1);
 
-    await rule.repair(violations[0]);
+    await violations[0].repair();
     expect(print(matcher.node, true)).toEqual(
       "pip install --no-cache-dir --upgrade pip==${PYTHON_PIP_VERSION}"
     );
@@ -115,10 +115,10 @@ describe("Testing rule matcher", () => {
     const matcher = new Matcher(root);
 
     const rule = mkdirUsrSrcThenRemove;
-    const violations = matcher.match(rule).violations;
+    const violations = matcher.match(rule);
     expect(violations).toHaveLength(1);
 
-    await rule.repair(violations[0]);
+    await violations[0].repair();
     expect(print(matcher.node, true)).toEqual(
       "RUN mkdir -p /usr/src/python\n    rm -rf /usr/src/python\n"
     );
@@ -130,10 +130,10 @@ describe("Testing rule matcher", () => {
     const matcher = new Matcher(root);
 
     const rule = configureShouldUseBuildFlag;
-    const violations = matcher.match(rule).violations;
+    const violations = matcher.match(rule);
     expect(violations).toHaveLength(1);
 
-    await rule.repair(violations[0]);
+    await violations[0].repair();
     expect(print(matcher.node, true)).toEqual(
       'RUN ./configure --build="$(dpkg-architecture --query DEB_BUILD_GNU_TYPE)" --disable-install-doc --enable-shared\n'
     );
@@ -143,10 +143,10 @@ describe("Testing rule matcher", () => {
     const matcher = new Matcher(root);
 
     const rule = gemUpdateSystemRmRootGem;
-    const violations = matcher.match(rule).violations;
+    const violations = matcher.match(rule);
     expect(violations).toHaveLength(1);
 
-    await rule.repair(violations[0]);
+    await violations[0].repair();
     expect(print(matcher.node, true)).toEqual(
       "RUN gem update --system\n    rm -rf /root/.gem;\n"
     );
@@ -156,10 +156,10 @@ describe("Testing rule matcher", () => {
     const matcher = new Matcher(root);
 
     const rule = gemUpdateNoDocument;
-    const violations = matcher.match(rule).violations;
+    const violations = matcher.match(rule);
     expect(violations).toHaveLength(1);
 
-    await rule.repair(violations[0]);
+    await violations[0].repair();
     expect(print(matcher.node, true)).toEqual(
       "RUN echo 'install: --no-document\nupdate: --no-document' > \"${HOME}/.gemrc\"\nRUN gem update --system ${RUBYGEMS_VERSION}\n"
     );
@@ -169,10 +169,10 @@ describe("Testing rule matcher", () => {
     const matcher = new Matcher(root);
 
     const rule = yumInstallForceYes;
-    const violations = matcher.match(rule).violations;
+    const violations = matcher.match(rule);
     expect(violations).toHaveLength(1);
 
-    await rule.repair(violations[0]);
+    await violations[0].repair();
     expect(print(matcher.node, true)).toEqual("RUN yum install -y test\n");
   });
   test("yumInstallRmVarCacheYum", async () => {
@@ -180,10 +180,10 @@ describe("Testing rule matcher", () => {
     const matcher = new Matcher(root);
 
     const rule = yumInstallRmVarCacheYum;
-    const violations = matcher.match(rule).violations;
+    const violations = matcher.match(rule);
     expect(violations).toHaveLength(1);
 
-    await rule.repair(violations[0]);
+    await violations[0].repair();
     expect(print(matcher.node, true)).toEqual(
       "RUN yum install test\n    rm -rf /var/cache/yum\n"
     );
@@ -195,10 +195,10 @@ describe("Testing rule matcher", () => {
     const matcher = new Matcher(root);
 
     const rule = gpgUseBatchFlag;
-    const violations = matcher.match(rule).violations;
+    const violations = matcher.match(rule);
     expect(violations).toHaveLength(1);
 
-    await rule.repair(violations[0]);
+    await violations[0].repair();
     expect(print(matcher.node, true)).toEqual(
       "RUN gpg --batch --keyserver ha.pool.sks-keyservers.net\n"
     );
@@ -210,10 +210,10 @@ describe("Testing rule matcher", () => {
     const matcher = new Matcher(root);
 
     const rule = gpgUseHaPools;
-    const violations = matcher.match(rule).violations;
+    const violations = matcher.match(rule);
     expect(violations).toHaveLength(1);
 
-    await rule.repair(violations[0]);
+    await violations[0].repair();
     expect(print(matcher.node, true)).toEqual(
       "RUN gpg --keyserver ha.pool.sks-keyservers.net\n"
     );
@@ -223,10 +223,10 @@ describe("Testing rule matcher", () => {
     const matcher = new Matcher(root);
 
     const rule = ruleAptGetInstallUseY;
-    const violations = matcher.match(rule).violations;
+    const violations = matcher.match(rule);
     expect(violations).toHaveLength(1);
 
-    await rule.repair(violations[0]);
+    await violations[0].repair();
     expect(print(matcher.node, true)).toEqual("RUN apt-get install -y test\n");
   });
   test("ruleAptGetInstallUseNoRec", async () => {
@@ -234,10 +234,10 @@ describe("Testing rule matcher", () => {
     const matcher = new Matcher(root);
 
     const rule = ruleAptGetInstallUseNoRec;
-    const violations = matcher.match(rule).violations;
+    const violations = matcher.match(rule);
     expect(violations).toHaveLength(1);
 
-    await rule.repair(violations[0]);
+    await violations[0].repair();
     expect(print(matcher.node, true)).toEqual(
       "RUN apt-get install --no-install-recommends test\n"
     );
@@ -247,10 +247,10 @@ describe("Testing rule matcher", () => {
     const matcher = new Matcher(root);
 
     const rule = ruleAptGetInstallThenRemoveAptLists;
-    const violations = matcher.match(rule).violations;
+    const violations = matcher.match(rule);
     expect(violations).toHaveLength(1);
 
-    await rule.repair(violations[0]);
+    await violations[0].repair();
     expect(print(matcher.node, true)).toEqual(
       "RUN apt-get install test\n    rm -rf /var/lib/apt/lists/*;\n"
     );
@@ -262,10 +262,10 @@ describe("Testing rule matcher", () => {
     const matcher = new Matcher(root);
 
     const rule = apkAddUseNoCache;
-    const violations = matcher.match(rule).violations;
+    const violations = matcher.match(rule);
     expect(violations).toHaveLength(1);
 
-    await rule.repair(violations[0]);
+    await violations[0].repair();
     expect(print(matcher.node, true)).toEqual(
       "RUN apk add --no-cache --virtual .php-rundeps ${runDeps}\n"
     );

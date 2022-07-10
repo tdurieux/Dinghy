@@ -1,5 +1,5 @@
 import { parseShell } from "../lib/ast/docker-bash-parser";
-import { Matcher } from "../lib/debloat";
+import { Matcher } from "../lib/debloat/rule-matcher";
 
 describe("Testing enrich", () => {
   test("grep --", async () => {

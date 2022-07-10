@@ -1,3 +1,4 @@
+import { AnyRecord } from "dns";
 import { print } from "./docker-printer";
 
 export type DockerOpsNodeType =
@@ -190,7 +191,7 @@ export abstract class DockerOpsNode {
     return this;
   }
 
-  addChild(child: DockerOpsNodeType | DockerOpsNodeType[]) {
+  addChild(child: DockerOpsNodeType | DockerOpsNodeType[]): typeof this {
     if (child == null) return;
     if (Array.isArray(child)) {
       for (const c of child) {
@@ -203,10 +204,8 @@ export abstract class DockerOpsNode {
     return this;
   }
 
-  getElement<T extends DockerOpsNode>(
-    element: new (t: void | string) => T
-  ): T | null {
-    const type = new element().type;
+  getElement<T extends DockerOpsNode>(element: new (t: any) => T): T | null {
+    const type = new element(undefined).type;
     let out: T = null;
     this.traverse((node) => {
       if (node.type == type) {
@@ -218,10 +217,8 @@ export abstract class DockerOpsNode {
     return out;
   }
 
-  getElements<T extends DockerOpsNode>(
-    element: new (t: string | void) => T
-  ): T[] {
-    const type = new element().type;
+  getElements<T extends DockerOpsNode>(element: new (t: any) => T): T[] {
+    const type = new element(undefined).type;
     const out: T[] = [];
     this.traverse((node) => {
       if (node.type == type) out.push(node as T);
@@ -230,9 +227,9 @@ export abstract class DockerOpsNode {
   }
 
   getParent<T extends DockerOpsNode>(
-    element: new (t: string | void) => T
+    element: new (t: AnyRecord) => T
   ): T | null {
-    const type = new element().type;
+    const type = new element(undefined).type;
     let currentParent: T = this.parent as T;
     while (currentParent != null) {
       if (currentParent.type == type) {
@@ -336,8 +333,8 @@ export abstract class DockerOpsNode {
    * @returns the list of nodes that match query
    */
   public find(query: TreeSignatureI) {
-    const out: DockerOpsNode[] = [];
-    if (this.match(query)) out.push(this);
+    const out: DockerOpsNodeType[] = [];
+    if (this.match(query)) out.push(this as DockerOpsNodeType);
 
     this.traverse((child) => {
       if (child.match(query)) out.push(child);
@@ -889,7 +886,7 @@ export class BashArithmeticBinaryRhs extends DockerOpsNode {
   type: "BASH-ARITHMETIC-BINARY-RHS" = "BASH-ARITHMETIC-BINARY-RHS";
 }
 
-type TypeOfDockerOpsNode = new (t: void | string) => DockerOpsNode;
+type TypeOfDockerOpsNode = new (t: any) => DockerOpsNode;
 
 /** Factory for queries */
 export const Q = (

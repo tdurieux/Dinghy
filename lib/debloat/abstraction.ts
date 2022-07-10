@@ -93,7 +93,10 @@ export function abstract(node: DockerOpsNodeType) {
       if (node instanceof DockerOpsValueNode) {
         // node.value = null;
       }
-    } else if (node instanceof DockerOpsValueNode) {
+    } else if (
+      node instanceof DockerOpsValueNode &&
+      typeof node.value === "string"
+    ) {
       const value = node.value;
       for (const r in abtractionRegex) {
         if (value.match(abtractionRegex[r])) {
