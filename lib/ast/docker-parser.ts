@@ -4,6 +4,7 @@ import {
   From,
   JSONInstruction,
   Line,
+  Shell,
 } from "dockerfile-ast";
 import { readFileSync } from "fs";
 import { ShellParser } from "./docker-bash-parser";
@@ -191,11 +192,11 @@ export class DockerParser {
           dockerfileAST.addChild(wkd);
           break;
         case "volume":
+          const volume = new DockerVolume();
           for (const arg of line.getArguments()) {
-            dockerfileAST.addChild(
-              new DockerVolume().addChild(new DockerPath(arg.toString()))
-            );
+            volume.addChild(new DockerPath(arg.toString()));
           }
+          dockerfileAST.addChild(volume);
           break;
         case "arg":
           const arg = new DockerArg().addChild(
@@ -251,7 +252,7 @@ export class DockerParser {
         case "shell":
           const shell = new DockerShell();
           shell.setPosition(position);
-          argus = (line as JSONInstruction).getJSONStrings();
+          argus = (line as Shell).getJSONStrings();
           if (argus.length == 0) argus = line.getArguments();
           shell.addChild(
             new DockerShellExecutable(argus[0].getValue()).setPosition(

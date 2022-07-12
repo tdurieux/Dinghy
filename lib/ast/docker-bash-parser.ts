@@ -159,7 +159,7 @@ export class ShellParser {
           .addChild(
             new BashArithmeticBinaryOp()
               .setPosition(this.pos(BinaryArithm.OpPos))
-              .addChild(new BashOp(BinaryArithm.Op + ""))
+              .addChild(new BashOp(BinaryArithm.Op.toString()))
           )
           .addChild(
             new BashArithmeticBinaryLhs()
@@ -381,9 +381,6 @@ export class ShellParser {
         }
         out.addChild(op);
         return new BashRedirect().setPosition(this.pos(node)).addChild(out);
-      case "Replace":
-        const Replace = node as bashAST.Replace;
-        break;
       case "SglQuoted":
         const SglQuoted = node as bashAST.SglQuoted;
         return new BashSingleQuoted(SglQuoted.Value).setPosition(
@@ -473,6 +470,8 @@ export class ShellParser {
         return new BashBraceExpansion(Expansion.Op.toString()).addChild(
           this.handleNode(Expansion.Word)
         );
+      case "Replace":
+        const Replace = node as bashAST.Replace;
       case "Slice":
         const Slice = node as bashAST.Slice;
       case "ParExpOperator":

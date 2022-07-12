@@ -113,6 +113,7 @@ class Printer {
       case "AS-STRING":
       case "DOCKER-ENTRYPOINT-EXECUTABLE":
       case "DOCKER-SHELL-ARG":
+      case "DOCKER-SHELL-EXECUTABLE":
         this.append(node.value.replace(/\n/g, "\\\n"));
         break;
       case "DOCKER-IMAGE-REPO":
