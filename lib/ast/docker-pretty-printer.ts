@@ -1,11 +1,4 @@
-import {
-  BashComment,
-  BashScript,
-  DockerFile,
-  DockerOpsNodeType,
-  DockerRun,
-  DockerShell,
-} from "./docker-type";
+import { BashScript, DockerFile, DockerOpsNodeType } from "./docker-type";
 
 import { Printer, print as reprint } from "./docker-printer";
 
