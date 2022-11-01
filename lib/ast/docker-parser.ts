@@ -281,19 +281,15 @@ export class DockerParser {
           break;
         case "env":
           const args = line.getArguments();
+          const env = new DockerEnv().setPosition(position)
 
-          const env = new DockerEnv().addChild(
-            new DockerName(args[0].getValue()).setPosition(
-              rangeToPos(args[0].getRange())
-            )
-          );
-          env.setPosition(position);
-
-          env.addChild(
-            new DockerKeyword(line.getInstruction()).setPosition(
-              rangeToPos(line.getInstructionRange())
-            )
-          );
+          if (args.length > 0) {
+            env.addChild(
+              new DockerName(args[0].getValue()).setPosition(
+                rangeToPos(args[0].getRange())
+              )
+            );
+          }
 
           for (let i = 1; i < args.length; i++) {
             env.addChild(
@@ -302,6 +298,13 @@ export class DockerParser {
               )
             );
           }
+
+          env.addChild(
+            new DockerKeyword(line.getInstruction()).setPosition(
+              rangeToPos(line.getInstructionRange())
+            )
+          );
+          
           dockerfileAST.addChild(env);
           break;
         case "entrypoint":
@@ -484,7 +487,6 @@ export class DockerParser {
 
     // add comments if they are not inside an instruction
     for (const comment of lines.getComments()) {
-      comment.getRange().start.character;
       const position = new Position(
         comment.getRange().start.line,
         comment.getRange().start.character,
