@@ -209,7 +209,7 @@ export abstract class DockerOpsNode {
     return this;
   }
 
-  addChild(child: DockerOpsNodeType | DockerOpsNodeType[]): typeof this {
+  addChild(child: DockerOpsNodeType | DockerOpsNodeType[]) {
     if (child == null) return;
     if (Array.isArray(child)) {
       for (const c of child) {
@@ -411,7 +411,7 @@ export abstract class DockerOpsNode {
     return hasChanges;
   }
 
-  public clone(): typeof this {
+  public clone() {
     var cloneObj = new (this.constructor as any)();
     cloneObj.isChanged = true;
     for (const attribut in this) {
