@@ -1,14 +1,7 @@
 import * as fs from "fs";
 import * as yaml from "js-yaml";
 import yargs, { Argv } from "yargs";
-import { print } from "../../ast/docker-printer";
-import {
-  BashLiteral,
-  DockerOpsNode,
-  DockerOpsNodeType,
-  GenericNode,
-  Unknown,
-} from "../../ast/docker-type";
+import { DockerOpsNodeType, Position } from "../../ast/docker-type";
 
 const YAML_DIR = __dirname;
 
@@ -45,6 +38,12 @@ interface Scenario {
   captureAfterThirdNonOption?: string;
   captureAfterSecondNonOption?: string;
   captureAfterFirstNonOption?: string;
+  postProcess?: {
+    tagLastElement?: {
+      source: string;
+      tag: string;
+    };
+  }[];
 }
 interface Command {
   prefix: string;
@@ -212,7 +211,6 @@ function buildScenarioParser(
         "camel-case-expansion": false,
       })
       .fail((a, b, c) => {
-        console.error(b);
         throw new Error(
           "Arg parsing failed. " + originalArgs.join(" ") + "\n" + a
         );
@@ -471,15 +469,10 @@ function buildScenarioParser(
 function buildParser(
   prefix: string,
   scenarios: Scenario[]
-): (args: string[]) =>
-  | {
-      scenario: null;
-      result: DockerOpsNodeType;
-    }
-  | {
-      scenario: Scenario;
-      result: ScenarioParserOutput;
-    } {
+): (args: string[]) => null | {
+  scenario: Scenario;
+  result: ScenarioParserOutput;
+} {
   return (args: string[]) => {
     const parsers = scenarios.map(buildScenarioParser);
 
@@ -489,83 +482,172 @@ function buildParser(
         result.$.prefix = prefix;
         return { scenario: scenarios[i], result };
       } catch (e) {
-        if (e.message != "Scenario not applicable.") console.error(e);
+        // if (e.message != "Scenario not applicable.")
+        //   console.error("Scenario not applicable", scenarios[i], prefix, args.join(" "));
         continue;
       }
     }
 
-    return { scenario: null, result: new Unknown() };
+    return null;
   };
 }
 
 function nodify(
   prefix: string,
   type: string,
-  key: string | string[],
+  key: string,
+  aliases: string[],
   value: string,
   opts: any,
   paths: string[],
+  cmdAST: DockerOpsNodeType,
   oargs: {
     [x: string]: DockerOpsNodeType;
   }
-): DockerOpsNodeType {
-  function reify(v: string | number, def: DockerOpsNodeType[]) {
-    return oargs[v] ? [oargs[v]] : def || [];
+): void {
+  function matchKey(key: string) {
+    if (oargs["-" + key]) return oargs["-" + key];
+    if (oargs["--" + key]) return oargs["--" + key];
+
+    if (key.length == 1) {
+      for (const i in oargs) {
+        if (
+          i.match(
+            new RegExp(
+              "^-[^-]*" + key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+              "i"
+            )
+          )
+        ) {
+          return oargs[i];
+        }
+      }
+    } else {
+      for (const i in oargs) {
+        if (
+          i.match(
+            new RegExp("^--" + key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i")
+          )
+        ) {
+          return oargs[i];
+        }
+      }
+    }
+  }
+  let keyAST: DockerOpsNodeType = matchKey(key);
+  if (!keyAST) {
+    for (const k of aliases) {
+      keyAST = matchKey(k);
+      if (keyAST) break;
+    }
+  }
+  let valueAST: DockerOpsNodeType = oargs[value];
+  if (!valueAST && value?.trim && value.trim().length > 0) {
+    for (const i in oargs) {
+      if (i.includes(value)) {
+        valueAST = oargs[i];
+        break;
+      }
+    }
+  }
+
+  // add the value as a child of the command option
+  if (keyAST && valueAST && keyAST != valueAST) {
+    valueAST.remove();
+    keyAST.addChild(valueAST);
+    keyAST.setPosition(
+      new Position(
+        keyAST.position.lineStart,
+        keyAST.position.columnStart,
+        Math.max(valueAST.position.lineEnd, keyAST.position.lineEnd),
+        Math.max(valueAST.position.columnEnd, keyAST.position.columnEnd)
+      )
+    );
+  }
+  if (!keyAST && !valueAST && !Array.isArray(value)) {
+    if (typeof value == "boolean") {
+      keyAST = cmdAST;
+    } else {
+      console.log(
+        "\n",
+        "[ENRICH]",
+        prefix,
+        key,
+        type,
+        value,
+        ": ",
+        Object.keys(oargs).join(" ")
+      );
+    }
   }
 
   if (typeof key == "string" && paths.indexOf(key) !== -1) {
-    const out = new GenericNode(`${prefix}-${type}`).addChild(
-      new GenericNode(`BASH-PATH`)
-    );
-
-    reify(value as string, [new BashLiteral(value)]).forEach((e) =>
-      out.children[0].addChild(e)
-    );
-    return out;
+    if (valueAST) {
+      valueAST.annotations.push(`BASH-PATH`);
+      valueAST.annotations.push(`${prefix}-${type}`);
+    }
+    if (keyAST) {
+      keyAST.annotations.push(`${prefix}-${type}`);
+    }
+    return;
   } else if (opts.boolean.indexOf(key) !== -1) {
-    return new GenericNode(`${prefix}-F-${type}`);
+    if (keyAST) keyAST.annotations.push(`${prefix}-F-${type}`);
+    return;
   } else if (Array.isArray(value)) {
     if (value.length === 0) {
-      return new Unknown();
+      return;
     }
     if (!type.endsWith("S")) {
       type = type + "S";
     }
-    const out = new GenericNode(`${prefix}-${type}`);
     value.forEach((x) => {
-      const child = new GenericNode(`${prefix}-${type.slice(0, -1)}`);
-      reify(x, [new BashLiteral(x)]).forEach((e) => child.addChild(e));
-      out.addChild(child);
-    });
+      if (oargs[x]) {
+        if (keyAST && oargs[x] && keyAST != oargs[x]) {
+          oargs[x].remove();
+          keyAST.addChild(oargs[x]);
 
-    return out;
-  } else if (opts.string.indexOf(key) !== -1) {
-    const out = new GenericNode(`${prefix}-${type}`);
-    reify(value, [new BashLiteral(value)]).forEach((e) => out.addChild(e));
-    return out;
-  } else if (typeof value === "string" || typeof value === "number") {
-    const out = new GenericNode(`${prefix}-${type}`);
-    reify(value, [new BashLiteral(value.toString())]).forEach((e) =>
-      out.addChild(e)
-    );
-    return out;
+          keyAST.setPosition(
+            new Position(
+              keyAST.position.lineStart,
+              keyAST.position.columnStart,
+              Math.max(oargs[x].position.lineEnd, keyAST.position.lineEnd),
+              Math.max(oargs[x].position.columnEnd, keyAST.position.columnEnd)
+            )
+          );
+
+          keyAST.annotations.push(`${prefix}-${type.slice(0, -1)}`);
+        }
+        oargs[x].annotations.push(`${prefix}-${type.slice(0, -1)}`);
+      }
+    });
+    return;
   }
 
-  return new GenericNode(`${prefix}-${type}`);
+  if (keyAST) {
+    keyAST.annotations.push(`${prefix}-${type}`);
+  }
+  if (valueAST) {
+    valueAST.annotations.push(`${prefix}-${type}`);
+  }
+
+  return;
 }
 
 const buildPostProcessor =
   (parser: ReturnType<typeof buildParser>) =>
-  (argsString: string[], argsAST: DockerOpsNodeType[]): DockerOpsNodeType => {
+  (
+    cmdAST: DockerOpsNodeType,
+    argsString: string[],
+    argsAST: DockerOpsNodeType[]
+  ): void => {
     const output = parser(argsString);
 
-    if (output.result instanceof DockerOpsNode) {
-      return output.result;
+    if (!output) {
+      return;
     }
 
-    const argsASTCache = argsAST
-      .map((child) => ({ [print(child)]: child }))
-      .reduce((obj, cur) => ({ ...obj, ...cur }), {});
+    const argsASTCache = {};
+    argsString.forEach((s, index) => (argsASTCache[s] = argsAST[index]));
 
     const details = output.result.$;
 
@@ -590,7 +672,7 @@ const buildPostProcessor =
       (k) => (aliases[k] = aliases[k].sort((a, b) => b.length - a.length))
     );
 
-    const subtree = new GenericNode(details.name);
+    cmdAST.annotations.push(details.name);
 
     const ignores = details.cmd
       .split(" ")
@@ -607,7 +689,7 @@ const buildPostProcessor =
           // Maybe we've already processed or want to ignore this key
           ignores.indexOf(k) === -1
       )
-      .map((k) => {
+      .forEach((k) => {
         // Okay, get a "good" name for this key
         // Then remove all possible aliases
         if (aliases[k]) {
@@ -616,9 +698,11 @@ const buildPostProcessor =
             details.prefix,
             aliases[k][0].toUpperCase(),
             k,
+            aliases[k],
             output.result[k],
             details.options,
             details.paths,
+            cmdAST,
             argsASTCache
           );
         } else if (
@@ -626,24 +710,32 @@ const buildPostProcessor =
             (x) => aliases[x].indexOf(k) !== -1 && output.result[x]
           )
         ) {
-          return null; // Just skip, we'll hit this later
+          return; // Just skip, we'll hit this later
         } else {
           ignores.push(k);
           return nodify(
             details.prefix,
             k.toUpperCase(),
             k,
+            [],
             output.result[k],
             details.options,
             details.paths,
+            cmdAST,
             argsASTCache
           );
         }
-      })
-      .filter((x) => x)
-      .forEach((c) => subtree.addChild(c));
-
-    return subtree;
+      });
+    if (output.scenario.postProcess) {
+      for (const p of output.scenario.postProcess) {
+        if (p.tagLastElement) {
+          const v = output.result[p.tagLastElement.source]?.at(-1);
+          if (argsASTCache[v]) {
+            argsASTCache[v].annotations.push(p.tagLastElement.tag);
+          }
+        }
+      }
+    }
   };
 
 export function createEnrichers(): {

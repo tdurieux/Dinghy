@@ -21,6 +21,7 @@ command:
       - --auto-remove
       - --autoremove
       - --force-yes
+      - --assume-yes
     paths:
       - -C, --config
     counts:

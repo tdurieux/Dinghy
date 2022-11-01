@@ -245,13 +245,10 @@ export interface Parser extends Node {
 export interface Printer extends Node {
   Print(): string;
 }
-export interface ProcOperator extends Node {
-  String(): string;
-}
 export interface ProcSubst extends Node {
   OpPos: Pos;
   Rparen: Pos;
-  Op: ProcOperator;
+  Op: number;
   Stmts: Stmt[];
 }
 export interface Redirect extends Node {
@@ -317,7 +314,7 @@ export interface UnTestOperator extends Node {
 }
 export interface UnaryArithm extends Node {
   OpPos: Pos;
-  Op: UnAritOperator;
+  Op: number;
   Post: boolean;
   X: ArithmExpr;
 }

@@ -1,5 +1,5 @@
 // import * as sh2 from "sh-syntax";
-import sh from "mvdan-sh";
+import sh, { LangVariant } from "mvdan-sh";
 const { syntax } = sh;
 import { type } from "os";
 import * as bashAST from "./mvdan-sh-types";
@@ -64,6 +64,15 @@ import {
   BashComment,
   BashBraceGroup,
   BashBraceExpansion,
+  BashRedirectStdin,
+  BashProcSubOp,
+  BashProcSub,
+  BashProcSubBody,
+  BashConditionOp,
+  BashUntilBody,
+  BashUntilCondition,
+  BashReplace,
+  BashDollarBrace,
 } from "./docker-type";
 
 export class ShellParser {
@@ -77,20 +86,34 @@ export class ShellParser {
   private pos(node: bashAST.Node | bashAST.Pos): Position {
     if ((node as bashAST.Node).Pos !== undefined) {
       const n: bashAST.Node = node as bashAST.Node;
-      // Dockerfile position start at line 0
-      return new Position(
-        n.Pos().Line() - 1 + this.originalPosition.lineStart,
-        n.Pos().Col(),
-        n.End().Line() - 1 + this.originalPosition.lineStart,
-        n.End().Col()
-      );
+
+      const lineStart = n.Pos().Line() - 1 + this.originalPosition.lineStart;
+      const lineEnd = n.End().Line() - 1 + this.originalPosition.lineStart;
+      let columnStart = n.Pos().Col() - 1;
+      if (lineStart == this.originalPosition.lineStart) {
+        columnStart += this.originalPosition.columnStart;
+      }
+      let columnEnd = n.End().Col() - 1;
+      if (lineEnd == this.originalPosition.lineStart) {
+        columnEnd += this.originalPosition.columnStart;
+      }
+
+      const p = new Position(lineStart, columnStart, lineEnd, columnEnd);
+
+      p.file = this.originalPosition.file;
+      p.fileContent = this.originalPosition.fileContent;
+      return p;
     }
 
     const p: bashAST.Pos = node as bashAST.Pos;
-    return new Position(
-      p.Line() - 1 + this.originalPosition.lineStart,
-      p.Col()
-    );
+
+    const lineStart = p.Line() - 1 + this.originalPosition.lineStart;
+    let columnStart = p.Col() - 1;
+    if (lineStart == this.originalPosition.lineStart) {
+      columnStart += this.originalPosition.columnStart;
+    }
+
+    return new Position(lineStart, columnStart, lineStart);
   }
 
   private handleNodes(node: bashAST.Node[], current: DockerOpsNodeType) {
@@ -173,7 +196,7 @@ export class ShellParser {
           );
       case "BinaryCmd":
         const BinaryCmd = node as bashAST.BinaryCmd;
-        return new BashConditionBinary()
+        const bashConditionBinary = new BashConditionBinary()
           .setPosition(this.pos(node))
           .addChild(
             new BashConditionBinaryOp()
@@ -190,6 +213,18 @@ export class ShellParser {
               .setPosition(this.pos(BinaryCmd.Y))
               .addChild(this.handleNode(BinaryCmd.Y))
           );
+        // identify comments that are in the wrong part of the operator
+        bashConditionBinary.right
+          .getElements(BashComment)
+          .filter(
+            (c) =>
+              c.position.lineStart < bashConditionBinary.op.position.lineStart
+          )
+          .forEach((c) => {
+            c.remove();
+            bashConditionBinary.left.addChild(c);
+          });
+        return bashConditionBinary;
       case "Block":
         const Block = node as bashAST.Block;
         return Block.Stmts.map((e) =>
@@ -259,7 +294,12 @@ export class ShellParser {
         return bCmd;
       case "Comment":
         const Comment = node as bashAST.Comment;
-        return new BashComment(Comment.Text).setPosition(this.pos(node));
+        return new BashComment(
+          Comment.Text.trimEnd()
+            // remove the \ that has been added at the end of the line
+            .replace(/(.*)\\$/g, "$1")
+            .trimEnd()
+        ).setPosition(this.pos(node));
 
       case "DblQuoted":
         const DblQuoted = node as bashAST.DblQuoted;
@@ -337,10 +377,12 @@ export class ShellParser {
 
       case "ParamExp":
         const ParamExp = node as bashAST.ParamExp;
-        const dollar = new BashDollarParens()
+        const dollar = new BashDollarBrace()
           .setPosition(this.pos(node))
           .addChild(this.handleNode(ParamExp.Param));
+        dollar.short = ParamExp.Short;
         if (ParamExp.Slice) {
+          ParamExp.Slice.Offset;
           dollar.addChild(this.handleNode(ParamExp.Slice));
         }
         if (ParamExp.Repl) {
@@ -364,8 +406,13 @@ export class ShellParser {
         } else if (Redirect.Op === 55) {
           // >>
           op = new BashRedirectAppend();
+        } else if (Redirect.Op === 56) {
+          // <
+          op = new BashRedirectStdin();
         } else {
-          console.log("redirect kind", Redirect.Op);
+          const error = new Error("Unknown redirect kind " + Redirect.Op);
+          (error as any).node = node;
+          this.errors.push(error);
           op = new BashRedirectAppend();
         }
         op.setPosition(this.pos(Redirect.OpPos)).addChild(
@@ -391,6 +438,10 @@ export class ShellParser {
         const redirects = Stmt.Redirs.map((e) =>
           this.handleNode(e)
         ) as DockerOpsNodeType[];
+
+        if (!Stmt.Cmd) {
+          return redirects;
+        }
 
         let cmdStmt = this.handleNode(Stmt.Cmd) as MaybeSemanticCommand;
         if (Array.isArray(cmdStmt)) {
@@ -434,13 +485,23 @@ export class ShellParser {
         return new BashOp(UnAritOperator.String()).setPosition(this.pos(node));
       case "WhileClause":
         const WhileClause = node as bashAST.WhileClause;
-        return this.handleNodes(
-          WhileClause.Do,
-          this.handleNodes(
-            WhileClause.Cond,
-            new BashWhileExpression().setPosition(this.pos(node))
+        const whileE = new BashWhileExpression().setPosition(this.pos(node));
+        whileE
+          .addChild(
+            this.handleNodes(
+              WhileClause.Cond,
+              new BashUntilCondition().setPosition(
+                this.pos(WhileClause.WhilePos)
+              )
+            )
           )
-        );
+          .addChild(
+            this.handleNodes(
+              WhileClause.Do,
+              new BashUntilBody().setPosition(this.pos(WhileClause.DoPos))
+            )
+          );
+        return whileE;
       case "Word":
         const Word = node as bashAST.Word;
         // const bL = new BashLiteral(Word.Lit());
@@ -467,13 +528,47 @@ export class ShellParser {
         return this.handleNode(WordPart.Node);
       case "Expansion":
         const Expansion = node as bashAST.Expansion;
-        return new BashBraceExpansion(Expansion.Op.toString()).addChild(
-          this.handleNode(Expansion.Word)
-        );
-      case "Replace":
-        const Replace = node as bashAST.Replace;
+        const expansion = new BashBraceExpansion(Expansion.Op.toString());
+        if (Expansion.Word) {
+          expansion.addChild(this.handleNode(Expansion.Word));
+        }
+        return expansion;
+      case "Darwin":
+        console.log(node);
+        break;
+      case "ProcSubst":
+        const ProcSubst = node as bashAST.ProcSubst;
+        const o = new BashProcSub()
+          .setPosition(this.pos(node))
+          .addChild(
+            new BashProcSubOp(ProcSubst.Op.toString()).setPosition(
+              this.pos(ProcSubst.OpPos)
+            )
+          )
+          .addChild(
+            new BashProcSubBody().setPosition(this.pos(ProcSubst.Rparen))
+          );
+        this.handleNodes(ProcSubst.Stmts, o.getElement(BashProcSubBody));
+        return o;
       case "Slice":
         const Slice = node as bashAST.Slice;
+        if (Slice.Length) {
+          return this.handleNode(Slice.Length);
+        } else {
+          return this.handleNode(Slice.Offset);
+        }
+      case "UnaryArithm":
+        const UnaryArithm = node as bashAST.UnaryArithm;
+        const BCU = new BashConditionOp(UnaryArithm.Op.toString())
+          .setPosition(this.pos(node))
+          .addChild(this.handleNode(UnaryArithm.X));
+        return BCU;
+      case "Replace":
+        const Replace = node as bashAST.Replace;
+        return new BashReplace()
+          .setPosition(this.pos(node))
+          .addChild(this.handleNode(Replace.Orig))
+          .addChild(this.handleNode(Replace.With));
       case "ParExpOperator":
         const ParExpOperator = node as bashAST.ParExpOperator;
       case "ParNamesOperator":
@@ -488,10 +583,6 @@ export class ShellParser {
         const ParenArithm = node as bashAST.ParenArithm;
       case "ParenTest":
         const ParenTest = node as bashAST.ParenTest;
-      case "ProcOperator":
-        const ProcOperator = node as bashAST.ProcOperator;
-      case "ProcSubst":
-        const ProcSubst = node as bashAST.ProcSubst;
       case "LetClause":
         const LetClause = node as bashAST.LetClause;
       case "GlobOperator":
@@ -514,22 +605,21 @@ export class ShellParser {
         const CStyleLoop = node as bashAST.CStyleLoop;
       case "UnTestOperator":
         const UnTestOperator = node as bashAST.UnTestOperator;
-      case "UnaryArithm":
-        const UnaryArithm = node as bashAST.UnaryArithm;
       case "UnaryTest":
         const UnaryTest = node as bashAST.UnaryTest;
     }
-    console.error("Unhandled type", type);
     const e = new Error(`Unhandled bash type: ${type}`);
     (e as any).node = node;
     this.errors.push(e);
     return new Unknown().addChild(new BashLiteral(nodeType));
   }
 
-  async parse(): Promise<DockerOpsNodeType> {
+  async parse(
+    variant: LangVariant = syntax.LangPOSIX
+  ): Promise<DockerOpsNodeType> {
     const parser: bashAST.Parser = syntax.NewParser(
       syntax.KeepComments(true),
-      syntax.Variant(syntax.LangPOSIX)
+      syntax.Variant(variant)
     ) as any;
 
     try {
@@ -540,14 +630,16 @@ export class ShellParser {
       // });
       return this.handleNode(result as any) as BashScript;
     } catch (error) {
-      this.errors.push(error);
-      console.log(
-        (error as bashAST.ParseError).Error(),
-        (error as bashAST.ParseError).Incomplete
-      );
-      return new Unknown().addChild(
-        new BashLiteral((error as bashAST.ParseError).Error())
-      );
+      if (error.Error) {
+        error.message = (error as bashAST.ParseError).Error();
+        if (
+          error.message.includes("bash/mksh feature") &&
+          variant != syntax.LangBash
+        ) {
+          return this.parse(syntax.LangBash);
+        }
+        this.errors.push(error);
+      }
     }
   }
 }

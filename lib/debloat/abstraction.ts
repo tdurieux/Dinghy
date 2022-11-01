@@ -1,12 +1,13 @@
 import {
-  BashLiteral,
+  BashDoubleQuoted,
+  BashSingleQuoted,
+  BashWord,
   DockerOpsNodeType,
   DockerOpsValueNode,
-  GenericNode,
 } from "../ast/docker-type";
 
 export const abtractionRegex = {
-  "ABS-SINGLE-SPACE": / /,
+  "ABS-SINGLE-SPACE": new RegExp("^[^ ]* [^ ]*$"),
   "ABS-DOUBLE-SPACE": /  /,
   "ABS-NEW-LINE": /\n/,
   "ABS-TAB": /\t/,
@@ -32,7 +33,7 @@ export const abtractionRegex = {
   "ABS-PATH-DOT-CACHE": new RegExp("/.cache"),
   "ABS-PATH-DOT-GEM": new RegExp("/.gem"),
   "ABS-EXTENSION-ASC": new RegExp(".asc"),
-  "ABS-EXTENSION-TAR": new RegExp(".tar"),
+  "ABS-EXTENSION-TAR": new RegExp("(.tar|tgz)"),
   "ABS-PATH-ROOT-DIR": new RegExp("/root"),
   "ABS-URL-POOL": new RegExp("pool\\."),
   "ABS-URL-HA-POOL": new RegExp("ha.pool."),
@@ -62,56 +63,52 @@ const KEEP_TYPES = [
   "BASH-VARIABLE",
 ];
 
-const typesReplacement = {
-  "BASH-SINGLE-QUOTED": "BASH-LITERAL",
-  "BASH-DOUBLE-QUOTED": "BASH-LITERAL",
-};
 export function abstract(node: DockerOpsNodeType) {
   node.traverse((node: DockerOpsNodeType) => {
-    if (typesReplacement[node.type]) {
-      const t = new BashLiteral((node as any).value);
-      t.children = node.children;
-      t.original = node;
-      node.replace(t);
-    }
     if (KEEP_TYPES.includes(node.type as string)) {
       if (
         node.children.length == 1 &&
         node.children[0] instanceof DockerOpsValueNode
       ) {
-        const t = new GenericNode(
-          // WHY uppercase here
+        node.annotations.push(
           `${node.type}:${node.children[0].value.toUpperCase()}`
         );
-        t.original = node;
-        node.replace(t);
       } else if (node instanceof DockerOpsValueNode) {
-        const t = new GenericNode(`${node.type}:${node.value}`);
-        t.original = node;
-        node.replace(t);
-      }
-      if (node instanceof DockerOpsValueNode) {
-        // node.value = null;
+        node.annotations.push(`${node.type}:${node.value}`);
       }
     } else if (
       node instanceof DockerOpsValueNode &&
       typeof node.value === "string"
     ) {
-      const value = node.value;
+      const value = node.toString(true);
       for (const r in abtractionRegex) {
         if (value.match(abtractionRegex[r])) {
-          node.addChild(new GenericNode(r));
+          node.annotations.push(r);
         }
       }
     } else if (
-      (node.type as string) === "SC-APK-PACKAGE" &&
+      node instanceof BashSingleQuoted ||
+      node instanceof BashDoubleQuoted ||
+      node instanceof BashWord
+    ) {
+      const value = node.toString(true);
+      for (const r in abtractionRegex) {
+        if (value.match(abtractionRegex[r])) {
+          node.annotations.push(r);
+        }
+      }
+    } else if (
+      node.annotations.includes("SC-APK-PACKAGE") &&
       node.children.length == 1 &&
       node.children[0] instanceof DockerOpsValueNode &&
       node.children[0].value.startsWith(".")
     ) {
-      (node as GenericNode).type = `SC-APK-VIRTUAL:${node.children[0].value}`;
-      node.children[0].remove();
+      node.annotations.push(`SC-APK-VIRTUAL:${node.children[0].value}`);
     }
+  });
+  node.traverse((node) => {
+    node.isChanged = false;
+    return true;
   });
   return node;
 }

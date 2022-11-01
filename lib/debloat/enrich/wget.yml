@@ -22,6 +22,7 @@ command:
       - -O, --output-document
       - -a, --append-output 
       - -o, --output-file
+      - -i, --input-file
   scenarios:
     - cmd: $0 <url>
       options: *options

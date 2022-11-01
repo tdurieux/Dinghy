@@ -1,20 +1,24 @@
 import {
   BashCaseKind,
+  BashCommandArgs,
+  BashCommandCommand,
+  BashComment,
+  DockerKeyword,
   DockerOpsNodeType,
   DockerRun,
   DockerShellArg,
   DockerShellExecutable,
   GenericNode,
-  MaybeSemanticCommand,
 } from "./docker-type";
+import * as fs from "fs";
 
-class Printer {
+export class Printer {
   indentLevel = 0;
-  indentChar = "    ";
+  indentChar = "  ";
   output: string = "";
   _inCommand: boolean = false;
   _previousNode: DockerOpsNodeType | null = null;
-
+  readonly errors: Error[] = [];
   constructor(readonly root: DockerOpsNodeType, public original = false) {}
 
   inCommand() {
@@ -26,15 +30,34 @@ class Printer {
     return this;
   }
   newLine() {
-    if (this.inCommand) {
+    const newLineAndIndent = "\n" + this.indentChar.repeat(this.indentLevel);
+    if (this.output.endsWith(newLineAndIndent)) {
+      // remove indentation for empty lines
+      this.output = this.output.substring(
+        0,
+        this.output.length - this.indentChar.length * this.indentLevel
+      );
+    }
+    if (this._inCommand && !this.output.endsWith("\n")) {
+      if (!this.output.endsWith(" ")) {
+        this.output += " ";
+      }
       this.output += "\\";
+    }
+    // remove unwanted space at the end of a line (can happen because of comments)
+    if (this.output.endsWith(" ")) {
+      this.output = this.output.substring(0, this.output.length - 1);
     }
     this.output += "\n";
     this.output += this.indentChar.repeat(this.indentLevel);
     return this;
   }
   space() {
-    if (this.output.charAt(this.output.length - 1) == " ") return this;
+    if (
+      this.output.length == 0 ||
+      this.output.charAt(this.output.length - 1) == " "
+    )
+      return this;
     this.output += " ";
     return this;
   }
@@ -57,26 +80,39 @@ class Printer {
     return this;
   }
 
-  _generate(node: DockerOpsNodeType) {
-    if (node == null) return this;
-    if (this.original && node.original) {
-      node = node.original;
-    }
-
+  _printLineUntilPreviousNode(node: DockerOpsNodeType) {
     if (this._previousNode?.position?.lineEnd < node.position?.lineStart) {
       const nbLines = Math.abs(
         Math.abs(node.position?.lineStart) -
           this._previousNode?.position?.lineEnd
       );
-      for (let i = 0; i < nbLines; i++) this.newLine();
+      const inCommand = this._inCommand;
+      if (this._previousNode instanceof BashComment) {
+        this.outCommand();
+      }
+      for (let i = 0; i < nbLines; i++) {
+        this.newLine();
+      }
+      this._inCommand = inCommand;
     } else if (node instanceof DockerRun && this.output.length > 0) {
       this.newLine();
     }
+  }
+
+  _generate(node: DockerOpsNodeType, printNewLine = true) {
+    if (node == null) return this;
+    if (this.original && node.original) {
+      node = node.original;
+    }
+
+    if (printNewLine) {
+      this._printLineUntilPreviousNode(node);
+    }
+
     this._previousNode = node;
     switch (node.type) {
       case "BASH-SCRIPT":
         this._previousNode = null;
-      case "DOCKER-FILE":
       case "BASH-ASSIGN-RHS":
       case "BASH-CONDITION-BINARY-LHS":
       case "BASH-CONDITION-BINARY-RHS":
@@ -94,10 +130,18 @@ class Printer {
       case "BASH-IF-THEN":
       case "BASH-FUNCTION-BODY":
       case "BASH-FOR-IN-BODY":
+      case "BASH-ARITHMETIC-BINARY-RHS":
+      case "BASH-ARITHMETIC-BINARY-LHS":
+      case "BASH-ARITHMETIC-BINARY-OP":
+      case "BASH-UNTIL-CONDITION":
+      case "BASH-UNTIL-BODY":
         node.iterate((i) => this._generate(i));
         break;
+      case "DOCKER-FILE":
+        node.iterate((i) => this._generate(i));
+        this.newLine();
+        break;
       case "DOCKER-IMAGE-NAME":
-      case "DOCKER-NAME":
       case "DOCKER-LITERAL":
       case "BASH-LITERAL":
       case "BASH-VARIABLE":
@@ -114,7 +158,12 @@ class Printer {
       case "DOCKER-ENTRYPOINT-EXECUTABLE":
       case "DOCKER-SHELL-ARG":
       case "DOCKER-SHELL-EXECUTABLE":
+      case "DOCKER-ENTRYPOINT-ARG":
         this.append(node.value.replace(/\n/g, "\\\n"));
+        break;
+      case "DOCKER-NAME":
+      case "DOCKER-KEYWORD":
+        this.append(node.value).space();
         break;
       case "DOCKER-IMAGE-REPO":
         this.append(node.value + "/");
@@ -129,28 +178,34 @@ class Printer {
         this.append(":" + node.value);
         break;
       case "BASH-COMMENT":
-        this.append(
-          "#" +
-            node.value
-              .trimEnd()
-              // remove the \ that has been added at the end of the line
-              .replace(/(.*)\\$/g, "$1")
-        );
+        this.append("#" + node.value);
         break;
       case "BASH-CONDITION-UNARY":
         this._generate(node.op).space()._generate(node.exp);
         break;
       case "BASH-CONDITION-BINARY":
+      case "BASH-ARITHMETIC-BINARY":
         this._generate(node.left)
           .space()
           ._generate(node.op)
           .space()
           ._generate(node.right);
         break;
-      case "BASH-DOLLAR-PARENS":
-        this.append("${");
+
+      case "BASH-DOLLAR-BRACE":
+        this.append("$");
+        if (!node.short) {
+          this.append("{");
+        }
         node.iterate((node) => this._generate(node));
-        this.append("}");
+        if (!node.short) {
+          this.append("}");
+        }
+        break;
+      case "BASH-DOLLAR-PARENS":
+        this.append("$(");
+        node.iterate((node) => this._generate(node));
+        this.append(")");
         break;
       case "BASH-DOUBLE-QUOTED":
         this.append('"');
@@ -159,6 +214,18 @@ class Printer {
         break;
       case "BASH-SINGLE-QUOTED":
         this.append("'").append(node.value).append("'");
+        break;
+      case "BASH-WHILE-EXPRESSION":
+        this.append("while ")
+          ._generate(node.condition)
+          .append("; do")
+          .indent()
+          .newLine()
+          ._generate(node.body)
+          .deindent()
+          .newLine()
+          .append("done");
+        if (node.semicolon === true) this.append(";");
         break;
       case "BASH-FOR-IN":
         this.append("for ")
@@ -199,7 +266,7 @@ class Printer {
         node.iterate((i) => this._generate(i));
         break;
       case "BASH-ASSIGN":
-        this._generate(node.left).append(" = ")._generate(node.right);
+        this._generate(node.left).append("=")._generate(node.right);
         break;
       case "BASH-ASSIGN-LHS":
         this._generate(node.exp);
@@ -238,7 +305,18 @@ class Printer {
             break;
 
           default:
-            console.error("Unknow CASE-KIND", node.value);
+            if (node.position?.fileContent) {
+              console.error(
+                "Unknown CASE-KIND:",
+                node.value,
+                node.position?.fileContent.split("\n")[node.position.lineStart]
+              );
+            }
+            const e = new Error("Unknown CASE-KIND:" + node.value);
+            (e as any).node = node;
+            this.errors.push(e);
+
+            console.error("Unknown CASE-KIND", node.value);
             this.append(node.value);
             break;
         }
@@ -251,19 +329,19 @@ class Printer {
         this.append(")");
         break;
       case "BASH-REDIRECT-OVERWRITE":
-        this.append(" > ");
+        this.space().append(">").space();
         node.iterate((node) => this._generate(node));
         break;
       case "BASH-REDIRECT-STDERR":
-        this.append(" 2> ");
+        this.space().append("2>").space();
         node.iterate((node) => this._generate(node));
         break;
       case "BASH-REDIRECT-APPEND":
-        this.append(" >> ");
+        this.space().append(">>").space();
         node.iterate((node) => this._generate(node));
         break;
       case "BASH-REDIRECT-STDIN":
-        this.append(" < ");
+        this.space().append("<").space();
         node.iterate((node) => this._generate(node));
         break;
       case "BASH-BRACE-EXPANSION":
@@ -291,9 +369,34 @@ class Printer {
           case "12":
             this.append("|");
             break;
+          case "38":
+            this.append("=");
+            break;
 
           default:
-            console.error("Unknow BASH-OP:", node.value);
+            const e = new Error("Unknown BASH-OP:" + node.value);
+            (e as any).node = node;
+            this.errors.push(e);
+            if (node.position?.fileContent) {
+              console.error(
+                "Unknown BASH-OP:",
+                node.value,
+                node.position?.fileContent.split("\n")[node.position.lineStart]
+              );
+            } else if (node.position?.file) {
+              if (fs.existsSync(node.position.file)) {
+                const filecontent = fs.readFileSync(
+                  node.position.file,
+                  "utf-8"
+                );
+                console.error(
+                  "Unknown BASH-OP:",
+                  node.value,
+                  filecontent.split("\n")[node.position.lineStart]
+                );
+              }
+            }
+            console.error("Unknown BASH-OP:", node.value);
             this.append(node.value);
             break;
         }
@@ -306,7 +409,7 @@ class Printer {
       case "BASH-COMMAND-COMMAND":
       case "BASH-COMMAND-ARGS":
       case "BASH-COMMAND-PREFIX":
-        node.iterate((i) => this._generate(i).space());
+        node.iterate((node) => this.space()._generate(node));
         break;
       case "BASH-SUBSHELL":
         this.append("(");
@@ -322,104 +425,119 @@ class Printer {
         this._previousNode = node;
         break;
       case "MAYBE-SEMANTIC-COMMAND":
-        node.iterate((i) => {
-          this._generate(i);
-        });
-        this.trim();
+        const command = node.getChild(BashCommandCommand);
+        if (command) {
+          this._generate(command).space();
+        }
+        node.iterate(
+          (i, index) => {
+            if (index > 0) this.space();
+            this._generate(i);
+          },
+          (i) => !(i instanceof BashCommandCommand)
+        );
         if (node.semicolon === true) this.append(";");
         break;
       case "DOCKER-COMMENT":
         this.append("# " + node.value);
         break;
-      case "DOCKER-FROM":
-        this.indentLevel = 0;
-        this.append("FROM ");
-        node.iterate((i) => this._generate(i));
-        break;
       case "DOCKER-RUN":
         this.indentLevel = 0;
-        this.append("RUN ").indent().inCommand();
-        node.iterate((i) => this._generate(i));
+        this._generate(node.keyword).space();
+        this.indent().inCommand();
+        node.iterate(
+          (node) => this._generate(node),
+          (node) => !(node instanceof DockerKeyword)
+        );
         this.deindent().outCommand();
         this._previousNode = node;
         break;
       case "DOCKER-SHELL":
         this.indentLevel = 0;
-        this.append("SHELL [").indent();
+        this._generate(node.keyword).space();
+        this.append("[").indent();
         this._generate(node.getElement(DockerShellExecutable));
         for (const i of node.getElements(DockerShellArg)) {
           this.append(", ")._generate(i);
         }
         this.deindent().append("]");
         break;
+      case "DOCKER-FROM":
       case "DOCKER-ADD":
-        this.indentLevel = 0;
-        this.append("ADD ").indent();
-        node.iterate((i) => this._generate(i));
-        this.deindent();
-        break;
       case "DOCKER-COPY":
-        this.indentLevel = 0;
-        this.append("COPY ").indent();
-        node.iterate((i) => this._generate(i).space());
-        this.deindent();
-        break;
       case "DOCKER-WORKDIR":
-        this.indentLevel = 0;
-        this.append("WORKDIR ").indent();
-        node.iterate((i) => this._generate(i));
-        this.deindent();
-        break;
       case "DOCKER-ENV":
-        this.indentLevel = 0;
-        this.append("ENV ").indent();
-        node.iterate((i) => this._generate(i).space());
-        this.deindent();
-        break;
       case "DOCKER-EXPOSE":
+      case "DOCKER-STOPSIGNAL":
+      case "DOCKER-LABEL":
+      case "DOCKER-MAINTAINER":
         this.indentLevel = 0;
-        this.append("EXPOSE ").indent();
-        node.iterate((i) => this._generate(i).space());
+        this.indent();
+        node.iterate((i) => this._generate(i));
         this.deindent();
         break;
       case "DOCKER-ENTRYPOINT":
-        this.indentLevel = 0;
-        this.append("ENTRYPOINT [").indent();
-        node.iterate((i, index) => {
-          if (index > 0) this.append(", ");
-          this._generate(i);
-        });
-        this.append("]").deindent();
-        break;
       case "DOCKER-CMD":
         this.indentLevel = 0;
-        this.append("CMD [");
-        node.iterate((i, index) => {
-          if (index > 0) this.append(", ");
-          this._generate(i);
-        });
+        this._generate(node.keyword).space().append("[");
+        node.iterate(
+          (i, index) => {
+            if (index > 0) this.append(", ");
+            this._generate(i);
+          },
+          (node) => !(node instanceof DockerKeyword)
+        );
         this.append("]");
         break;
       case "DOCKER-VOLUME":
+      case "DOCKER-HEALTHCHECK":
         this.indentLevel = 0;
-        this.append("VOLUME ");
-        node.iterate((i, index) => {
-          if (index > 0) this.append(", ");
-          this._generate(i);
-        });
+        this._generate(node.keyword).space();
+        node.iterate(
+          (i, index) => {
+            if (index > 0) this.append(" ");
+            this._generate(i);
+          },
+          (node) => !(node instanceof DockerKeyword)
+        );
+        break;
+      case "DOCKER-ARG":
+        this.indentLevel = 0;
+        this.append("ARG ");
+        node.iterate(
+          (i, index) => {
+            if (index > 0) this.append("=");
+            this._generate(i);
+          },
+          (node) => !(node instanceof DockerKeyword)
+        );
         break;
       case "DOCKER-USER":
         this.indentLevel = 0;
         this.append("USER ");
-        node.iterate((i, index) => {
-          if (index > 0) this.append(", ");
-          this._generate(i);
-        });
+        node.iterate(
+          (i, index) => {
+            if (index > 0) this.append(", ");
+            this._generate(i);
+          },
+          (node) => !(node instanceof DockerKeyword)
+        );
+        break;
+      case "UNKNOWN":
+        console.trace("Type not supported: ", node.children[0].toString());
+        const er = new Error(
+          "Type not supported: " + node.children[0].toString()
+        );
+        (er as any).node = node;
+        this.errors.push(er);
         break;
       default:
-        console.error("Type not supported: ", node.type);
+        console.trace("Type not supported: ", node.type);
+        const e = new Error("Type not supported: " + node.type);
+        (e as any).node = node;
+        this.errors.push(e);
         if (node instanceof GenericNode && node.original) {
-          this.append(`[ENRICHED: ${node.original.children[0].toString()}] `);
+          this.append(`[ENRICHED: ${node.toString(true)}] `);
         } else if (node.original !== null) {
           node.original.iterate((i) => this._generate(i));
         } else {

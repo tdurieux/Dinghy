@@ -12,10 +12,10 @@ describe("Testing shell parser", () => {
     );
     expect(root.toString()).toBe(
       `RUN mkdir -p /usr/local/etc \\
-    && {\\
-        echo 'install: --no-document';\\
-        echo 'update: --no-document';\\
-    } >> /usr/local/etc/gemrc`
+  && { \\
+    echo 'install: --no-document'; \\
+    echo 'update: --no-document'; \\
+  } >> /usr/local/etc/gemrc\n`
     );
   });
 });

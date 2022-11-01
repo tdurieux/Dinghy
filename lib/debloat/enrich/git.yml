@@ -36,6 +36,7 @@ command:
           - --recursive
           - --no-recurse-submodules
           - --recurse-submodules
+          - --no-checkout
         strings:
           - -b, --branch
           - --depth

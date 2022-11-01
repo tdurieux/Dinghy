@@ -1,10 +1,12 @@
 import { Command, Option } from "commander";
 import { print } from "./lib/ast/docker-printer";
 import { Matcher } from "./lib/debloat/rule-matcher";
+import { DockerParser } from "./lib/ast/docker-parser";
 import * as Diff from "diff";
 
 import { RULES } from "./lib/debloat/rules";
 import { parseDockerFile } from "./lib/ast/docker-parser";
+import { readFileSync } from "fs";
 const program = new Command();
 
 program
@@ -28,16 +30,17 @@ program
   .argument("<file>", "The filepath to the Dockerfile")
   .option("-o, --output <output>", "the output destination of the repair")
   .action(async function (file: string, options: { output: string }) {
-    const dockerfile = await parseDockerFile(file);
+    const parser = new DockerParser(readFileSync(file, "utf8"));
+    parser.filename = file;
+    const dockerfile = await parser.parse();
     const matcher = new Matcher(dockerfile);
     const originalOutput = print(matcher.node, true);
-    // console.log(dockerfile.match(gemUpdateNoDocument));
     matcher.matchAll().forEach(async (e) => {
       console.log(e.toString());
       await e.repair();
     });
     const repairedOutput = print(matcher.node, true);
-    const diff = Diff.diffLines(originalOutput, repairedOutput);
+    const diff = Diff.diffLines(parser.fileContent, repairedOutput);
 
     console.log("The changes:\n");
     diff.forEach((part) => {

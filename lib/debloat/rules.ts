@@ -2,10 +2,12 @@ import { parseShell } from "../ast/docker-bash-parser";
 import { parseDocker } from "../ast/docker-parser";
 import {
   BashCommandArgs,
+  BashConditionBinary,
   BashLiteral,
   BashWord,
   DockerFile,
   DockerOpsNodeType,
+  DockerOpsValueNode,
   DockerRun,
   MaybeSemanticCommand,
   Position,
@@ -102,7 +104,7 @@ export const rmRecursiveAfterMktempD: Rule = {
     const run = violation.getParent(DockerRun);
     run?.addChild(
       (
-        await parseShell("rm -rf " + node.children.at(-1)?.toString())
+        await parseShell("rm -rf " + node.children.at(-1)?.toString(true))
       ).setPosition(new Position(run.position.lineEnd || 0 + 1, 0))
     );
   },
@@ -112,10 +114,7 @@ export const curlUseHttpsUrl: Rule = {
   scope: "INTRA-DIRECTIVE",
   name: "curlUseHttpsUrl",
   description: "Use https:// urls with curl",
-  query: Q(
-    "SC-CURL",
-    Q("SC-CURL-URL", Q("BASH-WORD", Q("BASH-LITERAL", Q("ABS-PROBABLY-URL"))))
-  ),
+  query: Q("SC-CURL", Q("SC-CURL-URL", Q("ALL", Q("ABS-PROBABLY-URL")))),
   consequent: {
     inNode: Q("ABS-URL-PROTOCOL-HTTPS"),
   },
@@ -125,7 +124,7 @@ export const curlUseHttpsUrl: Rule = {
     const node = violation.original ? violation.original : violation;
     node
       .getElements(BashLiteral)
-      .filter((e) => e.value.includes("http:"))
+      .filter((e) => e.value && e.value.includes("http:"))
       .forEach((e) => (e.value = e.value.replace("http:", "https:")));
   },
 };
@@ -134,10 +133,7 @@ export const wgetUseHttpsUrl: Rule = {
   scope: "INTRA-DIRECTIVE",
   name: "wgetUseHttpsUrl",
   description: "Use https:// urls with wget",
-  query: Q(
-    "SC-WGET",
-    Q("SC-WGET-URL", Q("BASH-WORD", Q("BASH-LITERAL", Q("ABS-PROBABLY-URL"))))
-  ),
+  query: Q("SC-WGET", Q("SC-WGET-URL", Q("ALL", Q("ABS-PROBABLY-URL")))),
   consequent: {
     inNode: Q("ABS-URL-PROTOCOL-HTTPS"),
   },
@@ -177,21 +173,9 @@ export const mkdirUsrSrcThenRemove: Rule = {
   name: "mkdirUsrSrcThenRemove",
   description:
     "After running mkdir /usr/src* use rm -rf /usr/src* to clean up.",
-  query: Q(
-    "SC-MKDIR",
-    Q(
-      "SC-MKDIR-PATHS",
-      Q("SC-MKDIR-PATH", Q(BashWord, Q(BashLiteral, Q("ABS-USR-SRC-DIR"))))
-    )
-  ),
+  query: Q("SC-MKDIR", Q("SC-MKDIR-PATH", Q("ALL", Q("ABS-USR-SRC-DIR")))),
   consequent: {
-    afterNode: Q(
-      "SC-RM",
-      Q(
-        "SC-RM-PATHS",
-        Q("SC-RM-PATH", Q(BashWord, Q(BashLiteral, Q("ABS-USR-SRC-DIR"))))
-      )
-    ),
+    afterNode: Q("SC-RM", Q("SC-RM-PATH", Q("ALL", Q("ABS-USR-SRC-DIR")))),
   },
   source:
     "https://github.com/docker-library/python/pull/20/commits/ce7da0b874784e6b69e3966b5d7ba995e873163e",
@@ -201,7 +185,11 @@ export const mkdirUsrSrcThenRemove: Rule = {
     run?.addChild(
       (
         await parseShell(
-          "rm -rf " + violation.getElement(BashLiteral)?.toString()
+          "rm -rf " +
+            violation
+              .find(Q("SC-MKDIR-PATH"))[0]
+              .getElement(BashLiteral)
+              ?.toString(true)
         )
       ).setPosition(new Position(violation.position.lineEnd || 0 + 1, 0))
     );
@@ -244,16 +232,10 @@ export const gemUpdateSystemRmRootGem: Rule = {
     afterNode: Q(
       "SC-RM",
       Q(
-        "SC-RM-PATHS",
-        Q(
-          "SC-RM-PATH",
-          Q(
-            "BASH-LITERAL",
-            Q("ABS-PATH-ABSOLUTE"),
-            Q("ABS-PATH-DOT-GEM"),
-            Q("ABS-PATH-ROOT-DIR")
-          )
-        )
+        "SC-RM-PATH",
+        Q("ABS-PATH-ABSOLUTE"),
+        Q("ABS-PATH-DOT-GEM"),
+        Q("ABS-PATH-ROOT-DIR")
       )
     ),
   },
@@ -278,18 +260,32 @@ export const sha256sumEchoOneSpaces: Rule = {
   consequent: {
     beforeNode: Q(
       "SC-ECHO",
-      Q(
-        "SC-ECHO-ITEMS",
-        Q("SC-ECHO-ITEM", Q("BASH-LITERAL", Q("ABS-SINGLE-SPACE")))
-      )
+      Q("SC-ECHO-ITEM", Q("ALL", Q("ABS-SINGLE-SPACE")))
     ),
   },
   source:
     "https://github.com/docker-library/memcached/pull/6/commits/a8c4206768821aa47579c6413be85be914875caa",
   notes:
     "sha1sum is old --- transliterated to use more modern sha256sum which most images are using",
-  repair(violation) {
-    throw new Error("Not implemented");
+  async repair(violation) {
+    const node = violation.original ? violation.original : violation;
+    const echoWithDoubleSpace = node
+      .getParent(BashConditionBinary)
+      .left.find(
+        Q("SC-ECHO", Q("SC-ECHO-ITEM", Q("ALL", Q("ABS-DOUBLE-SPACE"))))
+      );
+    if (echoWithDoubleSpace) {
+      echoWithDoubleSpace.forEach((n) =>
+        n
+          .find(Q("ABS-DOUBLE-SPACE"))
+          .filter((n) => n instanceof DockerOpsValueNode)
+          .forEach((doubleSpace) => {
+            (doubleSpace as DockerOpsValueNode).value = (
+              doubleSpace as DockerOpsValueNode
+            ).value.replace(/  /g, " ");
+          })
+      );
+    }
   },
 };
 
@@ -302,13 +298,7 @@ export const gemUpdateNoDocument: Rule = {
   consequent: {
     beforeNode: Q(
       "SC-ECHO",
-      Q(
-        "SC-ECHO-ITEMS",
-        Q(
-          "SC-ECHO-ITEM",
-          Q("BASH-WORD", Q("BASH-LITERAL", Q("ABS-CONFIG-NO-DOCUMENT")))
-        )
-      )
+      Q("SC-ECHO-ITEM", Q("ALL", Q("ABS-CONFIG-NO-DOCUMENT")))
     ),
   },
   source: "https://github.com/docker-library/ruby/pull/49/files",
@@ -341,15 +331,9 @@ export const gpgVerifyAscRmAsc: Rule = {
   name: "gpgVerifyAscRmAsc",
   description:
     "If you run gpg --verify <X>.asc you should remove the <x>.asc file.",
-  query: Q(
-    "SC-GPG",
-    Q(
-      "SC-GPG-VERIFYS",
-      Q("SC-GPG-VERIFY", Q("BASH-LITERAL", Q("ABS-EXTENSION-ASC")))
-    )
-  ),
+  query: Q("SC-GPG", Q("SC-GPG-VERIFY", Q("ALL", Q("ABS-EXTENSION-ASC")))),
   consequent: {
-    afterNode: Q("SC-RM", Q("SC-RM-PATHS", Q("SC-RM-PATH"))),
+    afterNode: Q("SC-RM", Q("SC-RM-PATH")),
   },
   source:
     "https://github.com/docker-library/php/pull/196/commits/8943e1e6a930768994fbc29f4df89d0a3fd65e12",
@@ -387,10 +371,7 @@ export const yumInstallRmVarCacheYum: Rule = {
     afterNode: Q(
       "SC-RM",
       Q("SC-RM-F-RECURSIVE"),
-      Q(
-        "SC-RM-PATHS",
-        Q("SC-RM-PATH", Q("BASH-LITERAL", Q("ABS-VAR-CACHE-YUM")))
-      )
+      Q("SC-RM-PATH", Q("ALL", Q("ABS-VAR-CACHE-YUM")))
     ),
   },
   source:
@@ -412,19 +393,9 @@ export const tarSomethingRmTheSomething: Rule = {
   scope: "INTRA-DIRECTIVE",
   name: "tarSomethingRmTheSomething",
   description: "If you run tar <X>.tar you should remove the <x>.tar file.",
-  query: Q(
-    "SC-TAR",
-    Q(BashLiteral),
-    Q("SC-TAR-FILE", Q("BASH-PATH", Q("BASH-LITERAL", Q("ABS-EXTENSION-TAR"))))
-  ),
+  query: Q("SC-TAR", Q("SC-TAR-FILE", Q("ALL", Q("ABS-EXTENSION-TAR")))),
   consequent: {
-    afterNode: Q(
-      "SC-RM",
-      Q(
-        "SC-RM-PATHS",
-        Q("SC-RM-PATH", Q("BASH-LITERAL", Q("ABS-EXTENSION-TAR")))
-      )
-    ),
+    afterNode: Q("SC-RM", Q("SC-RM-PATH", Q("ALL", Q("ABS-EXTENSION-TAR")))),
   },
   source:
     "IMPLICIT --- no reason to keep around duplicates (the compressed version and the uncompressed version)",
@@ -457,10 +428,7 @@ export const gpgUseHaPools: Rule = {
   scope: "INTRA-DIRECTIVE",
   name: "gpgUseHaPools",
   description: "Use ha.pool.* instead of pool.* with gpg.",
-  query: Q(
-    "SC-GPG",
-    Q("SC-GPG-KEYSERVER", Q("BASH-WORD", Q("BASH-LITERAL", Q("ABS-URL-POOL"))))
-  ),
+  query: Q("SC-GPG", Q("SC-GPG-KEYSERVER", Q("ALL", Q("ABS-URL-POOL")))),
   consequent: {
     inNode: Q("ABS-URL-HA-POOL"),
   },
@@ -544,21 +512,7 @@ export const ruleAptGetInstallThenRemoveAptLists: Rule = {
   consequent: {
     afterNode: Q(
       "SC-RM",
-      Q(
-        "SC-RM-PATHS",
-        Q(
-          "SC-RM-PATH",
-          Q(
-            "BASH-WORD",
-            Q(
-              "BASH-LITERAL",
-              Q("ABS-GLOB-STAR"),
-              Q("ABS-APT-LISTS"),
-              Q("ABS-PATH-VAR")
-            )
-          )
-        )
-      )
+      Q("SC-RM-PATH", Q("ABS-GLOB-STAR"), Q("ABS-APT-LISTS"), Q("ABS-PATH-VAR"))
     ),
   },
   source:
@@ -566,8 +520,8 @@ export const ruleAptGetInstallThenRemoveAptLists: Rule = {
   repair: async (violation) => {
     // add at the end of the command
     const run =
-      violation.original instanceof MaybeSemanticCommand
-        ? violation.original
+      violation instanceof MaybeSemanticCommand
+        ? violation
         : violation.getParent(MaybeSemanticCommand);
     const dRun = run?.getParent(DockerRun);
     if (!run || !dRun) return;

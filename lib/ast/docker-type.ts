@@ -43,6 +43,7 @@ export type DockerOpsNodeType =
   | BashConditionUnary
   | BashConditionUnaryExp
   | BashConditionUnaryOp
+  | BashDollarBrace
   | BashDollarArithmetic
   | BashDollarParens
   | BashDollarSingleQuoted
@@ -91,6 +92,7 @@ export type DockerOpsNodeType =
   | DockerAddTarget
   | DockerArg
   | DockerCmd
+  | DockerKeyword
   | DockerCmdArg
   | DockerCopy
   | DockerCopySource
@@ -101,6 +103,8 @@ export type DockerOpsNodeType =
   | DockerEnv
   | DockerExpose
   | DockerFile
+  | DockerLabel
+  | DockerMaintainer
   | DockerFrom
   | DockerImageDigest
   | DockerImageAlias
@@ -133,7 +137,11 @@ export type DockerOpsNodeType =
   | BashFunctionName
   | BashRedirectStderr
   | BashComment
-  | DockerComment;
+  | DockerComment
+  | DockerOnBuild
+  | DockerStopSignal
+  | DockerHealthCheck
+  | BashReplace;
 
 interface TreeSignatureI {
   type: (new (t: void | string) => DockerOpsNode) | string;
@@ -142,6 +150,8 @@ interface TreeSignatureI {
 }
 
 export class Position {
+  public file: string = null;
+  fileContent: string;
   constructor(
     readonly lineStart: number,
     readonly columnStart: number,
@@ -150,12 +160,15 @@ export class Position {
   ) {}
 
   clone() {
-    return new Position(
+    const c = new Position(
       this.lineStart,
       this.columnStart,
       this.lineEnd,
       this.columnEnd
     );
+    c.file = this.file;
+    c.fileContent = this.fileContent;
+    return c;
   }
 
   toString() {
@@ -180,7 +193,12 @@ export abstract class DockerOpsNode {
    * The original node. it is used after enrich and abstract
    */
   original: DockerOpsNodeType | null = null;
-  _position: Position;
+
+  public isChanged = false;
+
+  private _position: Position;
+
+  readonly annotations: string[] = [];
 
   get position(): Position {
     return this._position;
@@ -195,13 +213,39 @@ export abstract class DockerOpsNode {
     if (child == null) return;
     if (Array.isArray(child)) {
       for (const c of child) {
+        c.isChanged = true;
         this.addChild(c);
       }
       return this;
     }
+    child.isChanged = true;
     this.children.push(child);
     child.parent = this as any;
     return this;
+  }
+
+  getChild<T extends DockerOpsNode>(element: new (t: any) => T): T | null {
+    const type = new element(undefined).type;
+    let out: T = null;
+    this.iterate((node) => {
+      if (node.type == type) {
+        out = node as T;
+        // stop to traverse
+        return false;
+      }
+    });
+    return out;
+  }
+
+  getChildren<T extends DockerOpsNode>(element: new (t: any) => T): T[] {
+    const type = new element(undefined).type;
+    const out: T[] = [];
+    this.iterate((node) => {
+      if (node.type == type) {
+        out.push(node as T);
+      }
+    });
+    return out;
   }
 
   getElement<T extends DockerOpsNode>(element: new (t: any) => T): T | null {
@@ -240,7 +284,10 @@ export abstract class DockerOpsNode {
     return null;
   }
 
-  iterate(callback: (node: DockerOpsNodeType, index: number) => void) {
+  iterate(
+    callback: (node: DockerOpsNodeType, index: number) => void,
+    filter?: (node: DockerOpsNodeType) => boolean
+  ) {
     this.children.sort((a, b) => {
       if (a.position === undefined) return 0;
       if (b.position === undefined) return 0;
@@ -250,10 +297,12 @@ export abstract class DockerOpsNode {
       if (a.position.columnStart < b.position.columnStart) return -1;
       return 0;
     });
-    for (let index = 0; index < this.children.length; index++) {
-      const child = this.children[index];
+    let index = 0;
+    for (let i = 0; i < this.children.length; i++) {
+      const child = this.children[i];
       if (child == null) continue;
-      callback(child, index);
+      if (filter && !filter(child)) continue;
+      callback(child, index++);
     }
   }
 
@@ -291,10 +340,11 @@ export abstract class DockerOpsNode {
     const indexInParent = this.parent.children.indexOf(
       this as DockerOpsNodeType
     );
+    element.isChanged = true;
     element.parent = this.parent;
     if (indexInParent === -1) {
-      this.parent.children.filter((e) => e.original == this)[0].original =
-        element;
+      const e = this.parent.children.filter((e) => e.original == this)[0];
+      if (e) e.original = element;
       return this;
     }
     if (element.position == null) element.setPosition(this._position);
@@ -307,6 +357,7 @@ export abstract class DockerOpsNode {
       this as DockerOpsNodeType
     );
     delete this.parent.children[indexInParent];
+    this.isChanged = true;
     return this;
   }
 
@@ -314,7 +365,13 @@ export abstract class DockerOpsNode {
     const type =
       typeof query.type === "string" ? query.type : new query.type().type;
 
-    if (this.type !== type) return false;
+    if (type == "ALL") {
+      if (this.match(query.children[0])) return true;
+      return !this.traverse((node) => {
+        if (node.match(query.children[0])) return false;
+      });
+    }
+    if (this.type !== type && !this.annotations.includes(type)) return false;
     if (query.value !== undefined && (this as any).value !== query.value)
       return false;
 
@@ -342,11 +399,25 @@ export abstract class DockerOpsNode {
     return out;
   }
 
+  public hasChanges() {
+    if (this.isChanged) return true;
+    let hasChanges = false;
+    this.traverse((child) => {
+      if (child.isChanged) {
+        hasChanges = true;
+        return false;
+      }
+    });
+    return hasChanges;
+  }
+
   public clone(): typeof this {
     var cloneObj = new (this.constructor as any)();
+    cloneObj.isChanged = true;
     for (const attribut in this) {
       if (
         attribut == "parent" ||
+        attribut == "original" ||
         typeof this[attribut] === "function" ||
         this[attribut] == null
       )
@@ -373,8 +444,8 @@ export abstract class DockerOpsNode {
     return cloneObj;
   }
 
-  toString() {
-    return print(this as any);
+  toString(original = false) {
+    return print(this as any, original);
   }
 }
 
@@ -385,8 +456,15 @@ export class GenericNode extends DockerOpsNode {
 }
 
 export class DockerOpsValueNode extends DockerOpsNode {
-  constructor(public value: string) {
+  constructor(private _value: string) {
     super();
+  }
+  get value() {
+    return this._value;
+  }
+  set value(value: string) {
+    this._value = value;
+    this.isChanged = true;
   }
 }
 
@@ -570,6 +648,13 @@ export class BashConditionUnaryExp extends DockerOpsNode {
 export class BashConditionUnaryOp extends DockerOpsValueNode {
   type: "BASH-CONDITION-UNARY-OP" = "BASH-CONDITION-UNARY-OP";
 }
+export class BashDollarBrace extends DockerOpsNode {
+  type: "BASH-DOLLAR-BRACE" = "BASH-DOLLAR-BRACE";
+  /**
+   * Has braces around the expression
+   */
+  short: boolean;
+}
 export class BashDollarArithmetic extends DockerOpsNode {
   type: "BASH-DOLLAR-ARITHMETIC" = "BASH-DOLLAR-ARITHMETIC";
 }
@@ -749,10 +834,33 @@ export class BashUntilExpression extends DockerOpsNode {
 export class BashVariable extends DockerOpsValueNode {
   type: "BASH-VARIABLE" = "BASH-VARIABLE";
 }
+export class BashReplace extends DockerOpsNode {
+  type: "BASH-REPLACE" = "BASH-REPLACE";
+}
 export class BashWhileExpression extends DockerOpsNode {
   type: "BASH-WHILE-EXPRESSION" = "BASH-WHILE-EXPRESSION";
+  semicolon: boolean;
+
+  get body(): BashUntilBody {
+    return this.getElement(BashUntilBody);
+  }
+  get condition(): BashUntilCondition {
+    return this.getElement(BashUntilCondition);
+  }
 }
-export class DockerAdd extends DockerOpsNode {
+export abstract class DockerNode extends DockerOpsNode {
+  get keyword() {
+    return this.getElement(DockerKeyword);
+  }
+
+  get arguments() {
+    return this.children.filter((e) => !(e instanceof DockerKeyword));
+  }
+}
+export class DockerKeyword extends DockerOpsValueNode {
+  type: "DOCKER-KEYWORD" = "DOCKER-KEYWORD";
+}
+export class DockerAdd extends DockerNode {
   type: "DOCKER-ADD" = "DOCKER-ADD";
 }
 export class DockerAddSource extends DockerOpsNode {
@@ -761,16 +869,16 @@ export class DockerAddSource extends DockerOpsNode {
 export class DockerAddTarget extends DockerOpsNode {
   type: "DOCKER-ADD-TARGET" = "DOCKER-ADD-TARGET";
 }
-export class DockerArg extends DockerOpsNode {
+export class DockerArg extends DockerNode {
   type: "DOCKER-ARG" = "DOCKER-ARG";
 }
-export class DockerCmd extends DockerOpsNode {
+export class DockerCmd extends DockerNode {
   type: "DOCKER-CMD" = "DOCKER-CMD";
 }
 export class DockerCmdArg extends DockerOpsValueNode {
   type: "DOCKER-CMD-ARG" = "DOCKER-CMD-ARG";
 }
-export class DockerCopy extends DockerOpsNode {
+export class DockerCopy extends DockerNode {
   type: "DOCKER-COPY" = "DOCKER-COPY";
 }
 export class DockerCopySource extends DockerOpsNode {
@@ -779,7 +887,13 @@ export class DockerCopySource extends DockerOpsNode {
 export class DockerCopyTarget extends DockerOpsNode {
   type: "DOCKER-COPY-TARGET" = "DOCKER-COPY-TARGET";
 }
-export class DockerEntrypoint extends DockerOpsNode {
+export class DockerLabel extends DockerNode {
+  type: "DOCKER-LABEL" = "DOCKER-LABEL";
+}
+export class DockerMaintainer extends DockerNode {
+  type: "DOCKER-MAINTAINER" = "DOCKER-MAINTAINER";
+}
+export class DockerEntrypoint extends DockerNode {
   type: "DOCKER-ENTRYPOINT" = "DOCKER-ENTRYPOINT";
 }
 export class DockerEntrypointArg extends DockerOpsValueNode {
@@ -788,16 +902,17 @@ export class DockerEntrypointArg extends DockerOpsValueNode {
 export class DockerEntrypointExecutable extends DockerOpsValueNode {
   type: "DOCKER-ENTRYPOINT-EXECUTABLE" = "DOCKER-ENTRYPOINT-EXECUTABLE";
 }
-export class DockerEnv extends DockerOpsNode {
+export class DockerEnv extends DockerNode {
   type: "DOCKER-ENV" = "DOCKER-ENV";
 }
-export class DockerExpose extends DockerOpsNode {
+export class DockerExpose extends DockerNode {
   type: "DOCKER-EXPOSE" = "DOCKER-EXPOSE";
 }
 export class DockerFile extends DockerOpsNode {
   type: "DOCKER-FILE" = "DOCKER-FILE";
+  fileContent?: string;
 }
-export class DockerFrom extends DockerOpsNode {
+export class DockerFrom extends DockerNode {
   type: "DOCKER-FROM" = "DOCKER-FROM";
 }
 export class DockerImageName extends DockerOpsValueNode {
@@ -827,10 +942,10 @@ export class DockerPath extends DockerOpsValueNode {
 export class DockerPort extends DockerOpsValueNode {
   type: "DOCKER-PORT" = "DOCKER-PORT";
 }
-export class DockerRun extends DockerOpsNode {
+export class DockerRun extends DockerNode {
   type: "DOCKER-RUN" = "DOCKER-RUN";
 }
-export class DockerShell extends DockerOpsNode {
+export class DockerShell extends DockerNode {
   type: "DOCKER-SHELL" = "DOCKER-SHELL";
 }
 export class DockerShellArg extends DockerOpsValueNode {
@@ -839,18 +954,39 @@ export class DockerShellArg extends DockerOpsValueNode {
 export class DockerShellExecutable extends DockerOpsValueNode {
   type: "DOCKER-SHELL-EXECUTABLE" = "DOCKER-SHELL-EXECUTABLE";
 }
-export class DockerUser extends DockerOpsNode {
+export class DockerUser extends DockerNode {
   type: "DOCKER-USER" = "DOCKER-USER";
 }
-export class DockerVolume extends DockerOpsNode {
+export class DockerVolume extends DockerNode {
   type: "DOCKER-VOLUME" = "DOCKER-VOLUME";
 }
-export class DockerWorkdir extends DockerOpsNode {
+export class DockerWorkdir extends DockerNode {
   type: "DOCKER-WORKDIR" = "DOCKER-WORKDIR";
+}
+export class DockerOnBuild extends DockerOpsNode {
+  type: "DOCKER-ONBUILD" = "DOCKER-ONBUILD";
+}
+export class DockerStopSignal extends DockerOpsNode {
+  type: "DOCKER-STOPSIGNAL" = "DOCKER-STOPSIGNAL";
+}
+export class DockerHealthCheck extends DockerNode {
+  type: "DOCKER-HEALTHCHECK" = "DOCKER-HEALTHCHECK";
 }
 export class MaybeSemanticCommand extends DockerOpsNode {
   type: "MAYBE-SEMANTIC-COMMAND" = "MAYBE-SEMANTIC-COMMAND";
   semicolon: boolean;
+
+  get command(): BashCommandArgs {
+    return this.children.filter(
+      (e) => e instanceof BashCommandCommand
+    )[0] as BashCommandArgs;
+  }
+
+  get args(): BashCommandArgs[] {
+    return this.children.filter(
+      (e) => e instanceof BashCommandArgs
+    ) as BashCommandArgs[];
+  }
 }
 export class SemanticCommand extends DockerOpsNode {
   type: "SEMANTIC-COMMAND" = "SEMANTIC-COMMAND";
@@ -875,6 +1011,16 @@ export class BashArithmeticVariable extends DockerOpsNode {
 }
 export class BashArithmeticBinary extends DockerOpsNode {
   type: "BASH-ARITHMETIC-BINARY" = "BASH-ARITHMETIC-BINARY";
+
+  get op() {
+    return this.getElement(BashArithmeticBinaryOp);
+  }
+  get right() {
+    return this.getElement(BashArithmeticBinaryRhs);
+  }
+  get left() {
+    return this.getElement(BashArithmeticBinaryLhs);
+  }
 }
 export class BashArithmeticBinaryOp extends DockerOpsNode {
   type: "BASH-ARITHMETIC-BINARY-OP" = "BASH-ARITHMETIC-BINARY-OP";

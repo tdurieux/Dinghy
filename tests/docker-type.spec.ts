@@ -61,7 +61,7 @@ describe("Testing docker-types", () => {
     root.traverse((node) => {
       elements.push(node);
     });
-    expect(elements).toHaveLength(9);
+    expect(elements).toHaveLength(10);
   });
   test("clone", async () => {
     const root = await parseDocker("RUN wget localhost");

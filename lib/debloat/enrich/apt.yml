@@ -12,6 +12,7 @@ command:
       - --auto-remove
       - --autoremove
       - --force-yes
+      - --assume-yes
       - --no-install-recommends
     paths:
       - -o, --option

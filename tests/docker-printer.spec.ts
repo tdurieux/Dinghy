@@ -11,18 +11,18 @@ describe("Testing docker-printer", () => {
     await testPrint("RUN wget localhost;");
     await testPrint("RUN echo 'toto';");
 
-    await testPrint(`RUN set -eux;\\
-    \\
-    savedAptMark = "\${apt-mark showmanual}";\\
-    apt-get update;`);
-    await testPrint(`RUN case "\${dpkgArch}" in\\
-        armel)\\
-            extraConfigureArgs = "\${extraConfigureArgs} --with-arch=armv4t --with-float=soft"\\
-            ;;\\
-        armhf)\\
-            extraConfigureArgs = "\${extraConfigureArgs} --with-arch=armv7-a --with-float=hard --with-fpu=vfpv3-d16 --with-mode=thumb"\\
-            ;;\\
-    esac;`);
+    await testPrint(`RUN set -eux; \\
+
+  savedAptMark = "\${apt-mark showmanual}"; \\
+  apt-get update;`);
+    await testPrint(`RUN case "\${dpkgArch}" in \\
+    armel) \\
+      extraConfigureArgs = "\${extraConfigureArgs} --with-arch=armv4t --with-float=soft" \\
+      ;; \\
+    armhf) \\
+      extraConfigureArgs = "\${extraConfigureArgs} --with-arch=armv7-a --with-float=hard --with-fpu=vfpv3-d16 --with-mode=thumb" \\
+      ;; \\
+  esac;`);
   });
 
   test("print FROM", async () => {
@@ -59,6 +59,12 @@ describe("Testing docker-printer", () => {
   });
   test("print ENTRYPOINT", async () => {
     await testPrint(`ENTRYPOINT ["docker-entrypoint.sh"]`);
+  });
+  test("print LABEL", async () => {
+    await testPrint(`LABEL com.circleci.preserve-entrypoint=true`);
+  });
+  test("print MAINTAINER", async () => {
+    await testPrint(`MAINTAINER tdurieux`);
   });
   test("print comment", async () => {
     await testPrint(`# comment`);

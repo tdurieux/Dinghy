@@ -29,7 +29,7 @@ export class Matcher {
   private _root: DockerOpsNodeType;
 
   constructor(root: DockerOpsNodeType) {
-    this._root = Matcher.abstract(root.clone());
+    this._root = Matcher.abstract(root);
   }
 
   public static enrich(root: DockerOpsNodeType) {
@@ -37,25 +37,23 @@ export class Matcher {
 
     root.traverse((node) => {
       if (node instanceof MaybeSemanticCommand) {
-        const commandAST = node.getElement(BashCommandCommand);
+        const commandAST = node.command;
         if (!commandAST) return true;
 
         const command = commandAST.getElement(BashLiteral)?.value;
         if (!command) return true;
 
         if (COMMAND_MAP[command]) {
-          const commandArgs = node
-            .getElements(BashCommandArgs)
-            .map((e) => e.children)
-            .flat();
-          const payload = COMMAND_MAP[command](
-            commandArgs
-              .filter((e) => e.toString() != "--")
-              .map((c) => c.toString()),
-            commandArgs.filter((e) => e.toString() != "--")
+          const commandArgs = node.args.filter(
+            (e) => e.toString(true).trim() != "--"
           );
-          payload.original = node;
-          node.replace(payload);
+
+          // enrich the arguments of the command
+          COMMAND_MAP[command](
+            node,
+            commandArgs.map((c) => c.toString(true).trim()),
+            commandArgs
+          );
         }
       }
     });
