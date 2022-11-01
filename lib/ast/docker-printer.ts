@@ -372,7 +372,12 @@ export class Printer {
           case "38":
             this.append("=");
             break;
-
+          case '68':
+            this.append("==");
+            break;
+          case '85':
+            this.append("!=");
+            break;
           default:
             const e = new Error("Unknown BASH-OP:" + node.value);
             (e as any).node = node;
