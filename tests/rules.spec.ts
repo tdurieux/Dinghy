@@ -76,6 +76,19 @@ describe("Testing rule matcher", () => {
     const root = await parseShell("RUN npm i\\\n    npm cache clean --force;");
     expect(new Matcher(root).match(npmCacheCleanAfterInstall)).toHaveLength(0);
   });
+  test("npmCacheCleanUseForce2", async () => {
+    const root = await parseDocker("RUN npm i && npm cache clean");
+    const matcher = new Matcher(root);
+
+    const rule = npmCacheCleanUseForce;
+    const violations = matcher.match(rule);
+    expect(violations).toHaveLength(1);
+
+    await violations[0].repair();
+    new Matcher(root);
+    expect(violations[0].isStillValid()).toBeFalsy();
+    expect(print(matcher.node)).toEqual("RUN npm i && npm cache clean --force\n");
+  });
   test("npmCacheCleanUseForce", async () => {
     const root = await parseDocker("RUN npm cache clean");
     const matcher = new Matcher(root);
@@ -374,7 +387,7 @@ describe("Testing rule matcher", () => {
     await violations[0].repair();
     await matcher.match(ruleAptGetInstallUseNoRec)[0].repair();
     expect(print(matcher.node)).toEqual(
-      "RUN apt-get update && apt-get install --no-install-recommends test\n"
+      "RUN apt-get update && \\\n  apt-get install --no-install-recommends test\n"
     );
   });
   test("gpgVerifyAscRmAsc valid", async () => {

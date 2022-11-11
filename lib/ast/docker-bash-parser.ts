@@ -73,6 +73,7 @@ import {
   BashUntilCondition,
   BashReplace,
   BashDollarBrace,
+  BashArithmeticExpression,
 } from "./docker-type";
 import File from "./file";
 
@@ -140,9 +141,11 @@ export class ShellParser {
         return this.handleNode(ArithmCmd.X);
       case "ArithmExp":
         const ArithmExp = node as bashAST.ArithmExp;
-        return new BashArithmeticBinary()
+        const bab = new BashArithmeticExpression()
           .setPosition(this.pos(node))
           .addChild(this.handleNode(ArithmExp.X));
+        bab.bracket = ArithmExp.Bracket;
+        return bab;
       case "ArithmExpr":
         const ArithmExpr = node as bashAST.ArithmExpr;
         return this.handleNode(ArithmExpr.Node);
@@ -178,7 +181,7 @@ export class ShellParser {
 
       case "BinaryArithm":
         const BinaryArithm = node as bashAST.BinaryArithm;
-        return new BashArithmeticBinary()
+        const ba = new BashArithmeticBinary()
           .setPosition(this.pos(node))
           .addChild(
             new BashArithmeticBinaryOp()
@@ -199,6 +202,7 @@ export class ShellParser {
               .setPosition(this.pos(BinaryArithm.Y))
               .addChild(this.handleNode(BinaryArithm.Y))
           );
+        return ba;
       case "BinaryCmd":
         const BinaryCmd = node as bashAST.BinaryCmd;
         const bashConditionBinary = new BashConditionBinary()
@@ -465,15 +469,11 @@ export class ShellParser {
 
         cmdStmt.semicolon =
           Stmt.Semicolon.Line() > 0 && Stmt.Semicolon.Col() > 0;
+        cmdStmt.isBackground = Stmt.Background;
+        cmdStmt.isCoprocess = Stmt.Coprocess;
+        cmdStmt.isNegated = Stmt.Negated;
 
         this.handleNodes(Stmt.Comments, cmdStmt);
-
-        if (Stmt.Negated) {
-          return new BashConditionUnary()
-            .setPosition(this.pos(node))
-            .addChild(new BashConditionUnaryOp("!"))
-            .addChild(new BashConditionUnaryExp().addChild(cmdStmt));
-        }
 
         return cmdStmt;
       case "StmtList":

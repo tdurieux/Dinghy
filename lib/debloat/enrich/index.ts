@@ -554,15 +554,17 @@ function nodify(
   // add the value as a child of the command option
   if (keyAST && valueAST && keyAST != valueAST) {
     valueAST.remove();
+    const isChanged = valueAST.isChanged;
     keyAST.addChild(valueAST);
-    keyAST.setPosition(
-      new Position(
-        keyAST.position.lineStart,
-        keyAST.position.columnStart,
-        Math.max(valueAST.position.lineEnd, keyAST.position.lineEnd),
-        Math.max(valueAST.position.columnEnd, keyAST.position.columnEnd)
-      )
+    const p = new Position(
+      keyAST.position.lineStart,
+      keyAST.position.columnStart,
+      Math.max(valueAST.position.lineEnd, keyAST.position.lineEnd),
+      Math.max(valueAST.position.columnEnd, keyAST.position.columnEnd)
     );
+    p.file = keyAST.position.file;
+    keyAST.setPosition(p);
+    valueAST.isChanged = isChanged;
   }
   if (!keyAST && !valueAST && !Array.isArray(value)) {
     if (typeof value == "boolean") {
@@ -604,16 +606,18 @@ function nodify(
       if (oargs[x]) {
         if (keyAST && oargs[x] && keyAST != oargs[x]) {
           oargs[x].remove();
+          const isChanged = oargs[x].isChanged;
           keyAST.addChild(oargs[x]);
+          oargs[x].isChanged = isChanged;
 
-          keyAST.setPosition(
-            new Position(
-              keyAST.position.lineStart,
-              keyAST.position.columnStart,
-              Math.max(oargs[x].position.lineEnd, keyAST.position.lineEnd),
-              Math.max(oargs[x].position.columnEnd, keyAST.position.columnEnd)
-            )
+          const p = new Position(
+            keyAST.position.lineStart,
+            keyAST.position.columnStart,
+            Math.max(oargs[x].position.lineEnd, keyAST.position.lineEnd),
+            Math.max(oargs[x].position.columnEnd, keyAST.position.columnEnd)
           );
+          p.file = keyAST.position.file;
+          keyAST.setPosition(p);
 
           keyAST.annotations.push(`${prefix}-${type.slice(0, -1)}`);
         }

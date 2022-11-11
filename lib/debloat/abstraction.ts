@@ -106,9 +106,5 @@ export function abstract(node: DockerOpsNodeType) {
       node.annotations.push(`SC-APK-VIRTUAL:${node.children[0].value}`);
     }
   });
-  node.traverse((node) => {
-    node.isChanged = false;
-    return true;
-  });
   return node;
 }

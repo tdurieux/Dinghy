@@ -12,7 +12,7 @@ RUN apt-get update; apt-get dist-upgrade -y \
       ack build-essential bzip2 ca-certificates git graphviz \
       libglib2.0-0 libsm6 libxext6 libxrender1 \
       neovim procps tmux tree unzip wget \
- && apt-get clean && rm -rf /var/lib/apt/lists/*; apt-get autoclean
+ && apt-get clean; && rm -rf /var/lib/apt/lists/*; apt-get autoclean
 
 WORKDIR /tmp
 

@@ -3,13 +3,19 @@ import { DockerOpsNodeType, Position } from "./docker-type";
 
 export default class File {
   public content: string;
+  public key: string;
+
   constructor(readonly path?: string, content?: string) {
     this.content = content || (path && readFileSync(path, "utf8"));
+    this.key = path || content;
   }
 
   contentOfNode(node: DockerOpsNodeType): string {
     if (!node.position) return "";
-    return this.contentAtPosition(node.position, node.toString().length);
+    return this.contentAtPosition(
+      node.position,
+      node.position.columnEnd === undefined ? node.toString().length : 0
+    );
   }
 
   contentAtPosition(position: Position, length?: number): string {

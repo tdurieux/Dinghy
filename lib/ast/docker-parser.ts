@@ -175,6 +175,15 @@ export class DockerParser {
           const copy = new DockerCopy();
           copy.setPosition(position);
 
+          (line as JSONInstruction).getFlags().forEach((flag) => {
+            // copy.addChild(
+            //   new DockerKeyword(flag.getName()).setPosition(
+            //     this.rangeToPos(flag.getRange())
+            //   )
+            // );
+          });
+
+
           copy.addChild(
             new DockerKeyword(line.getInstruction()).setPosition(
               this.rangeToPos(line.getInstructionRange())

@@ -4,6 +4,7 @@ import {
   BashCommandCommand,
   BashCommandPrefix,
   BashComment,
+  BashStatement,
   DockerKeyword,
   DockerOpsNodeType,
   DockerRun,
@@ -12,13 +13,14 @@ import {
   GenericNode,
 } from "./docker-type";
 import * as fs from "fs";
+import File from "./file";
 
 export class Printer {
   _indentLevel = 0;
   indentChar = "  ";
   output: string = "";
   _inCommand: boolean = false;
-  _previousNode: DockerOpsNodeType | null = null;
+  _previousNode: Record<string, DockerOpsNodeType> = {};
   readonly errors: Error[] = [];
   constructor(readonly root: DockerOpsNodeType, public original = false) {}
 
@@ -87,15 +89,25 @@ export class Printer {
     this.output = this.output.trimEnd();
     return this;
   }
-
+  _getPreviousNodePosition(node: DockerOpsNodeType) {
+    return this._getPreviousNode(node)?.position;
+  }
+  _getPreviousNode(node: DockerOpsNodeType) {
+    return this._previousNode[node.position?.file?.key || "new"];
+  }
+  set previousNode(node: DockerOpsNodeType) {
+    this._previousNode[node.position?.file?.key || "new"] = node;
+  }
   _printLineUntilPreviousNode(node: DockerOpsNodeType) {
-    if (this._previousNode?.position?.lineEnd < node.position?.lineStart) {
+    if (
+      this._getPreviousNodePosition(node)?.lineEnd < node.position?.lineStart
+    ) {
       const nbLines = Math.abs(
         Math.abs(node.position?.lineStart) -
-          this._previousNode?.position?.lineEnd
+          this._getPreviousNodePosition(node)?.lineEnd
       );
       const inCommand = this._inCommand;
-      if (this._previousNode instanceof BashComment) {
+      if (this._getPreviousNode(node) instanceof BashComment) {
         this.outCommand();
       }
       for (let i = 0; i < nbLines; i++) {
@@ -119,13 +131,17 @@ export class Printer {
 
     if (node.position?.file) {
       // generated elements don't have a file
-      this._previousNode = node;
+      this._previousNode[node.position?.file?.key || "new"] = node;
     } else {
-      this._previousNode = null;
+      this._previousNode["new"] = null;
+    }
+
+    if (node instanceof BashStatement && node.isNegated) {
+      this.append("!");
     }
     switch (node.type) {
       case "BASH-SCRIPT":
-        this._previousNode = null;
+        this._previousNode[node.position?.file?.key || "new"] = null;
       case "BASH-ASSIGN-RHS":
       case "BASH-CONDITION-BINARY-LHS":
       case "BASH-CONDITION-BINARY-RHS":
@@ -196,6 +212,15 @@ export class Printer {
       case "BASH-CONDITION-UNARY":
         this._generate(node.op).space()._generate(node.exp);
         break;
+      case "BASH-ARITHMETIC-EXPRESSION":
+        this.append("$(( ");
+        if (node.bracket) {
+        }
+        node.iterate((i) => this._generate(i));
+        this.space().append("))");
+        if (node.bracket) {
+        }
+        break;
       case "BASH-CONDITION-BINARY":
       case "BASH-ARITHMETIC-BINARY":
         this._generate(node.left)
@@ -238,7 +263,6 @@ export class Printer {
           .deindent()
           .newLine()
           .append("done");
-        if (node.semicolon === true) this.append(";");
         break;
       case "BASH-FOR-IN":
         this.append("for ")
@@ -252,7 +276,6 @@ export class Printer {
           .deindent()
           .newLine()
           .append("done");
-        if (node.semicolon === true) this.append(";");
         break;
       case "BASH-FUNCTION":
         this._generate(node.name).append("() {").indent().newLine();
@@ -271,7 +294,6 @@ export class Printer {
         // dont print fi if elif, fi will be handled by the parent if
         if (node.parent.type !== "BASH-IF-ELSE")
           this.trim().newLine().append("fi");
-        if (node.semicolon === true) this.append(";");
         break;
 
       case "BASH-IF-ELSE":
@@ -290,8 +312,7 @@ export class Printer {
           ._generate(node.cases)
           .newLine()
           .append("esac");
-        this._previousNode = node;
-        if (node.semicolon === true) this.append(";");
+        this._previousNode[node.position.file.key] = node;
         break;
       case "BASH-CASE-EXPRESSIONS":
         node.iterate((node) => this._generate(node));
@@ -304,7 +325,7 @@ export class Printer {
           .newLine()
           .append(";;")
           .deindent();
-        this._previousNode = node;
+        this._previousNode[node.position.file.key] = node;
         break;
       case "BASH-CASE-EXP-CASES":
         this._generate(node.getElement(BashCaseKind)).indent().newLine();
@@ -383,7 +404,7 @@ export class Printer {
             this.append("|");
             break;
           case "38":
-            this.append("=");
+            this.append("*");
             break;
           case "68":
             this.append("+");
@@ -394,9 +415,15 @@ export class Printer {
           case "85":
             this.append("/");
             break;
-          case "54":
           case "72":
+            this.append("?");
+            break;
           case "87":
+            this.append(":");
+            break;
+          case "54":
+            this.append(">");
+            break;
           default:
             const e = new Error("Unknown BASH-OP:" + node.value);
             (e as any).node = node;
@@ -436,12 +463,12 @@ export class Printer {
           this._generate(i);
         });
         this.deindent().newLine().append("}");
-        this._previousNode = node;
+        this._previousNode[node.position.file.key] = node;
         break;
       case "MAYBE-SEMANTIC-COMMAND":
-        const prefix = node.getChild(BashCommandPrefix);
+        const prefix = node.getChildren(BashCommandPrefix);
         if (prefix) {
-          this._generate(prefix).space();
+          prefix.forEach((i) => this._generate(i).space());
         }
         const command = node.getChild(BashCommandCommand);
         if (command) {
@@ -456,7 +483,6 @@ export class Printer {
             !(i instanceof BashCommandCommand) &&
             !(i instanceof BashCommandPrefix)
         );
-        if (node.semicolon === true) this.append(";");
         break;
       case "DOCKER-COMMENT":
         this.append("# " + node.value);
@@ -470,17 +496,17 @@ export class Printer {
           (node) => !(node instanceof DockerKeyword)
         );
         this.deindent().outCommand();
-        this._previousNode = node;
+        this._previousNode[node.position.file.key] = node;
         break;
       case "DOCKER-SHELL":
         this.indentLevel = 0;
-        this._generate(node.keyword).space();
+        this.inCommand()._generate(node.keyword).space();
         this.append("[").indent();
         this._generate(node.getElement(DockerShellExecutable));
         for (const i of node.getElements(DockerShellArg)) {
           this.append(", ")._generate(i);
         }
-        this.deindent().append("]");
+        this.deindent().append("]").outCommand();
         break;
       case "DOCKER-FROM":
       case "DOCKER-ADD":
@@ -493,14 +519,14 @@ export class Printer {
       case "DOCKER-MAINTAINER":
       case "DOCKER-ONBUILD":
         this.indentLevel = 0;
-        this.indent();
+        this.indent().inCommand();
         node.iterate((i) => this._generate(i));
-        this.deindent();
+        this.deindent().outCommand();
         break;
       case "DOCKER-ENTRYPOINT":
       case "DOCKER-CMD":
         this.indentLevel = 0;
-        this._generate(node.keyword).space().append("[");
+        this.inCommand()._generate(node.keyword).space().append("[");
         node.iterate(
           (i, index) => {
             if (index > 0) this.append(", ");
@@ -508,7 +534,7 @@ export class Printer {
           },
           (node) => !(node instanceof DockerKeyword)
         );
-        this.append("]");
+        this.append("]").outCommand();
         break;
       case "DOCKER-VOLUME":
       case "DOCKER-HEALTHCHECK":
@@ -524,7 +550,7 @@ export class Printer {
         break;
       case "DOCKER-ARG":
         this.indentLevel = 0;
-        this.append("ARG ");
+        this.append("ARG ").inCommand();
         node.iterate(
           (i, index) => {
             if (index > 0) this.append("=");
@@ -532,6 +558,7 @@ export class Printer {
           },
           (node) => !(node instanceof DockerKeyword)
         );
+        this.outCommand();
         break;
       case "DOCKER-USER":
         this.indentLevel = 0;
@@ -545,7 +572,11 @@ export class Printer {
         );
         break;
       case "UNKNOWN":
-        console.trace("Type not supported: ", node.children[0].toString());
+        console.trace(
+          "Type not supported: ",
+          node.children[0].toString(),
+          node.position.file.path
+        );
         const er = new Error(
           "Type not supported: " + node.children[0].toString()
         );
@@ -564,6 +595,17 @@ export class Printer {
         } else {
           node.iterate((i) => this._generate(i));
         }
+    }
+    if (node instanceof BashStatement) {
+      if (node.semicolon === true) {
+        if (node.isBackground) {
+          this.space().append("&");
+        } else if (node.isCoprocess) {
+          this.space().append("|&");
+        } else {
+          this.append(";");
+        }
+      }
     }
     return this;
   }

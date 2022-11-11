@@ -70,3 +70,15 @@ describe("Testing docker-printer", () => {
     await testPrint(`# comment`);
   });
 });
+
+describe("Testing docker-printer of shell", () => {
+  test("Bash-OP", async () => {
+    await testPrint(`RUN make -j $(( nproc > 2 ? nproc - 2 : 1 ))`);
+    await testPrint(`RUN $(( nproc - 2 ))`);
+    await testPrint(`RUN $(( nproc + 2 ))`);
+    await testPrint(`RUN $(( nproc & 2 ))`);
+    await testPrint(`RUN $(( nproc * 2 ))`);
+    await testPrint(`RUN $(( nproc / 2 ))`);
+    await testPrint(`RUN $(( nproc | 2 ))`);
+  });
+});

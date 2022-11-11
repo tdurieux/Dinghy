@@ -126,6 +126,7 @@ export type DockerOpsNodeType =
   | MaybeSemanticCommand
   | SemanticCommand
   | Unknown
+  | BashArithmeticExpression
   | BashArithmeticSequence
   | BashArithmeticExpansion
   | BashArithmeticVariable
@@ -485,6 +486,13 @@ export class DockerOpsValueNode extends DockerOpsNode {
   }
 }
 
+export class BashStatement extends DockerOpsNode {
+  semicolon: boolean;
+  isBackground: boolean;
+  isCoprocess: boolean;
+  isNegated: boolean;
+}
+
 export class MaybeBash extends DockerOpsValueNode {
   type: "MAYBE-BASH" = "MAYBE-BASH";
 }
@@ -555,9 +563,8 @@ export class BashCaseExpCase extends DockerOpsNode {
 export class BashCaseExpCases extends DockerOpsNode {
   type: "BASH-CASE-EXP-CASES" = "BASH-CASE-EXP-CASES";
 }
-export class BashCaseExpression extends DockerOpsNode {
+export class BashCaseExpression extends BashStatement {
   type: "BASH-CASE-EXPRESSION" = "BASH-CASE-EXPRESSION";
-  semicolon = false;
 
   get target() {
     return this.getElement(BashCaseExpTarget);
@@ -603,7 +610,7 @@ export class BashConditionAndLhs extends DockerOpsNode {
 export class BashConditionAndRhs extends DockerOpsNode {
   type: "BASH-CONDITION-AND-RHS" = "BASH-CONDITION-AND-RHS";
 }
-export class BashConditionBinary extends DockerOpsNode {
+export class BashConditionBinary extends BashStatement {
   type: "BASH-CONDITION-BINARY" = "BASH-CONDITION-BINARY";
 
   get op() {
@@ -687,9 +694,8 @@ export class BashDoubleQuoted extends DockerOpsNode {
 export class BashExtGlob extends DockerOpsValueNode {
   type: "BASH-EXT-GLOB" = "BASH-EXT-GLOB";
 }
-export class BashForIn extends DockerOpsNode {
+export class BashForIn extends BashStatement {
   type: "BASH-FOR-IN" = "BASH-FOR-IN";
-  semicolon: boolean = false;
 
   get body(): BashForInBody {
     return this.getElement(BashForInBody);
@@ -745,10 +751,8 @@ export class BashIfElseIfExpCheck extends DockerOpsNode {
 export class BashIfElseIfExpression extends DockerOpsNode {
   type: "BASH-IF-ELSE-IF-EXPRESSION" = "BASH-IF-ELSE-IF-EXPRESSION";
 }
-export class BashIfExpression extends DockerOpsNode {
+export class BashIfExpression extends BashStatement {
   type: "BASH-IF-EXPRESSION" = "BASH-IF-EXPRESSION";
-
-  semicolon = false;
 
   get condition(): BashIfCondition {
     return this.getElement(BashIfCondition);
@@ -854,9 +858,8 @@ export class BashVariable extends DockerOpsValueNode {
 export class BashReplace extends DockerOpsNode {
   type: "BASH-REPLACE" = "BASH-REPLACE";
 }
-export class BashWhileExpression extends DockerOpsNode {
+export class BashWhileExpression extends BashStatement {
   type: "BASH-WHILE-EXPRESSION" = "BASH-WHILE-EXPRESSION";
-  semicolon: boolean;
 
   get body(): BashUntilBody {
     return this.getElement(BashUntilBody);
@@ -988,9 +991,9 @@ export class DockerStopSignal extends DockerOpsNode {
 export class DockerHealthCheck extends DockerNode {
   type: "DOCKER-HEALTHCHECK" = "DOCKER-HEALTHCHECK";
 }
-export class MaybeSemanticCommand extends DockerOpsNode {
+
+export class MaybeSemanticCommand extends BashStatement {
   type: "MAYBE-SEMANTIC-COMMAND" = "MAYBE-SEMANTIC-COMMAND";
-  semicolon: boolean;
 
   get command(): BashCommandArgs {
     return this.children.filter(
@@ -1021,6 +1024,10 @@ export class BashArithmeticSequence extends DockerOpsNode {
 }
 export class BashArithmeticExpansion extends DockerOpsNode {
   type: "BASH-ARITHMETIC-EXPANSION" = "BASH-ARITHMETIC-EXPANSION";
+}
+export class BashArithmeticExpression extends DockerOpsNode {
+  type: "BASH-ARITHMETIC-EXPRESSION" = "BASH-ARITHMETIC-EXPRESSION";
+  bracket: boolean = false;
 }
 export class BashArithmeticVariable extends DockerOpsNode {
   type: "BASH-ARITHMETIC-VARIABLE" = "BASH-ARITHMETIC-VARIABLE";

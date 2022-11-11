@@ -2,6 +2,7 @@ import {
   BashCommandCommand,
   BashConditionBinary,
   BashScript,
+  BashStatement,
   DockerFile,
   DockerOpsNodeType,
   MaybeSemanticCommand,
@@ -82,14 +83,20 @@ export class PrettyPrinter extends Printer {
     } else {
       this._printLineUntilPreviousNode(node);
 
-      if (node.position?.file) {
-        // generated elements don't have a file
-        this._previousNode = node;
-      } else {
-        this._previousNode = null;
-      }
+      this._previousNode[node.position.file.key] = node;
       this._getOriginalLine(node);
-      if ((node as any).semicolon === true) this.append(";");
+      
+      if (node instanceof BashStatement) {
+        if (node.semicolon === true) {
+          if (node.isBackground) {
+            this.space().append("&");
+          } else if (node.isCoprocess) {
+            this.space().append("|&");
+          } else {
+            this.append(";");
+          }
+        }
+      }
     }
     return this;
   }

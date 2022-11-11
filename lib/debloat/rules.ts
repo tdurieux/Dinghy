@@ -62,8 +62,8 @@ async function postFixWith(
   child.replace(binary);
 
   binary
-    .addChild(new BashConditionBinaryOp().addChild(new BashOp("10")))
     .addChild(new BashConditionBinaryLhs().addChild(child))
+    .addChild(new BashConditionBinaryOp().addChild(new BashOp("10")))
     .addChild(
       new BashConditionBinaryRhs().addChild(
         toInsert.setPosition(new Position(node.position.lineEnd || 0 + 1, 0))

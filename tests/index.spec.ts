@@ -340,7 +340,7 @@ describe("Testing docker parser with bash", () => {
     expect(dockerfile).toBeInstanceOf(DockerFile);
     const matcher = new Matcher(dockerfile);
     expect(matcher.match(curlUseFlagF)).toHaveLength(1);
-    expect(matcher.matchAll().map(i => i.toString())).toHaveLength(4);
+    expect(matcher.matchAll().map((i) => i.toString())).toHaveLength(4);
   });
   test("a39b5f620df6ae20a6841cf748eb9023c2ea72b6", async () => {
     const dockerfile = await praseFile(
@@ -493,6 +493,12 @@ describe("Testing docker parser with bash", () => {
     expect(matcher.match(apkAddUseNoCache)).toHaveLength(13);
     expect(matcher.match(configureShouldUseBuildFlag)).toHaveLength(12);
     expect(matcher.matchAll()).toHaveLength(25);
+  });
+  test("unknow-type", async () => {
+    const dockerfile = await praseFile("unknow-type");
+    expect(dockerfile).toBeInstanceOf(DockerFile);
+    expect(dockerfile.toString()).toBe(dockerfile.position.file.content);
+    //matcher.matchAll().forEach((v) => v.repair());
   });
 });
 
