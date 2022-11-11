@@ -318,11 +318,11 @@ export class Printer {
             break;
 
           default:
-            if (node.position?.fileContent) {
+            if (node.position?.file) {
               console.error(
                 "Unknown CASE-KIND:",
                 node.value,
-                node.position?.fileContent.split("\n")[node.position.lineStart]
+                node.position?.file.contentOfNode(node)
               );
             }
             const e = new Error("Unknown CASE-KIND:" + node.value);
@@ -401,25 +401,13 @@ export class Printer {
             const e = new Error("Unknown BASH-OP:" + node.value);
             (e as any).node = node;
             this.errors.push(e);
-            if (node.position?.fileContent != null) {
+            if (node.position?.file != null) {
               console.error(
                 "Unknown BASH-OP:",
                 node.position?.file,
                 node.value,
-                node.position?.fileContent.split("\n")[node.position.lineStart]
+                node.position?.file.contentOfNode(node)
               );
-            } else if (node.position?.file != null) {
-              if (fs.existsSync(node.position.file)) {
-                const filecontent = fs.readFileSync(
-                  node.position.file,
-                  "utf-8"
-                );
-                console.error(
-                  "Unknown BASH-OP:",
-                  node.value,
-                  filecontent.split("\n")[node.position.lineStart]
-                );
-              }
             } else {
               console.error("Unknown BASH-OP:", node.value, node.position);
             }

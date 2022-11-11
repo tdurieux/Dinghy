@@ -8,22 +8,23 @@ import {
 } from "./docker-type";
 
 import { Printer, print as reprint } from "./docker-printer";
+import File from "./file";
 
 export class PrettyPrinter extends Printer {
-  originalFileContent: string | undefined;
+  originalFile: File | undefined;
 
   constructor(root: DockerOpsNodeType) {
     super(root);
     if (root instanceof DockerFile) {
-      this.originalFileContent = root.fileContent;
+      this.originalFile = root.position.file;
     } else {
-      this.originalFileContent = root.getParent(DockerFile)?.fileContent;
+      this.originalFile = root.getParent(DockerFile)?.position.file;
     }
     // this._detectIndentation();
   }
 
   print(): string {
-    if (!this.originalFileContent) {
+    if (!this.originalFile) {
       return reprint(this.root);
     }
     this._generate(this.root);
@@ -32,8 +33,8 @@ export class PrettyPrinter extends Printer {
 
   // detect the indentation used in the original file
   private _detectIndentation(node: DockerOpsNodeType) {
-    if (!this.originalFileContent) return;
-    const lines = this.originalFileContent.split("\n");
+    if (!this.originalFile) return;
+    const lines = this.originalFile.content.split("\n");
     for (let i = node.position.lineStart; i < lines.length; i++) {
       const line = lines[i];
       if (line.startsWith(" ")) {
@@ -56,34 +57,12 @@ export class PrettyPrinter extends Printer {
   }
 
   private _getOriginalLine(node: DockerOpsNodeType) {
-    if (!this.originalFileContent) return;
+    if (!this.originalFile) return;
     if (!node.position || node.position.lineStart == -1) {
       super._generate(node);
       return;
     }
-    const lineStart = node.position.lineStart;
-    const lineEnd = node.position.lineEnd || lineStart;
-    const columnStart = node.position.columnStart;
-    const columnEnd =
-      node.position.columnEnd || columnStart + node.toString().length;
-
-    const lines = this.originalFileContent.split("\n");
-
-    for (let i = lineStart; i <= Math.min(lineEnd, lines.length - 1); i++) {
-      const line = lines[i];
-
-      if (i == lineStart) {
-        if (i == lineEnd) {
-          this.append(line.substring(columnStart, columnEnd));
-        } else {
-          this.append(line.substring(columnStart) + "\n");
-        }
-      } else if (i == lineEnd) {
-        this.append(line.substring(0, columnEnd));
-      } else {
-        this.append(line + "\n");
-      }
-    }
+    this.append(node.position.file.contentOfNode(node));
   }
 
   _generate(node: DockerOpsNodeType) {

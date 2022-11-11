@@ -1,6 +1,6 @@
 import { readFileSync } from "fs";
 import { parseShell } from "../lib/ast/docker-bash-parser";
-import { parseDocker, parseDockerFile } from "../lib/ast/docker-parser";
+import { parseDocker } from "../lib/ast/docker-parser";
 import { print } from "../lib/ast/docker-pretty-printer";
 import { Matcher } from "../lib/debloat/rule-matcher";
 import {
@@ -100,9 +100,7 @@ describe("Testing rule matcher", () => {
     expect(violations).toHaveLength(1);
 
     await violations[0].repair();
-    expect(print(matcher.node)).toEqual(
-      "RUN mktemp -d fold && rm -rf fold\n"
-    );
+    expect(print(matcher.node)).toEqual("RUN mktemp -d fold && rm -rf fold\n");
   });
   test("rmRecursiveAfterMktempD valid", async () => {
     const root = await parseShell("RUN mktemp -d fold && rm -rf fold\n");
@@ -273,7 +271,7 @@ describe("Testing rule matcher", () => {
   && { \\
     echo 'install: --no-document'; \\
     echo 'update: --no-document'; \\
-  } >> /usr/local/etc/gemrc\nRUN gem update --system \$RUBYGEMS_VERSION\n`
+  } >> /usr/local/etc/gemrc;\nRUN gem update --system \$RUBYGEMS_VERSION\n`
     );
   });
   test("gemUpdateNoDocument valid", async () => {
@@ -433,7 +431,9 @@ describe("Testing rule matcher", () => {
     );
   });
   test("ruleAptGetInstallUseNoRec real case", async () => {
-    const root = await parseDocker("RUN DEBIAN_FRONTEND=noninteractive apt-get -y install z3");
+    const root = await parseDocker(
+      "RUN DEBIAN_FRONTEND=noninteractive apt-get -y install z3"
+    );
     const matcher = new Matcher(root);
 
     const rule = ruleAptGetInstallUseNoRec;

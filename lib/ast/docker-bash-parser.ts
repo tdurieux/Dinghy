@@ -74,6 +74,7 @@ import {
   BashReplace,
   BashDollarBrace,
 } from "./docker-type";
+import File from "./file";
 
 export class ShellParser {
   readonly errors = [];
@@ -99,9 +100,7 @@ export class ShellParser {
       }
 
       const p = new Position(lineStart, columnStart, lineEnd, columnEnd);
-
       p.file = this.originalPosition.file;
-      p.fileContent = this.originalPosition.fileContent;
       return p;
     }
 
@@ -115,7 +114,6 @@ export class ShellParser {
 
     const out = new Position(lineStart, columnStart, lineStart);
     out.file = this.originalPosition.file;
-    out.fileContent = this.originalPosition.fileContent;
     return out;
   }
 
@@ -656,5 +654,7 @@ export class ShellParser {
 }
 
 export async function parseShell(shString: string) {
+  const p = new Position(0, 0);
+  p.file = new File(undefined, shString);
   return new ShellParser(shString).parse();
 }

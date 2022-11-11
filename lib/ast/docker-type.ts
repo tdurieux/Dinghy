@@ -1,5 +1,6 @@
 import { AnyRecord } from "dns";
 import { print } from "./docker-printer";
+import File from "./file";
 
 export type DockerOpsNodeType =
   | AsString
@@ -150,10 +151,9 @@ interface TreeSignatureI {
 }
 
 export class Position {
-  public file: string = null;
-  fileContent: string;
+  public file: File = null;
   constructor(
-    readonly lineStart: number,
+    public lineStart: number,
     readonly columnStart: number,
     readonly lineEnd?: number,
     readonly columnEnd?: number
@@ -167,7 +167,6 @@ export class Position {
       this.columnEnd
     );
     c.file = this.file;
-    c.fileContent = this.fileContent;
     return c;
   }
 
@@ -928,7 +927,6 @@ export class DockerExpose extends DockerNode {
 }
 export class DockerFile extends DockerOpsNode {
   type: "DOCKER-FILE" = "DOCKER-FILE";
-  fileContent?: string;
 }
 export class DockerFrom extends DockerNode {
   type: "DOCKER-FROM" = "DOCKER-FROM";

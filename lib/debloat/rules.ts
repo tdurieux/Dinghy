@@ -46,7 +46,7 @@ async function postFixWith(
   if (toInsert instanceof BashScript) {
     toInsert = toInsert.children[0];
   }
-  new Matcher(toInsert)
+  new Matcher(toInsert);
   const script = node.getParent(BashScript);
   let child = script.children[0];
   for (const c of script.children) {
@@ -338,19 +338,18 @@ export const gemUpdateNoDocument: Rule = {
     const dRun = node.getParent(DockerRun);
     if (dFile == null || dRun == null) return;
 
-    dFile.addChild(
-      (
-        await parseDocker(
-          `RUN mkdir -p /usr/local/etc \\
-    && { \\
-      echo 'install: --no-document'; \\
-      echo 'update: --no-document'; \\
-    } >> /usr/local/etc/gemrc;\n`
-        )
+    const setup = (
+      await parseDocker(
+        `RUN mkdir -p /usr/local/etc \\
+  && { \\
+    echo 'install: --no-document'; \\
+    echo 'update: --no-document'; \\
+  } >> /usr/local/etc/gemrc;\n`
       )
-        .getElement(DockerRun)
-        .setPosition(new Position(dRun.position.lineStart - 1, 99))
-    );
+    ).getElement(DockerRun);
+    // move the setup before the gem update
+    setup.position.lineStart = dRun.position.lineStart - 1;
+    dFile.addChild(setup);
   },
 };
 

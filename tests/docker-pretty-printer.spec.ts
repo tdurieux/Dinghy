@@ -13,7 +13,7 @@ describe("Testing docker-pretty-printer", () => {
     matcher.matchAll().forEach(async (e) => {
       await e.repair();
     });
-    expect(print(dockerfile)).toBe(dockerfile.fileContent);
+    expect(print(dockerfile)).toBe(dockerfile.position.file.content);
   });
 
   test("print 0001a177c159ca47f359c34cfdce78ecf80e7eb0", async () => {
@@ -28,7 +28,7 @@ describe("Testing docker-pretty-printer", () => {
         await e.repair();
       } catch (error) {}
     });
-    expect(print(dockerfile)).toBe(dockerfile.fileContent);
+    expect(print(dockerfile)).toBe(dockerfile.position.file.content);
   });
 
   test("print 0ce06af56644fb21ee96178f60c2d57eb73c8226", async () => {
@@ -43,7 +43,7 @@ describe("Testing docker-pretty-printer", () => {
         await e.repair();
       } catch (error) {}
     });
-    expect(print(dockerfile)).toBe(dockerfile.fileContent);
+    expect(print(dockerfile)).toBe(dockerfile.position.file.content);
   });
   test("print 9cae314c3410c74d2267c7c71eeb17a83b13f07f", async () => {
     const dockerfile = await praseFile(
@@ -57,6 +57,6 @@ describe("Testing docker-pretty-printer", () => {
         await e.repair();
       } catch (error) {}
     });
-    expect(print(dockerfile)).toBe(dockerfile.fileContent);
+    expect(print(dockerfile)).toBe(dockerfile.position.file.content);
   });
 });

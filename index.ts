@@ -5,8 +5,8 @@ import { DockerParser } from "./lib/ast/docker-parser";
 import * as Diff from "diff";
 
 import { RULES } from "./lib/debloat/rules";
-import { parseDockerFile } from "./lib/ast/docker-parser";
-import { readFileSync } from "fs";
+import { parseDocker } from "./lib/ast/docker-parser";
+import File from "./lib/ast/file";
 const program = new Command();
 
 program
@@ -30,8 +30,7 @@ program
   .argument("<file>", "The filepath to the Dockerfile")
   .option("-o, --output <output>", "the output destination of the repair")
   .action(async function (file: string, options: { output: string }) {
-    const parser = new DockerParser(readFileSync(file, "utf8"));
-    parser.filename = file;
+    const parser = new DockerParser(new File(file));
     const dockerfile = await parser.parse();
     const matcher = new Matcher(dockerfile);
     const originalOutput = print(matcher.node, true);
@@ -40,7 +39,7 @@ program
       await e.repair();
     });
     const repairedOutput = print(matcher.node, true);
-    const diff = Diff.diffLines(parser.fileContent, repairedOutput);
+    const diff = Diff.diffLines(parser.file.content, repairedOutput);
 
     console.log("The changes:\n");
     diff.forEach((part) => {
@@ -64,7 +63,7 @@ program
   .description("Analyze a Dockerfile file for rule violation")
   .argument("<file>", "The filepath to the Dockerfile")
   .action(async (file: string) => {
-    const dockerfile = await parseDockerFile(file);
+    const dockerfile = await parseDocker(file);
     const matcher = new Matcher(dockerfile);
     matcher.matchAll().forEach((e) => console.log(e.toString()));
   });
@@ -74,7 +73,7 @@ program
   .description("Generate the AST of the dockerfile")
   .argument("<file>", "The filepath to the Dockerfile")
   .action(async (file: string) => {
-    const dockerfile = await parseDockerFile(file);
+    const dockerfile = await parseDocker(file);
     console.log(
       JSON.stringify(dockerfile, ["type", "children", "value", "position"], 2)
     );

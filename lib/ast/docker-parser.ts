@@ -7,7 +7,8 @@ import {
   Line,
   Shell,
 } from "@tdurieux/dockerfile-ast";
-import { readFileSync } from "fs";
+import { existsSync, readFileSync } from "fs";
+import File from "./file";
 import { ShellParser } from "./docker-bash-parser";
 import {
   AsString,
@@ -57,10 +58,8 @@ import {
 
 export class DockerParser {
   public readonly errors: Error[] = [];
-  public filename: string;
-  constructor(public readonly fileContent: string, filename?: string) {
-    if (filename) this.filename = filename;
-  }
+
+  constructor(public readonly file: File) {}
 
   private rangeToPos(range: ReturnType<Line["getRange"]>) {
     if (!range) return undefined;
@@ -70,17 +69,16 @@ export class DockerParser {
       range.end.line,
       range.end.character
     );
-    p.file = this.filename;
+    p.file = this.file;
     return p;
   }
 
   async parse(): Promise<DockerFile> {
     const dockerfileAST: DockerFile = new DockerFile();
-    if (!this.fileContent || this.fileContent.trim().length == 0)
+    if (!this.file || this.file.content?.trim().length == 0)
       return dockerfileAST;
-    dockerfileAST.fileContent = this.fileContent;
 
-    const lines = DockerfileParser.parse(this.fileContent);
+    const lines = DockerfileParser.parse(this.file.content);
     if (!lines.getRange()) return dockerfileAST;
     dockerfileAST.setPosition(this.rangeToPos(lines.getRange()));
 
@@ -90,8 +88,8 @@ export class DockerParser {
       for (let line = position.lineStart; line <= position.lineEnd; line++) {
         instructionLines.add(line);
       }
-      position.file = this.filename;
-      position.fileContent = this.fileContent;
+      position.file = this.file;
+
       const command = line.getKeyword().toLowerCase();
       switch (command) {
         case "from":
@@ -508,7 +506,7 @@ export class DockerParser {
         comment.getRange().end.line,
         comment.getRange().end.character
       );
-      position.file = this.filename;
+      position.file = this.file;
       // if not inside an instruction add to the root
       if (!instructionLines.has(comment.getRange().start.line)) {
         dockerfileAST.addChild(
@@ -526,13 +524,16 @@ export class DockerParser {
   }
 }
 
-export async function parseDockerFile(filePath: string) {
-  const parser = new DockerParser(readFileSync(filePath, "utf8"));
-  parser.filename = filePath;
-  return parser.parse();
-}
-
-export async function parseDocker(fileContent: string) {
-  const parser = new DockerParser(fileContent);
+export async function parseDocker(file: string | File) {
+  let parser: DockerParser = undefined;
+  if (file instanceof File) {
+    parser = new DockerParser(file);
+  } else {
+    if (existsSync(file)) {
+      parser = new DockerParser(new File(file));
+    } else {
+      parser = new DockerParser(new File(undefined, file));
+    }
+  }
   return parser.parse();
 }
