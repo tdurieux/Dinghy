@@ -55,20 +55,23 @@ import {
   DockerMaintainer,
 } from "./docker-type";
 
-function rangeToPos(range: ReturnType<Line["getRange"]>) {
-  return new Position(
-    range.start.line,
-    range.start.character,
-    range.end.line,
-    range.end.character
-  );
-}
-
 export class DockerParser {
   public readonly errors: Error[] = [];
   public filename: string;
   constructor(public readonly fileContent: string, filename?: string) {
     if (filename) this.filename = filename;
+  }
+
+  private rangeToPos(range: ReturnType<Line["getRange"]>) {
+    if (!range) return undefined;
+    const p = new Position(
+      range.start.line,
+      range.start.character,
+      range.end.line,
+      range.end.character
+    );
+    p.file = this.filename;
+    return p;
   }
 
   async parse(): Promise<DockerFile> {
@@ -79,11 +82,11 @@ export class DockerParser {
 
     const lines = DockerfileParser.parse(this.fileContent);
     if (!lines.getRange()) return dockerfileAST;
-    dockerfileAST.setPosition(rangeToPos(lines.getRange()));
+    dockerfileAST.setPosition(this.rangeToPos(lines.getRange()));
 
     const instructionLines = new Set<number>();
     for (const line of lines.getInstructions()) {
-      const position = rangeToPos(line.getRange());
+      const position = this.rangeToPos(line.getRange());
       for (let line = position.lineStart; line <= position.lineEnd; line++) {
         instructionLines.add(line);
       }
@@ -96,21 +99,21 @@ export class DockerParser {
           const fromNode = new DockerFrom();
           fromNode.addChild(
             new DockerKeyword(line.getInstruction()).setPosition(
-              rangeToPos(line.getInstructionRange())
+              this.rangeToPos(line.getInstructionRange())
             )
           );
           fromNode.setPosition(position);
           if (from.getRegistry()) {
             fromNode.addChild(
               new DockerImageRepo(from.getRegistry()).setPosition(
-                rangeToPos(from.getRegistryRange())
+                this.rangeToPos(from.getRegistryRange())
               )
             );
           }
           if (from.getImageName()) {
             fromNode.addChild(
               new DockerImageName(from.getImageName()).setPosition(
-                rangeToPos(from.getImageNameRange())
+                this.rangeToPos(from.getImageNameRange())
               )
             );
           }
@@ -118,14 +121,14 @@ export class DockerParser {
           if (from.getImageTag()) {
             fromNode.addChild(
               new DockerImageTag(from.getImageTag()).setPosition(
-                rangeToPos(from.getImageTagRange())
+                this.rangeToPos(from.getImageTagRange())
               )
             );
           }
           if (from.getImageDigest()) {
             fromNode.addChild(
               new DockerImageDigest(from.getImageDigest()).setPosition(
-                rangeToPos(from.getImageDigestRange())
+                this.rangeToPos(from.getImageDigestRange())
               )
             );
           }
@@ -133,7 +136,7 @@ export class DockerParser {
           if (from.getBuildStage()) {
             fromNode.addChild(
               new DockerImageAlias(from.getBuildStage()).setPosition(
-                rangeToPos(from.getBuildStageRange())
+                this.rangeToPos(from.getBuildStageRange())
               )
             );
           }
@@ -145,9 +148,13 @@ export class DockerParser {
 
           dockerRun.addChild(
             new DockerKeyword(line.getInstruction()).setPosition(
-              rangeToPos(line.getInstructionRange())
+              this.rangeToPos(line.getInstructionRange())
             )
           );
+          dockerfileAST.addChild(dockerRun);
+          if (line.getRawArgumentsContent() == null) {
+            break;
+          }
 
           const shellString = line
             .getRawArgumentsContent()
@@ -158,13 +165,13 @@ export class DockerParser {
             .replace(/^( *)\n/gm, "$1\\\n");
           const shellParser = new ShellParser(
             shellString,
-            rangeToPos(line.getArgumentsRange())
+            this.rangeToPos(line.getArgumentsRange())
           );
           const shellNode = await shellParser.parse();
           dockerRun.addChild(shellNode);
           // happen all errors
           shellParser.errors.forEach((v) => this.errors.push(v));
-          dockerfileAST.addChild(dockerRun);
+
           break;
         case "copy":
           const copy = new DockerCopy();
@@ -172,7 +179,7 @@ export class DockerParser {
 
           copy.addChild(
             new DockerKeyword(line.getInstruction()).setPosition(
-              rangeToPos(line.getInstructionRange())
+              this.rangeToPos(line.getInstructionRange())
             )
           );
 
@@ -184,7 +191,11 @@ export class DockerParser {
             } else {
               type = new DockerCopySource();
             }
-            type.addChild(new DockerPath(arg.getValue()));
+            type.addChild(
+              new DockerPath(arg.getValue()).setPosition(
+                this.rangeToPos(arg.getRange())
+              )
+            );
             copy.addChild(type);
           }
           dockerfileAST.addChild(copy);
@@ -195,7 +206,7 @@ export class DockerParser {
 
           add.addChild(
             new DockerKeyword(line.getInstruction()).setPosition(
-              rangeToPos(line.getInstructionRange())
+              this.rangeToPos(line.getInstructionRange())
             )
           );
 
@@ -217,13 +228,13 @@ export class DockerParser {
             .setPosition(position)
             .addChild(
               new DockerPort(line.getArgumentsContent()).setPosition(
-                rangeToPos(line.getArgumentsRange())
+                this.rangeToPos(line.getArgumentsRange())
               )
             );
 
           expose.addChild(
             new DockerKeyword(line.getInstruction()).setPosition(
-              rangeToPos(line.getInstructionRange())
+              this.rangeToPos(line.getInstructionRange())
             )
           );
 
@@ -232,14 +243,14 @@ export class DockerParser {
         case "workdir":
           const wkd = new DockerWorkdir().addChild(
             new DockerPath(line.getArgumentsContent()).setPosition(
-              rangeToPos(line.getArgumentsRange())
+              this.rangeToPos(line.getArgumentsRange())
             )
           );
           wkd.setPosition(position);
 
           wkd.addChild(
             new DockerKeyword(line.getInstruction()).setPosition(
-              rangeToPos(line.getInstructionRange())
+              this.rangeToPos(line.getInstructionRange())
             )
           );
 
@@ -251,7 +262,7 @@ export class DockerParser {
 
           volume.addChild(
             new DockerKeyword(line.getInstruction()).setPosition(
-              rangeToPos(line.getInstructionRange())
+              this.rangeToPos(line.getInstructionRange())
             )
           );
 
@@ -268,7 +279,7 @@ export class DockerParser {
 
           arg.addChild(
             new DockerKeyword(line.getInstruction()).setPosition(
-              rangeToPos(line.getInstructionRange())
+              this.rangeToPos(line.getInstructionRange())
             )
           );
 
@@ -281,12 +292,12 @@ export class DockerParser {
           break;
         case "env":
           const args = line.getArguments();
-          const env = new DockerEnv().setPosition(position)
+          const env = new DockerEnv().setPosition(position);
 
           if (args.length > 0) {
             env.addChild(
               new DockerName(args[0].getValue()).setPosition(
-                rangeToPos(args[0].getRange())
+                this.rangeToPos(args[0].getRange())
               )
             );
           }
@@ -294,40 +305,42 @@ export class DockerParser {
           for (let i = 1; i < args.length; i++) {
             env.addChild(
               new DockerLiteral(args[i].getValue()).setPosition(
-                rangeToPos(args[i].getRange())
+                this.rangeToPos(args[i].getRange())
               )
             );
           }
 
           env.addChild(
             new DockerKeyword(line.getInstruction()).setPosition(
-              rangeToPos(line.getInstructionRange())
+              this.rangeToPos(line.getInstructionRange())
             )
           );
-          
+
           dockerfileAST.addChild(env);
           break;
         case "entrypoint":
           let entrypointArgs: Argument[] = (
             line as JSONInstruction
           ).getJSONStrings();
-          if (entrypointArgs.length == 0) entrypointArgs = line.getArguments();
-
-          const entrypoint = new DockerEntrypoint().addChild(
-            new DockerEntrypointExecutable(entrypointArgs[0].getValue())
-          );
-          entrypoint.setPosition(position);
-
+          const entrypoint = new DockerEntrypoint().setPosition(position);
           entrypoint.addChild(
             new DockerKeyword(line.getInstruction()).setPosition(
-              rangeToPos(line.getInstructionRange())
+              this.rangeToPos(line.getInstructionRange())
             )
           );
 
-          for (let i = 1; i < entrypointArgs.length; i++) {
+          if (entrypointArgs.length == 0) entrypointArgs = line.getArguments();
+
+          if (entrypointArgs.length > 0) {
             entrypoint.addChild(
-              new DockerEntrypointArg(entrypointArgs[i].getValue())
+              new DockerEntrypointExecutable(entrypointArgs[0].getValue())
             );
+
+            for (let i = 1; i < entrypointArgs.length; i++) {
+              entrypoint.addChild(
+                new DockerEntrypointArg(entrypointArgs[i].getValue())
+              );
+            }
           }
           dockerfileAST.addChild(entrypoint);
           break;
@@ -337,7 +350,7 @@ export class DockerParser {
 
           cmd.addChild(
             new DockerKeyword(line.getInstruction()).setPosition(
-              rangeToPos(line.getInstructionRange())
+              this.rangeToPos(line.getInstructionRange())
             )
           );
 
@@ -354,7 +367,7 @@ export class DockerParser {
 
           shell.addChild(
             new DockerKeyword(line.getInstruction()).setPosition(
-              rangeToPos(line.getInstructionRange())
+              this.rangeToPos(line.getInstructionRange())
             )
           );
 
@@ -362,14 +375,14 @@ export class DockerParser {
           if (argus.length == 0) argus = line.getArguments();
           shell.addChild(
             new DockerShellExecutable(argus[0].getValue()).setPosition(
-              rangeToPos(argus[0].getRange())
+              this.rangeToPos(argus[0].getRange())
             )
           );
           for (let index = 1; index < argus.length; index++) {
             const arg = argus[index];
             shell.addChild(
               new DockerShellArg(arg.getValue()).setPosition(
-                rangeToPos(arg.getRange())
+                this.rangeToPos(arg.getRange())
               )
             );
           }
@@ -383,7 +396,7 @@ export class DockerParser {
 
           user.addChild(
             new DockerKeyword(line.getInstruction()).setPosition(
-              rangeToPos(line.getInstructionRange())
+              this.rangeToPos(line.getInstructionRange())
             )
           );
 
@@ -394,7 +407,7 @@ export class DockerParser {
 
           healthcheck.addChild(
             new DockerKeyword(line.getInstruction()).setPosition(
-              rangeToPos(line.getInstructionRange())
+              this.rangeToPos(line.getInstructionRange())
             )
           );
 
@@ -410,7 +423,7 @@ export class DockerParser {
 
           stopsignal.addChild(
             new DockerKeyword(line.getInstruction()).setPosition(
-              rangeToPos(line.getInstructionRange())
+              this.rangeToPos(line.getInstructionRange())
             )
           );
 
@@ -424,7 +437,7 @@ export class DockerParser {
 
           onbuild.addChild(
             new DockerKeyword(line.getInstruction()).setPosition(
-              rangeToPos(line.getInstructionRange())
+              this.rangeToPos(line.getInstructionRange())
             )
           );
 
@@ -435,23 +448,25 @@ export class DockerParser {
 
           const dockerLabel = new DockerLabel().setPosition(position);
 
-          dockerLabel.addChild(
-            new DockerName(labelArgs[0].getValue()).setPosition(
-              rangeToPos(labelArgs[0].getRange())
-            )
-          );
+          if (labelArgs.length > 0) {
+            dockerLabel.addChild(
+              new DockerName(labelArgs[0].getValue()).setPosition(
+                this.rangeToPos(labelArgs[0].getRange())
+              )
+            );
+          }
 
           for (let i = 1; i < labelArgs.length; i++) {
             dockerLabel.addChild(
               new DockerLiteral(labelArgs[i].getValue()).setPosition(
-                rangeToPos(labelArgs[i].getRange())
+                this.rangeToPos(labelArgs[i].getRange())
               )
             );
           }
 
           dockerLabel.addChild(
             new DockerKeyword(line.getInstruction()).setPosition(
-              rangeToPos(line.getInstructionRange())
+              this.rangeToPos(line.getInstructionRange())
             )
           );
 
@@ -461,13 +476,13 @@ export class DockerParser {
           const maintainer = new DockerMaintainer()
             .addChild(
               new DockerLiteral(line.getArgumentsContent()).setPosition(
-                rangeToPos(line.getArgumentsRange())
+                this.rangeToPos(line.getArgumentsRange())
               )
             )
             .setPosition(position)
             .addChild(
               new DockerKeyword(line.getInstruction()).setPosition(
-                rangeToPos(line.getInstructionRange())
+                this.rangeToPos(line.getInstructionRange())
               )
             );
 
@@ -493,6 +508,7 @@ export class DockerParser {
         comment.getRange().end.line,
         comment.getRange().end.character
       );
+      position.file = this.filename;
       // if not inside an instruction add to the root
       if (!instructionLines.has(comment.getRange().start.line)) {
         dockerfileAST.addChild(

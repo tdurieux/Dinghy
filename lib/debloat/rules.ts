@@ -3,17 +3,22 @@ import { parseDocker } from "../ast/docker-parser";
 import {
   BashCommandArgs,
   BashConditionBinary,
+  BashConditionBinaryLhs,
+  BashConditionBinaryOp,
+  BashConditionBinaryRhs,
   BashLiteral,
+  BashOp,
+  BashScript,
   BashWord,
   DockerFile,
   DockerOpsNodeType,
   DockerOpsValueNode,
   DockerRun,
-  MaybeSemanticCommand,
   Position,
   Q,
   TreeSignature,
 } from "../ast/docker-type";
+import { Matcher } from "./rule-matcher";
 
 export interface Rule {
   scope: "INTRA-DIRECTIVE" | "INTER-DIRECTIVE";
@@ -28,6 +33,42 @@ export interface Rule {
     afterNode?: TreeSignature;
   };
   repair: (node: DockerOpsNodeType) => Promise<void>;
+}
+
+async function postFixWith(
+  node: DockerOpsNodeType,
+  toInsert: DockerOpsNodeType
+) {
+  if (!toInsert) {
+    console.error("[REPAIR] toInsert is null");
+    return;
+  }
+  if (toInsert instanceof BashScript) {
+    toInsert = toInsert.children[0];
+  }
+  new Matcher(toInsert)
+  const script = node.getParent(BashScript);
+  let child = script.children[0];
+  for (const c of script.children) {
+    if (c === node || c.hasChild(node)) {
+      child = c;
+      break;
+    }
+  }
+
+  // add at the end of the command
+  const binary = new BashConditionBinary();
+  binary.parent = child.parent;
+  child.replace(binary);
+
+  binary
+    .addChild(new BashConditionBinaryOp().addChild(new BashOp("10")))
+    .addChild(new BashConditionBinaryLhs().addChild(child))
+    .addChild(
+      new BashConditionBinaryRhs().addChild(
+        toInsert.setPosition(new Position(node.position.lineEnd || 0 + 1, 0))
+      )
+    );
 }
 
 export const curlUseFlagF: Rule = {
@@ -61,13 +102,7 @@ export const npmCacheCleanAfterInstall: Rule = {
   source:
     "https://github.com/docker-library/ghost/pull/186/commits/c3bac502046ed5bea16fee67cc48ba993baeaea8",
   repair: async (violation) => {
-    // add at the end of the command
-    const run = violation.getParent(DockerRun);
-    run?.addChild(
-      (await parseShell("npm cache clean --force;")).setPosition(
-        new Position(violation.position.lineEnd || 0 + 1, 0)
-      )
-    );
+    postFixWith(violation, await parseShell("npm cache clean --force;"));
   },
 };
 
@@ -85,8 +120,11 @@ export const npmCacheCleanUseForce: Rule = {
     "Had to split into two rules to describe both adding npm cache clean and using the --force flag",
   repair: async (violation) => {
     const node = violation.original ? violation.original : violation;
-    const e = await parseShell("npm cache clean --force");
-    node.replace(e);
+    node.addChild(
+      new BashCommandArgs()
+        .setPosition(node.children[2].position)
+        .addChild(new BashWord().addChild(new BashLiteral("--force")))
+    );
   },
 };
 
@@ -101,11 +139,10 @@ export const rmRecursiveAfterMktempD: Rule = {
   source: "IMPLICIT --- you should remove temporary dirs in docker images",
   repair: async (violation) => {
     const node = violation.original ? violation.original : violation;
-    const run = violation.getParent(DockerRun);
-    run?.addChild(
-      (
-        await parseShell("rm -rf " + node.children.at(-1)?.toString(true))
-      ).setPosition(new Position(run.position.lineEnd || 0 + 1, 0))
+
+    postFixWith(
+      node,
+      await parseShell("rm -rf " + node.children.at(-1)?.toString(true))
     );
   },
 };
@@ -180,18 +217,15 @@ export const mkdirUsrSrcThenRemove: Rule = {
   source:
     "https://github.com/docker-library/python/pull/20/commits/ce7da0b874784e6b69e3966b5d7ba995e873163e",
   repair: async (violation) => {
-    // add at the end of the command
-    const run = violation.getParent(DockerRun);
-    run?.addChild(
-      (
-        await parseShell(
-          "rm -rf " +
-            violation
-              .find(Q("SC-MKDIR-PATH"))[0]
-              .getElement(BashLiteral)
-              ?.toString(true)
-        )
-      ).setPosition(new Position(violation.position.lineEnd || 0 + 1, 0))
+    postFixWith(
+      violation,
+      await parseShell(
+        "rm -rf " +
+          violation
+            .find(Q("SC-MKDIR-PATH"))[0]
+            .getElement(BashLiteral)
+            ?.toString(true)
+      )
     );
   },
 };
@@ -242,13 +276,7 @@ export const gemUpdateSystemRmRootGem: Rule = {
   source:
     "https://github.com/docker-library/ruby/pull/185/commits/c9a4472a019d18aba1fdab6a63b96474b40ca191",
   repair: async (violation) => {
-    // add at the end of the command
-    const run = violation.getParent(DockerRun);
-    run?.addChild(
-      (await parseShell("rm -rf /root/.gem;")).setPosition(
-        new Position(violation.position.lineEnd || 0 + 1, 0)
-      )
-    );
+    postFixWith(violation, await parseShell("rm -rf /root/.gem;"));
   },
 };
 
@@ -337,8 +365,13 @@ export const gpgVerifyAscRmAsc: Rule = {
   },
   source:
     "https://github.com/docker-library/php/pull/196/commits/8943e1e6a930768994fbc29f4df89d0a3fd65e12",
-  repair(violation) {
-    throw new Error("Not implemented");
+  repair: async (violation) => {
+    postFixWith(
+      violation,
+      await parseShell(
+        "rm " + violation.find(Q("ABS-EXTENSION-ASC"))[0].toString()
+      )
+    );
   },
 };
 
@@ -379,13 +412,7 @@ export const yumInstallRmVarCacheYum: Rule = {
   notes:
     "The source here is for apt-get. This rule is the natural translation to yum.",
   repair: async (violation) => {
-    // add at the end of the command
-    const run = violation.getParent(DockerRun);
-    run?.addChild(
-      (await parseShell("rm -rf /var/cache/yum")).setPosition(
-        new Position(violation.position.lineEnd || 0 + 1, 0)
-      )
-    );
+    postFixWith(violation, await parseShell("rm -rf /var/cache/yum"));
   },
 };
 
@@ -399,8 +426,13 @@ export const tarSomethingRmTheSomething: Rule = {
   },
   source:
     "IMPLICIT --- no reason to keep around duplicates (the compressed version and the uncompressed version)",
-  repair(violation) {
-    throw new Error("Not implemented");
+  repair: async (violation) => {
+    postFixWith(
+      violation,
+      await parseShell(
+        "rm -rf " + violation.find(Q("ABS-EXTENSION-TAR"))[0]?.toString()
+      )
+    );
   },
 };
 
@@ -475,8 +507,33 @@ export const ruleAptGetUpdatePrecedesInstall: Rule = {
   },
   source:
     "IMPLICIT --- one of Hadolint's recommendations and a docker best practice.",
-  repair(violation) {
-    throw new Error("Not implemented");
+  repair: async (violation) => {
+    const root = violation.getParent(DockerFile);
+    const installs = root.find(Q("SC-APT-GET-INSTALL"));
+    if (installs.length !== 1) {
+      // do not support more than one install
+      return;
+    }
+    const updates = root.find(Q("SC-APT-GET-UPDATE"));
+    if (updates.length !== 1) {
+      // do not support more than one update
+      return;
+    }
+    const install = installs[0];
+    const update = updates[0];
+    if (update.parent instanceof BashScript) {
+      update.getParent(DockerRun).remove();
+
+      const script = install.getParent(BashScript);
+      const child = script.children[0];
+
+      // add at the end of the command
+      const binary = new BashConditionBinary()
+        .addChild(new BashConditionBinaryOp().addChild(new BashOp("10")))
+        .addChild(new BashConditionBinaryRhs().addChild(child.clone()))
+        .addChild(new BashConditionBinaryLhs().addChild(update));
+      child.replace(binary);
+    }
   },
 };
 
@@ -518,18 +575,7 @@ export const ruleAptGetInstallThenRemoveAptLists: Rule = {
   source:
     "https://github.com/docker-library/ruby/pull/7/commits/950a673e59df846608f624ee55321d36ba1f89ba",
   repair: async (violation) => {
-    // add at the end of the command
-    const run =
-      violation instanceof MaybeSemanticCommand
-        ? violation
-        : violation.getParent(MaybeSemanticCommand);
-    const dRun = run?.getParent(DockerRun);
-    if (!run || !dRun) return;
-    dRun.addChild(
-      (await parseShell("rm -rf /var/lib/apt/lists/*;")).setPosition(
-        new Position(run.position.lineEnd || 0 + 1, 0)
-      )
-    );
+    postFixWith(violation, await parseShell("rm -rf /var/lib/apt/lists/*;"));
   },
 };
 

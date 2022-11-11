@@ -14,7 +14,16 @@ export class Violation {
   constructor(readonly rule: Rule, readonly node: DockerOpsNodeType) {}
 
   public async repair() {
-    return this.rule.repair(this.node);
+    if (this.isStillValid()) {
+      return this.rule.repair(this.node);
+    }
+  }
+
+  public isStillValid(): boolean {
+    const newViolations = new Matcher(this.node, { toAbstract: false }).match(
+      this.rule
+    );
+    return newViolations.length > 0;
   }
 
   public toString(): string {
@@ -28,35 +37,38 @@ export class Violation {
 export class Matcher {
   private _root: DockerOpsNodeType;
 
-  constructor(root: DockerOpsNodeType) {
-    this._root = Matcher.abstract(root);
+  constructor(root: DockerOpsNodeType, { toAbstract } = { toAbstract: true }) {
+    this._root = toAbstract ? Matcher.abstract(root) : root;
   }
 
   public static enrich(root: DockerOpsNodeType) {
     const COMMAND_MAP = createEnrichers();
 
-    root.traverse((node) => {
-      if (node instanceof MaybeSemanticCommand) {
-        const commandAST = node.command;
-        if (!commandAST) return true;
+    root.traverse(
+      (node) => {
+        if (node instanceof MaybeSemanticCommand) {
+          const commandAST = node.command;
+          if (!commandAST) return true;
 
-        const command = commandAST.getElement(BashLiteral)?.value;
-        if (!command) return true;
+          const command = commandAST.getElement(BashLiteral)?.value;
+          if (!command) return true;
 
-        if (COMMAND_MAP[command]) {
-          const commandArgs = node.args.filter(
-            (e) => e.toString(true).trim() != "--"
-          );
+          if (COMMAND_MAP[command]) {
+            const commandArgs = node.args.filter(
+              (e) => e.toString(true).trim() != "--"
+            );
 
-          // enrich the arguments of the command
-          COMMAND_MAP[command](
-            node,
-            commandArgs.map((c) => c.toString(true).trim()),
-            commandArgs
-          );
+            // enrich the arguments of the command
+            COMMAND_MAP[command](
+              node,
+              commandArgs.map((c) => c.toString(true).trim()),
+              commandArgs
+            );
+          }
         }
-      }
-    });
+      },
+      { includeSelf: true }
+    );
     return root;
   }
 
@@ -93,7 +105,7 @@ export class Matcher {
         !rule.consequent.beforeNode &&
         !rule.consequent.afterNode
       ) {
-        // if no post-validation  add the violation and continue to the next candidate
+        // if no post-validation add the violation and continue to the next candidate
         violations.push(new Violation(rule, candidate));
         continue;
       }

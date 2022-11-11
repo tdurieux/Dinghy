@@ -2,6 +2,7 @@ import {
   BashCaseKind,
   BashCommandArgs,
   BashCommandCommand,
+  BashCommandPrefix,
   BashComment,
   DockerKeyword,
   DockerOpsNodeType,
@@ -13,7 +14,7 @@ import {
 import * as fs from "fs";
 
 export class Printer {
-  indentLevel = 0;
+  _indentLevel = 0;
   indentChar = "  ";
   output: string = "";
   _inCommand: boolean = false;
@@ -29,6 +30,13 @@ export class Printer {
     this._inCommand = false;
     return this;
   }
+  get indentLevel() {
+    return this._indentLevel;
+  }
+  set indentLevel(value: number) {
+    this._indentLevel = Math.max(value, 0);
+  }
+
   newLine() {
     const newLineAndIndent = "\n" + this.indentChar.repeat(this.indentLevel);
     if (this.output.endsWith(newLineAndIndent)) {
@@ -109,7 +117,12 @@ export class Printer {
       this._printLineUntilPreviousNode(node);
     }
 
-    this._previousNode = node;
+    if (node.position?.file) {
+      // generated elements don't have a file
+      this._previousNode = node;
+    } else {
+      this._previousNode = null;
+    }
     switch (node.type) {
       case "BASH-SCRIPT":
         this._previousNode = null;
@@ -372,23 +385,30 @@ export class Printer {
           case "38":
             this.append("=");
             break;
-          case '68':
-            this.append("==");
+          case "68":
+            this.append("+");
             break;
-          case '85':
-            this.append("!=");
+          case "70":
+            this.append("-");
             break;
+          case "85":
+            this.append("/");
+            break;
+          case "54":
+          case "72":
+          case "87":
           default:
             const e = new Error("Unknown BASH-OP:" + node.value);
             (e as any).node = node;
             this.errors.push(e);
-            if (node.position?.fileContent) {
+            if (node.position?.fileContent != null) {
               console.error(
                 "Unknown BASH-OP:",
+                node.position?.file,
                 node.value,
                 node.position?.fileContent.split("\n")[node.position.lineStart]
               );
-            } else if (node.position?.file) {
+            } else if (node.position?.file != null) {
               if (fs.existsSync(node.position.file)) {
                 const filecontent = fs.readFileSync(
                   node.position.file,
@@ -400,8 +420,9 @@ export class Printer {
                   filecontent.split("\n")[node.position.lineStart]
                 );
               }
+            } else {
+              console.error("Unknown BASH-OP:", node.value, node.position);
             }
-            console.error("Unknown BASH-OP:", node.value);
             this.append(node.value);
             break;
         }
@@ -430,6 +451,10 @@ export class Printer {
         this._previousNode = node;
         break;
       case "MAYBE-SEMANTIC-COMMAND":
+        const prefix = node.getChild(BashCommandPrefix);
+        if (prefix) {
+          this._generate(prefix).space();
+        }
         const command = node.getChild(BashCommandCommand);
         if (command) {
           this._generate(command).space();
@@ -439,7 +464,9 @@ export class Printer {
             if (index > 0) this.space();
             this._generate(i);
           },
-          (i) => !(i instanceof BashCommandCommand)
+          (i) =>
+            !(i instanceof BashCommandCommand) &&
+            !(i instanceof BashCommandPrefix)
         );
         if (node.semicolon === true) this.append(";");
         break;
@@ -476,6 +503,7 @@ export class Printer {
       case "DOCKER-STOPSIGNAL":
       case "DOCKER-LABEL":
       case "DOCKER-MAINTAINER":
+      case "DOCKER-ONBUILD":
         this.indentLevel = 0;
         this.indent();
         node.iterate((i) => this._generate(i));

@@ -224,6 +224,18 @@ export abstract class DockerOpsNode {
     return this;
   }
 
+  hasChild(child: DockerOpsNodeType): boolean {
+    let out = false;
+    this.traverse((node) => {
+      if (node === child) {
+        out = true;
+        // stop to traverse
+        return false;
+      }
+    });
+    return out;
+  }
+
   getChild<T extends DockerOpsNode>(element: new (t: any) => T): T | null {
     const type = new element(undefined).type;
     let out: T = null;
@@ -312,7 +324,13 @@ export abstract class DockerOpsNode {
    * @param callback returns false to stop the traverse
    * @returns false if not everything has been traversed
    */
-  traverse(callback: (node: DockerOpsNodeType) => boolean | void): boolean {
+  traverse(
+    callback: (node: DockerOpsNodeType) => boolean | void,
+    { includeSelf } = { includeSelf: false }
+  ): boolean {
+    if (includeSelf) {
+      if (callback(this as DockerOpsNodeType) === false) return false;
+    }
     this.children.sort((a, b) => {
       if (a.position === undefined) return 0;
       if (b.position === undefined) return 0;
@@ -425,7 +443,7 @@ export abstract class DockerOpsNode {
       if (Array.isArray(this[attribut])) {
         cloneObj[attribut] = [];
         for (const e of this[attribut] as any) {
-          if ((e as any).clone) {
+          if (e != undefined && (e as any).clone) {
             const c = (e as any).clone();
             if (attribut == "children") {
               c.parent = cloneObj;

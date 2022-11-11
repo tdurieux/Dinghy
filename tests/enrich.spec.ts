@@ -34,4 +34,11 @@ describe("Testing enrich", () => {
       "SC-APT-GET-UPDATE",
     ]);
   });
+
+  test("acd", async () => {
+    const root = await parseShell("cd ~;");
+    const r = Matcher.enrich(root);
+    expect(r.getElement(MaybeSemanticCommand)?.annotations).toEqual(["SC-CD"]);
+    expect(r.getElement(BashCommandArgs)?.annotations).toEqual(["SC-CD-PATH"]);
+  });
 });

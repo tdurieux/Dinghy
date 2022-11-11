@@ -1,6 +1,7 @@
+import { readFileSync } from "fs";
 import { parseShell } from "../lib/ast/docker-bash-parser";
-import { parseDocker } from "../lib/ast/docker-parser";
-import { print } from "../lib/ast/docker-printer";
+import { parseDocker, parseDockerFile } from "../lib/ast/docker-parser";
+import { print } from "../lib/ast/docker-pretty-printer";
 import { Matcher } from "../lib/debloat/rule-matcher";
 import {
   apkAddUseNoCache,
@@ -11,6 +12,7 @@ import {
   gemUpdateSystemRmRootGem,
   gpgUseBatchFlag,
   gpgUseHaPools,
+  gpgVerifyAscRmAsc,
   mkdirUsrSrcThenRemove,
   npmCacheCleanAfterInstall,
   npmCacheCleanUseForce,
@@ -19,12 +21,14 @@ import {
   ruleAptGetInstallThenRemoveAptLists,
   ruleAptGetInstallUseNoRec,
   ruleAptGetInstallUseY,
+  ruleAptGetUpdatePrecedesInstall,
   sha256sumEchoOneSpaces,
   tarSomethingRmTheSomething,
   wgetUseHttpsUrl,
   yumInstallForceYes,
   yumInstallRmVarCacheYum,
 } from "../lib/debloat/rules";
+import { praseFile } from "./test-utils";
 
 describe("Testing rule matcher", () => {
   test("curlUseFlagF", async () => {
@@ -36,7 +40,7 @@ describe("Testing rule matcher", () => {
     expect(violations).toHaveLength(1);
 
     await violations[0].repair();
-    expect(print(matcher.node, true)).toEqual("curl -f https://");
+    expect(print(matcher.node)).toEqual("curl -f https://");
   });
   test("curlUseFlagF valid", async () => {
     const root = await parseShell("curl -f https://");
@@ -51,8 +55,21 @@ describe("Testing rule matcher", () => {
     expect(violations).toHaveLength(1);
 
     await violations[0].repair();
-    expect(print(matcher.node, true)).toEqual(
-      "RUN npm i \\\n  npm cache clean --force;\n"
+    expect(print(matcher.node)).toEqual(
+      "RUN npm i && npm cache clean --force;\n"
+    );
+  });
+  test("npmCacheCleanAfterInstall inside binary", async () => {
+    const root = await parseDocker("RUN npm update && npm i");
+    const matcher = new Matcher(root);
+
+    const rule = npmCacheCleanAfterInstall;
+    const violations = matcher.match(rule);
+    expect(violations).toHaveLength(1);
+
+    await violations[0].repair();
+    expect(print(matcher.node)).toEqual(
+      "RUN npm update && npm i && npm cache clean --force;\n"
     );
   });
   test("npmCacheCleanAfterInstall valid", async () => {
@@ -68,7 +85,7 @@ describe("Testing rule matcher", () => {
     expect(violations).toHaveLength(1);
 
     await violations[0].repair();
-    expect(print(matcher.node, true)).toEqual("RUN npm cache clean --force\n");
+    expect(print(matcher.node)).toEqual("RUN npm cache clean --force\n");
   });
   test("npmCacheCleanUseForce valid", async () => {
     const root = await parseShell("RUN npm cache clean --force");
@@ -83,12 +100,12 @@ describe("Testing rule matcher", () => {
     expect(violations).toHaveLength(1);
 
     await violations[0].repair();
-    expect(print(matcher.node, true)).toEqual(
-      "RUN mktemp -d fold \\\n  rm -rf fold\n"
+    expect(print(matcher.node)).toEqual(
+      "RUN mktemp -d fold && rm -rf fold\n"
     );
   });
   test("rmRecursiveAfterMktempD valid", async () => {
-    const root = await parseShell("RUN mktemp -d fold \\\n  rm -rf fold\n");
+    const root = await parseShell("RUN mktemp -d fold && rm -rf fold\n");
     expect(new Matcher(root).match(rmRecursiveAfterMktempD)).toHaveLength(0);
   });
   test("curlUseHttpsUrl invalid", async () => {
@@ -100,7 +117,7 @@ describe("Testing rule matcher", () => {
     expect(violations).toHaveLength(1);
 
     await violations[0].repair();
-    expect(print(matcher.node, true)).toEqual("curl https://host.com/");
+    expect(print(matcher.node)).toEqual("curl https://host.com/");
   });
   test("curlUseHttpsUrl invalid2", async () => {
     const root = await parseShell(
@@ -113,7 +130,7 @@ describe("Testing rule matcher", () => {
     expect(violations).toHaveLength(1);
 
     await violations[0].repair();
-    expect(print(matcher.node, true)).toEqual(
+    expect(print(matcher.node)).toEqual(
       'curl -SL "https://php.net/get/php-$PHP_VERSION.tar.bz2.asc/from/this/mirror" -o "$PHP_FILENAME.asc"'
     );
   });
@@ -126,7 +143,7 @@ describe("Testing rule matcher", () => {
     expect(violations).toHaveLength(1);
 
     await violations[0].repair();
-    expect(print(matcher.node, true)).toEqual(
+    expect(print(matcher.node)).toEqual(
       'curl -SL "https://$PHP_VERSION.tar.bz2.asc"'
     );
   });
@@ -147,7 +164,7 @@ describe("Testing rule matcher", () => {
     expect(violations).toHaveLength(1);
 
     await violations[0].repair();
-    expect(print(matcher.node, true)).toEqual("wget https://host.com/");
+    expect(print(matcher.node)).toEqual("wget https://host.com/");
   });
   test("wgetUseHttpsUrl valid", async () => {
     const root = await parseShell("wget https://host.com/");
@@ -164,7 +181,7 @@ describe("Testing rule matcher", () => {
     expect(violations).toHaveLength(1);
 
     await violations[0].repair();
-    expect(print(matcher.node, true)).toEqual(
+    expect(print(matcher.node)).toEqual(
       "pip install --no-cache-dir --upgrade pip==$PYTHON_PIP_VERSION"
     );
   });
@@ -183,13 +200,13 @@ describe("Testing rule matcher", () => {
     expect(violations).toHaveLength(1);
 
     await violations[0].repair();
-    expect(print(matcher.node, true)).toEqual(
-      "RUN mkdir -p /usr/src/python \\\n  rm -rf /usr/src/python\n"
+    expect(print(matcher.node)).toEqual(
+      "RUN mkdir -p /usr/src/python && rm -rf /usr/src/python\n"
     );
   });
   test("mkdirUsrSrcThenRemove valid", async () => {
     const root = await parseDocker(
-      "RUN mkdir -p /usr/src/python \\\n    rm -rf /usr/src/python"
+      "RUN mkdir -p /usr/src/python && rm -rf /usr/src/python"
     );
     expect(new Matcher(root).match(mkdirUsrSrcThenRemove)).toHaveLength(0);
   });
@@ -204,7 +221,7 @@ describe("Testing rule matcher", () => {
     expect(violations).toHaveLength(1);
 
     await violations[0].repair();
-    expect(print(matcher.node, true)).toEqual(
+    expect(print(matcher.node)).toEqual(
       'RUN ./configure --build="$(dpkg-architecture --query DEB_BUILD_GNU_TYPE)" --disable-install-doc --enable-shared\n'
     );
   });
@@ -231,15 +248,15 @@ describe("Testing rule matcher", () => {
     expect(violations).toHaveLength(1);
 
     await violations[0].repair();
-    expect(print(matcher.node, true)).toEqual(
-      "RUN gem update --system \\\n  rm -rf /root/.gem;\n"
+    expect(print(matcher.node)).toEqual(
+      "RUN gem update --system && rm -rf /root/.gem;\n"
     );
   });
   test("gemUpdateSystemRmRootGem valid", async () => {
     const root = await parseDocker(
       "RUN gem update --system;rm -rf /root/.gem;"
     );
-    new Matcher(root).match(gemUpdateSystemRmRootGem)
+    new Matcher(root).match(gemUpdateSystemRmRootGem);
     expect(new Matcher(root).match(gemUpdateSystemRmRootGem)).toHaveLength(0);
   });
   test("gemUpdateNoDocument", async () => {
@@ -251,7 +268,7 @@ describe("Testing rule matcher", () => {
     expect(violations).toHaveLength(1);
 
     await violations[0].repair();
-    expect(print(matcher.node, true)).toEqual(
+    expect(print(matcher.node)).toEqual(
       `RUN mkdir -p /usr/local/etc \\
   && { \\
     echo 'install: --no-document'; \\
@@ -278,7 +295,7 @@ describe("Testing rule matcher", () => {
     expect(violations).toHaveLength(1);
 
     await violations[0].repair();
-    expect(print(matcher.node, true)).toEqual("RUN yum install -y test\n");
+    expect(print(matcher.node)).toEqual("RUN yum install -y test\n");
   });
   test("yumInstallForceYes valid", async () => {
     const root = await parseDocker("RUN yum install -y test");
@@ -293,8 +310,8 @@ describe("Testing rule matcher", () => {
     expect(violations).toHaveLength(1);
 
     await violations[0].repair();
-    expect(print(matcher.node, true)).toEqual(
-      "RUN yum install test \\\n  rm -rf /var/cache/yum\n"
+    expect(print(matcher.node)).toEqual(
+      "RUN yum install test && rm -rf /var/cache/yum\n"
     );
   });
   test("yumInstallRmVarCacheYum valid", async () => {
@@ -314,7 +331,7 @@ describe("Testing rule matcher", () => {
     expect(violations).toHaveLength(1);
 
     await violations[0].repair();
-    expect(print(matcher.node, true)).toEqual(
+    expect(print(matcher.node)).toEqual(
       "RUN gpg --batch --keyserver ha.pool.sks-keyservers.net\n"
     );
   });
@@ -335,7 +352,7 @@ describe("Testing rule matcher", () => {
     expect(violations).toHaveLength(1);
 
     await violations[0].repair();
-    expect(print(matcher.node, true)).toEqual(
+    expect(print(matcher.node)).toEqual(
       "RUN gpg --keyserver ha.pool.sks-keyservers.net\n"
     );
   });
@@ -345,6 +362,48 @@ describe("Testing rule matcher", () => {
     );
     expect(new Matcher(root).match(gpgUseHaPools)).toHaveLength(0);
   });
+  test("ruleAptGetUpdatePrecedesInstall", async () => {
+    const root = await parseDocker(
+      "RUN apt-get update\nRUN apt-get install test"
+    );
+    const matcher = new Matcher(root);
+
+    const rule = ruleAptGetUpdatePrecedesInstall;
+    const violations = matcher.match(rule);
+    expect(violations).toHaveLength(1);
+    expect(matcher.match(ruleAptGetInstallUseNoRec)).toHaveLength(1);
+
+    await violations[0].repair();
+    await matcher.match(ruleAptGetInstallUseNoRec)[0].repair();
+    expect(print(matcher.node)).toEqual(
+      "RUN apt-get update && apt-get install --no-install-recommends test\n"
+    );
+  });
+  test("gpgVerifyAscRmAsc valid", async () => {
+    const root = await parseDocker(
+      "RUN gpg --verify /usr/local/bin/gosu.asc && rm /usr/local/bin/gosu.asc"
+    );
+    const matcher = new Matcher(root);
+
+    const rule = gpgVerifyAscRmAsc;
+    const violations = matcher.match(rule);
+    expect(violations).toHaveLength(0);
+  });
+
+  test("gpgVerifyAscRmAsc", async () => {
+    const root = await parseDocker("RUN gpg --verify /usr/local/bin/gosu.asc");
+    const matcher = new Matcher(root);
+
+    const rule = gpgVerifyAscRmAsc;
+    const violations = matcher.match(rule);
+    expect(violations).toHaveLength(1);
+
+    await violations[0].repair();
+    expect(print(matcher.node)).toEqual(
+      "RUN gpg --verify /usr/local/bin/gosu.asc && rm /usr/local/bin/gosu.asc\n"
+    );
+  });
+
   test("ruleAptGetInstallUseY", async () => {
     const root = await parseDocker("RUN apt-get install test");
     const matcher = new Matcher(root);
@@ -354,7 +413,7 @@ describe("Testing rule matcher", () => {
     expect(violations).toHaveLength(1);
 
     await violations[0].repair();
-    expect(print(matcher.node, true)).toEqual("RUN apt-get install -y test\n");
+    expect(print(matcher.node)).toEqual("RUN apt-get install -y test\n");
   });
   test("ruleAptGetInstallUseY valid", async () => {
     const root = await parseDocker("RUN apt-get install -y test");
@@ -369,8 +428,21 @@ describe("Testing rule matcher", () => {
     expect(violations).toHaveLength(1);
 
     await violations[0].repair();
-    expect(print(matcher.node, true)).toEqual(
+    expect(print(matcher.node)).toEqual(
       "RUN apt-get install --no-install-recommends test\n"
+    );
+  });
+  test("ruleAptGetInstallUseNoRec real case", async () => {
+    const root = await parseDocker("RUN DEBIAN_FRONTEND=noninteractive apt-get -y install z3");
+    const matcher = new Matcher(root);
+
+    const rule = ruleAptGetInstallUseNoRec;
+    const violations = matcher.match(rule);
+    expect(violations).toHaveLength(1);
+
+    await violations[0].repair();
+    expect(print(matcher.node)).toEqual(
+      "RUN DEBIAN_FRONTEND=noninteractive apt-get --no-install-recommends -y install z3\n"
     );
   });
   test("ruleAptGetInstallThenRemoveAptLists", async () => {
@@ -382,10 +454,43 @@ describe("Testing rule matcher", () => {
     expect(violations).toHaveLength(1);
 
     await violations[0].repair();
-    expect(print(matcher.node, true)).toEqual(
-      "RUN apt-get install test \\\n  rm -rf /var/lib/apt/lists/*;\n"
+    expect(print(matcher.node)).toEqual(
+      "RUN apt-get install test && rm -rf /var/lib/apt/lists/*;\n"
     );
   });
+  test("2 ruleAptGetInstallThenRemoveAptLists", async () => {
+    const root = await parseDocker(
+      "RUN apt-get install test && apt-get install test2"
+    );
+    const matcher = new Matcher(root);
+
+    const rule = ruleAptGetInstallThenRemoveAptLists;
+    const violations = matcher.match(rule);
+    expect(violations).toHaveLength(2);
+
+    await violations[0].repair();
+    expect(violations[1].isStillValid()).toBe(false);
+    await violations[1].repair();
+    expect(print(matcher.node)).toEqual(
+      "RUN apt-get install test && apt-get install test2 && rm -rf /var/lib/apt/lists/*;\n"
+    );
+  });
+
+  test("ruleAptGetInstallThenRemoveAptLists real scenario", async () => {
+    const root = await praseFile("complex-reprint");
+    const matcher = new Matcher(root);
+
+    const rule = ruleAptGetInstallThenRemoveAptLists;
+    const violations = matcher.match(rule);
+    expect(violations).toHaveLength(1);
+
+    await violations[0].repair();
+
+    expect(print(matcher.node)).toEqual(
+      readFileSync("./tests/data/complex-reprint-repaired.Dockerfile", "utf8")
+    );
+  });
+
   test("ruleAptGetInstallThenRemoveAptLists valid", async () => {
     const root = await parseDocker(
       "RUN apt-get install test && rm -rf /var/lib/apt/lists/*;"
@@ -407,7 +512,7 @@ describe("Testing rule matcher", () => {
     expect(violations).toHaveLength(1);
 
     await violations[0].repair();
-    expect(print(matcher.node, true)).toEqual(
+    expect(print(matcher.node)).toEqual(
       "RUN apk add --no-cache --virtual .php-rundeps $runDeps\n"
     );
   });
@@ -449,5 +554,9 @@ describe("Testing rule matcher", () => {
     const rule = tarSomethingRmTheSomething;
     const violations = matcher.match(rule);
     expect(violations).toHaveLength(1);
+    await violations[0].repair();
+    expect(print(matcher.node)).toEqual(
+      "RUN tar -zxvf curl-7.45.0.tar.gz && rm -rf curl-7.45.0.tar.gz\n"
+    );
   });
 });

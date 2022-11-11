@@ -113,7 +113,10 @@ export class ShellParser {
       columnStart += this.originalPosition.columnStart;
     }
 
-    return new Position(lineStart, columnStart, lineStart);
+    const out = new Position(lineStart, columnStart, lineStart);
+    out.file = this.originalPosition.file;
+    out.fileContent = this.originalPosition.fileContent;
+    return out;
   }
 
   private handleNodes(node: bashAST.Node[], current: DockerOpsNodeType) {
@@ -182,7 +185,11 @@ export class ShellParser {
           .addChild(
             new BashArithmeticBinaryOp()
               .setPosition(this.pos(BinaryArithm.OpPos))
-              .addChild(new BashOp(BinaryArithm.Op.toString()))
+              .addChild(
+                new BashOp(BinaryArithm.Op.toString()).setPosition(
+                  this.pos(BinaryArithm.OpPos)
+                )
+              )
           )
           .addChild(
             new BashArithmeticBinaryLhs()
@@ -201,7 +208,11 @@ export class ShellParser {
           .addChild(
             new BashConditionBinaryOp()
               .setPosition(this.pos(BinaryCmd.OpPos))
-              .addChild(new BashOp(BinaryCmd.Op + ""))
+              .addChild(
+                new BashOp(BinaryCmd.Op + "").setPosition(
+                  this.pos(BinaryCmd.OpPos)
+                )
+              )
           )
           .addChild(
             new BashConditionBinaryLhs()

@@ -1,4 +1,11 @@
-import { BashScript, DockerFile, DockerOpsNodeType } from "./docker-type";
+import {
+  BashCommandCommand,
+  BashConditionBinary,
+  BashScript,
+  DockerFile,
+  DockerOpsNodeType,
+  MaybeSemanticCommand,
+} from "./docker-type";
 
 import { Printer, print as reprint } from "./docker-printer";
 
@@ -50,6 +57,10 @@ export class PrettyPrinter extends Printer {
 
   private _getOriginalLine(node: DockerOpsNodeType) {
     if (!this.originalFileContent) return;
+    if (!node.position || node.position.lineStart == -1) {
+      super._generate(node);
+      return;
+    }
     const lineStart = node.position.lineStart;
     const lineEnd = node.position.lineEnd || lineStart;
     const columnStart = node.position.columnStart;
@@ -58,7 +69,7 @@ export class PrettyPrinter extends Printer {
 
     const lines = this.originalFileContent.split("\n");
 
-    for (let i = lineStart; i <= lineEnd; i++) {
+    for (let i = lineStart; i <= Math.min(lineEnd, lines.length - 1); i++) {
       const line = lines[i];
 
       if (i == lineStart) {
@@ -82,12 +93,24 @@ export class PrettyPrinter extends Printer {
       this._detectIndentation(node);
     }
 
-    if (node.hasChanges() || node.isChanged) {
+    if (
+      node instanceof MaybeSemanticCommand ||
+      node instanceof BashConditionBinary
+    )
+      this.space();
+    if (node.hasChanges() || node.isChanged || node.position?.file == null) {
       super._generate(node);
     } else {
       this._printLineUntilPreviousNode(node);
-      this._previousNode = node;
+
+      if (node.position?.file) {
+        // generated elements don't have a file
+        this._previousNode = node;
+      } else {
+        this._previousNode = null;
+      }
       this._getOriginalLine(node);
+      if ((node as any).semicolon === true) this.append(";");
     }
     return this;
   }
