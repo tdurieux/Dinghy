@@ -89,11 +89,13 @@ export interface CallExpr extends Node {
   Args: Word[];
 }
 export interface CaseClause extends Node {
+  Braces: boolean;
   Case: Pos;
   Esac: Pos;
-  Word: Word;
+  In: Pos;
   Items: CaseItem[];
   Last: Comment[];
+  Word: Word;
 }
 export interface CaseItem extends Node {
   Op: number;

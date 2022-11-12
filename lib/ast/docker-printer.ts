@@ -309,6 +309,8 @@ export class Printer {
       case "BASH-CASE-EXPRESSION":
         this.append("case ")
           ._generate(node.target)
+          .space()
+          .append("in")
           ._generate(node.cases)
           .newLine()
           .append("esac");
@@ -320,22 +322,19 @@ export class Printer {
       case "BASH-CASE-EXP-CASE":
         this._generate(node.labels())
           .indent()
-          .newLine()
           ._generate(node.stmls())
-          .newLine()
-          .append(";;")
+          ._generate(node.kind())
           .deindent();
         this._previousNode[node.position.file.key] = node;
         break;
       case "BASH-CASE-EXP-CASES":
-        this._generate(node.getElement(BashCaseKind)).indent().newLine();
         node.iterate((i) => this._generate(i));
         this.deindent();
         break;
       case "BASH-CASE-KIND":
         switch (node.value) {
           case "30":
-            this.append(" in");
+            this.space().append(";;");
             break;
 
           default:

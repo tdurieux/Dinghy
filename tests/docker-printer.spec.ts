@@ -16,13 +16,13 @@ describe("Testing docker-printer", () => {
   savedAptMark = "\${apt-mark showmanual}"; \\
   apt-get update;`);
     await testPrint(`RUN case "\${dpkgArch}" in \\
-    armel) \\
-      extraConfigureArgs = "\${extraConfigureArgs} --with-arch=armv4t --with-float=soft" \\
-      ;; \\
-    armhf) \\
-      extraConfigureArgs = "\${extraConfigureArgs} --with-arch=armv7-a --with-float=hard --with-fpu=vfpv3-d16 --with-mode=thumb" \\
-      ;; \\
-  esac;`);
+  armel) \\
+    extraConfigureArgs = "\${extraConfigureArgs} --with-arch=armv4t --with-float=soft" \\
+    ;; \\
+  armhf) \\
+    extraConfigureArgs = "\${extraConfigureArgs} --with-arch=armv7-a --with-float=hard --with-fpu=vfpv3-d16 --with-mode=thumb" \\
+    ;; \\
+esac;`);
   });
 
   test("print FROM", async () => {

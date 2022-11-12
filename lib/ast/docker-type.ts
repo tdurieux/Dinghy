@@ -565,6 +565,7 @@ export class BashCaseExpCases extends DockerOpsNode {
 }
 export class BashCaseExpression extends BashStatement {
   type: "BASH-CASE-EXPRESSION" = "BASH-CASE-EXPRESSION";
+  hasBraces: boolean = false;
 
   get target() {
     return this.getElement(BashCaseExpTarget);

@@ -85,8 +85,22 @@ export class ShellParser {
     readonly originalPosition: Position = new Position(0, 0)
   ) {}
 
-  private pos(node: bashAST.Node | bashAST.Pos): Position {
-    if ((node as bashAST.Node).Pos !== undefined) {
+  private pos(node: bashAST.Node[] | bashAST.Node | bashAST.Pos): Position {
+    if (Array.isArray(node)) {
+      if (node.length == 0) {
+        return null;
+      }
+      const p = new Position(
+        node[0].Pos().Line() - 1 + this.originalPosition.lineStart,
+        node[0].Pos().Col() - 1,
+        node[node.length - 1].End().Line() -
+          1 +
+          this.originalPosition.lineStart,
+        node[node.length - 1].End().Col() - 1
+      );
+      p.file = this.originalPosition.file;
+      return p;
+    } else if ((node as bashAST.Node).Pos !== undefined) {
       const n: bashAST.Node = node as bashAST.Node;
 
       const lineStart = n.Pos().Line() - 1 + this.originalPosition.lineStart;
@@ -272,14 +286,20 @@ export class ShellParser {
         return cmd;
       case "CaseClause":
         const CaseClause = node as bashAST.CaseClause;
-        return new BashCaseExpression()
-          .setPosition(this.pos(node))
+        const bce = new BashCaseExpression().setPosition(this.pos(node));
+        bce.hasBraces = CaseClause.Braces;
+        return bce
           .addChild(
             new BashCaseExpTarget()
               .setPosition(this.pos(CaseClause.Word))
               .addChild(this.handleNode(CaseClause.Word))
           )
-          .addChild(this.handleNodes(CaseClause.Items, new BashCaseExpCases()));
+          .addChild(
+            this.handleNodes(
+              CaseClause.Items,
+              new BashCaseExpCases().setPosition(this.pos(CaseClause.Items))
+            )
+          );
       case "CaseItem":
         const CaseItem = node as bashAST.CaseItem;
         return new BashCaseExpCase()
@@ -289,9 +309,17 @@ export class ShellParser {
               this.pos(CaseItem.OpPos)
             )
           )
-          .addChild(this.handleNodes(CaseItem.Patterns, new BashCaseLabels()))
           .addChild(
-            this.handleNodes(CaseItem.Stmts, new BashCaseExpressions())
+            this.handleNodes(
+              CaseItem.Patterns,
+              new BashCaseLabels().setPosition(this.pos(CaseItem.Patterns))
+            )
+          )
+          .addChild(
+            this.handleNodes(
+              CaseItem.Stmts,
+              new BashCaseExpressions().setPosition(this.pos(CaseItem.Stmts))
+            )
           );
       case "CmdSubst":
         const CmdSubst = node as bashAST.CmdSubst;

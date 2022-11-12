@@ -80,7 +80,15 @@ export class DockerParser {
 
     const lines = DockerfileParser.parse(this.file.content);
     if (!lines.getRange()) return dockerfileAST;
-    dockerfileAST.setPosition(this.rangeToPos(lines.getRange()));
+    const document = (lines as any).document;
+    const p = new Position(
+      0,
+      0,
+      document.lineCount - 1,
+      this.file.content.split("\n").pop().length
+    );
+    p.file = this.file;
+    dockerfileAST.setPosition(p);
 
     const instructionLines = new Set<number>();
     for (const line of lines.getInstructions()) {
@@ -94,13 +102,12 @@ export class DockerParser {
       switch (command) {
         case "from":
           const from = line as From;
-          const fromNode = new DockerFrom();
+          const fromNode = new DockerFrom().setPosition(position);
           fromNode.addChild(
             new DockerKeyword(line.getInstruction()).setPosition(
               this.rangeToPos(line.getInstructionRange())
             )
           );
-          fromNode.setPosition(position);
           if (from.getRegistry()) {
             fromNode.addChild(
               new DockerImageRepo(from.getRegistry()).setPosition(
@@ -182,7 +189,6 @@ export class DockerParser {
             //   )
             // );
           });
-
 
           copy.addChild(
             new DockerKeyword(line.getInstruction()).setPosition(

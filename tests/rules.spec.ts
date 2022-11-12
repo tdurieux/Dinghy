@@ -2,6 +2,7 @@ import { readFileSync } from "fs";
 import { parseShell } from "../lib/ast/docker-bash-parser";
 import { parseDocker } from "../lib/ast/docker-parser";
 import { print } from "../lib/ast/docker-pretty-printer";
+import { DockerRun, Q } from "../lib/ast/docker-type";
 import { Matcher } from "../lib/debloat/rule-matcher";
 import {
   apkAddUseNoCache,
@@ -41,6 +42,10 @@ describe("Testing rule matcher", () => {
 
     await violations[0].repair();
     expect(print(matcher.node)).toEqual("curl -f https://");
+  });
+  test("curlUseFlagF ftp valid", async () => {
+    const root = await parseShell("curl -f ftp://");
+    expect(new Matcher(root).match(curlUseFlagF)).toHaveLength(0);
   });
   test("curlUseFlagF valid", async () => {
     const root = await parseShell("curl -f https://");
@@ -87,7 +92,9 @@ describe("Testing rule matcher", () => {
     await violations[0].repair();
     new Matcher(root);
     expect(violations[0].isStillValid()).toBeFalsy();
-    expect(print(matcher.node)).toEqual("RUN npm i && npm cache clean --force\n");
+    expect(print(matcher.node)).toEqual(
+      "RUN npm i && npm cache clean --force\n"
+    );
   });
   test("npmCacheCleanUseForce", async () => {
     const root = await parseDocker("RUN npm cache clean");
@@ -176,6 +183,10 @@ describe("Testing rule matcher", () => {
 
     await violations[0].repair();
     expect(print(matcher.node)).toEqual("wget https://host.com/");
+  });
+  test("wgetUseHttpsUrl ftp valid", async () => {
+    const root = await parseShell("wget ftp://host.com/");
+    expect(new Matcher(root).match(wgetUseHttpsUrl)).toHaveLength(0);
   });
   test("wgetUseHttpsUrl valid", async () => {
     const root = await parseShell("wget https://host.com/");
@@ -390,6 +401,23 @@ describe("Testing rule matcher", () => {
       "RUN apt-get update && \\\n  apt-get install --no-install-recommends test\n"
     );
   });
+  test("ruleAptGetUpdatePrecedesInstall 2", async () => {
+    const root = await praseFile("ruleAptGetUpdatePrecedesInstall_fail");
+    const matcher = new Matcher(root);
+
+    const rule = ruleAptGetUpdatePrecedesInstall;
+    const violations = matcher.match(rule);
+    expect(violations).toHaveLength(1);
+    expect(matcher.match(ruleAptGetInstallUseNoRec)).toHaveLength(1);
+
+    await matcher.match(ruleAptGetInstallUseNoRec)[0].repair();
+    await violations[0].repair();
+    expect(
+      print(root.find(Q(DockerRun, Q("ALL", Q("SC-APT-GET-UPDATE"))))[0])
+    ).toEqual(
+      "RUN apt-get update -qq && \\\n  apt-get install --no-install-recommends -yq make gcc flex bison libcap-ng-dev"
+    );
+  });
   test("gpgVerifyAscRmAsc valid", async () => {
     const root = await parseDocker(
       "RUN gpg --verify /usr/local/bin/gosu.asc && rm /usr/local/bin/gosu.asc"
@@ -540,6 +568,18 @@ describe("Testing rule matcher", () => {
     const violations = matcher.match(rule);
     expect(violations).toHaveLength(0);
   });
+
+  test("sha256sumEchoOneSpaces without echo valid", async () => {
+    const root = await parseDocker(
+      "RUN sha256sum --strict --ignore-missing --check CHECKSUMS"
+    );
+    const matcher = new Matcher(root);
+
+    const rule = sha256sumEchoOneSpaces;
+    const violations = matcher.match(rule);
+    expect(violations).toHaveLength(0);
+  });
+
   test("sha256sumEchoOneSpaces invalid", async () => {
     const root = await parseDocker(
       'RUN echo "$PHP_SHA256  *$PHP_FILENAME" | sha256sum -c -\n'
@@ -569,7 +609,7 @@ describe("Testing rule matcher", () => {
     expect(violations).toHaveLength(1);
     await violations[0].repair();
     expect(print(matcher.node)).toEqual(
-      "RUN tar -zxvf curl-7.45.0.tar.gz && rm -rf curl-7.45.0.tar.gz\n"
+      "RUN tar -zxvf curl-7.45.0.tar.gz && rm curl-7.45.0.tar.gz\n"
     );
   });
 });

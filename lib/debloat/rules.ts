@@ -151,7 +151,7 @@ export const curlUseHttpsUrl: Rule = {
   scope: "INTRA-DIRECTIVE",
   name: "curlUseHttpsUrl",
   description: "Use https:// urls with curl",
-  query: Q("SC-CURL", Q("SC-CURL-URL", Q("ALL", Q("ABS-PROBABLY-URL")))),
+  query: Q("SC-CURL", Q("SC-CURL-URL", Q("ALL", Q("ABS-URL-PROTOCOL-HTTP")))),
   consequent: {
     inNode: Q("ABS-URL-PROTOCOL-HTTPS"),
   },
@@ -170,7 +170,7 @@ export const wgetUseHttpsUrl: Rule = {
   scope: "INTRA-DIRECTIVE",
   name: "wgetUseHttpsUrl",
   description: "Use https:// urls with wget",
-  query: Q("SC-WGET", Q("SC-WGET-URL", Q("ALL", Q("ABS-PROBABLY-URL")))),
+  query: Q("SC-WGET", Q("SC-WGET-URL", Q("ALL", Q("ABS-URL-PROTOCOL-HTTP")))),
   consequent: {
     inNode: Q("ABS-URL-PROTOCOL-HTTPS"),
   },
@@ -284,12 +284,14 @@ export const sha256sumEchoOneSpaces: Rule = {
   scope: "INTRA-DIRECTIVE",
   name: "sha256sumEchoOneSpaces",
   description: "sha256sum takes an input on stdin with one space.",
-  query: Q("SC-SHA-256-SUM", Q("SC-SHA-256-SUM-F-CHECK")),
+  // query: Q("SC-SHA-256-SUM", Q("SC-SHA-256-SUM-F-CHECK")),
+  query: Q(
+    BashConditionBinary,
+    Q("ALL", Q("SC-ECHO")),
+    Q("ALL", Q("SC-SHA-256-SUM", Q("SC-SHA-256-SUM-F-CHECK")))
+  ),
   consequent: {
-    beforeNode: Q(
-      "SC-ECHO",
-      Q("SC-ECHO-ITEM", Q("ALL", Q("ABS-SINGLE-SPACE")))
-    ),
+    inNode: Q("SC-ECHO", Q("SC-ECHO-ITEM", Q("ALL", Q("ABS-SINGLE-SPACE")))),
   },
   source:
     "https://github.com/docker-library/memcached/pull/6/commits/a8c4206768821aa47579c6413be85be914875caa",
@@ -429,7 +431,7 @@ export const tarSomethingRmTheSomething: Rule = {
     postFixWith(
       violation,
       await parseShell(
-        "rm -rf " + violation.find(Q("ABS-EXTENSION-TAR"))[0]?.toString()
+        "rm " + violation.find(Q("ABS-EXTENSION-TAR"))[0]?.toString()
       )
     );
   },
@@ -522,6 +524,7 @@ export const ruleAptGetUpdatePrecedesInstall: Rule = {
     const update = updates[0];
     if (update.parent instanceof BashScript) {
       update.getParent(DockerRun).remove();
+      update.setPosition(null);
 
       const script = install.getParent(BashScript);
       const child = script.children[0];

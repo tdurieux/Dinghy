@@ -4,6 +4,21 @@ import { Matcher } from "../lib/debloat/rule-matcher";
 import { praseFile } from "./test-utils";
 
 describe("Testing docker-pretty-printer", () => {
+  test("print reprint_issue", async () => {
+    const dockerfile = await praseFile("reprint_issue");
+    expect(print(dockerfile)).toBe(dockerfile.position.file.content);
+  });
+  test("test repair non sha256", async () => {
+    const dockerfile = await praseFile("non_sha256echo");
+    expect(print(dockerfile)).toBe(dockerfile.position.file.content);
+    const matcher = new Matcher(dockerfile);
+    const violations = matcher.matchAll();
+    expect(violations.length).toBe(0);
+    violations.forEach(async (e) => {
+      await e.repair();
+    });
+    expect(print(dockerfile)).toBe(dockerfile.position.file.content);
+  });
   test("print 7cb0093bfdd6688528619ff0af54cdf0f95243b3", async () => {
     const dockerfile = await praseFile(
       "7cb0093bfdd6688528619ff0af54cdf0f95243b3"
