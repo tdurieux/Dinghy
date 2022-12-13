@@ -1,6 +1,6 @@
 import {
-  BashCommandCommand,
   BashConditionBinary,
+  BashRedirect,
   BashScript,
   BashStatement,
   DockerFile,
@@ -31,6 +31,44 @@ export class PrettyPrinter extends Printer {
     this._generate(this.root);
     return this.output;
   }
+
+  _printLineUntilPreviousNode(node: DockerOpsNodeType) {
+    if (node.position?.lineStart !== undefined && node.position?.file) {
+      const line =
+        node.position.file.content.split("\n")[node.position.lineStart];
+      for (let i = 0; line && i < line.length; i++) {
+        const c = line[i];
+        if (c != " " && c != "\t") {
+          if (i > 0) {
+            this.indentChar = line[0];
+          }
+          this._indentLevel = i;
+          break;
+        }
+      }
+    }
+    return super._printLineUntilPreviousNode(node);
+  }
+  // writeIndent() {
+  //   if (this.currentNode?.position?.lineStart) {
+  //     const line =
+  //       this.currentNode.position.file.content.split("\n")[
+  //         this.currentNode.position.lineStart
+  //       ];
+  //     for (let i = 0; i < line.length; i++) {
+  //       const c = line[i];
+  //       if (c != " " && c != "\t") {
+  //         if (i > 0) {
+  //           this.append(line.slice(0, i - 1));
+  //         }
+  //         break;
+  //       }
+  //     }
+  //   } else {
+  //     super.writeIndent();
+  //   }
+  //   return this;
+  // }
 
   // detect the indentation used in the original file
   private _detectIndentation(node: DockerOpsNodeType) {
@@ -63,11 +101,18 @@ export class PrettyPrinter extends Printer {
       super._generate(node);
       return;
     }
-    this.append(node.position.file.contentOfNode(node));
+    const content = node.position.file.contentOfNode(node);
+    this.append(content);
   }
 
   _generate(node: DockerOpsNodeType) {
     if (node == null) return this;
+
+    // the file did not changed, just reprint the original file
+    if (node instanceof DockerFile && !node.hasChanges()) {
+      this.append(node.position.file.content);
+      return this;
+    }
 
     if (node instanceof BashScript) {
       this._detectIndentation(node);
@@ -80,23 +125,35 @@ export class PrettyPrinter extends Printer {
       this.space();
     if (node.hasChanges() || node.isChanged || node.position?.file == null) {
       super._generate(node);
-    } else {
+    } else {     
       this._printLineUntilPreviousNode(node);
 
-      this._previousNode[node.position.file.key] = node;
-      this._getOriginalLine(node);
-      
-      if (node instanceof BashStatement) {
-        if (node.semicolon === true) {
-          if (node.isBackground) {
-            this.space().append("&");
-          } else if (node.isCoprocess) {
-            this.space().append("|&");
-          } else {
-            this.append(";");
-          }
-        }
+      this.previousNode = node;
+      if (node.position?.file?.key) {
+        delete this._previousNode["new"];
       }
+      this._getOriginalLine(node);
+
+      // if (node instanceof BashStatement) {
+      //   const redirect = node.getChildren(BashRedirect);
+      //   redirect.forEach((node) => this.space()._generate(node));
+      //   if (node.semicolon === true) {
+      //     if (node.isBackground) {
+      //       this.space().append("&");
+      //     } else if (node.isCoprocess) {
+      //       this.space().append("|&");
+      //     } else {
+      //       this.trim().append(";");
+      //     }
+      //   }
+      // }
+    }
+    // add the empty line after the last node
+    if (node instanceof DockerFile && node.position.lineEnd) {
+      const p = node.position.clone();
+      p.lineStart = node.position.lineEnd;
+      this.indentLevel = 0
+      this._printLineUntilPreviousNode(new DockerFile().setPosition(p));
     }
     return this;
   }

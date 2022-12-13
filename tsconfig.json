@@ -11,6 +11,6 @@
     "outDir": "./build"
     // "moduleResolution": "node"
   },
-  "include": ["index.ts"],
+  "include": ["index.ts", "lib/index.ts"],
   "exclude": []
 }

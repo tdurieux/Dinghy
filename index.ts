@@ -1,10 +1,9 @@
 import { Command, Option } from "commander";
-import { print } from "./lib/ast/docker-printer";
-import { Matcher } from "./lib/debloat/rule-matcher";
+import { Matcher } from "./lib/repair/rule-matcher";
 import { DockerParser } from "./lib/ast/docker-parser";
 import * as Diff from "diff";
 
-import { RULES } from "./lib/debloat/rules";
+import { RULES } from "./lib/repair/rules";
 import { parseDocker } from "./lib/ast/docker-parser";
 import File from "./lib/ast/file";
 const program = new Command();
@@ -33,12 +32,12 @@ program
     const parser = new DockerParser(new File(file));
     const dockerfile = await parser.parse();
     const matcher = new Matcher(dockerfile);
-    const originalOutput = print(matcher.node, true);
+    const originalOutput = matcher.node.toString(true);
     matcher.matchAll().forEach(async (e) => {
       console.log(e.toString());
       await e.repair();
     });
-    const repairedOutput = print(matcher.node, true);
+    const repairedOutput = matcher.node.toString(true);
     const diff = Diff.diffLines(parser.file.content, repairedOutput);
 
     console.log("The changes:\n");

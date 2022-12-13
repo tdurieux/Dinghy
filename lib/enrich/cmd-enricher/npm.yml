@@ -26,6 +26,7 @@ command:
       - --no-color
       - --save
       - --production
+      - --unsafe-perm
     strings:
       - --only
       - --tag

@@ -1,6 +1,8 @@
 import { AnyRecord } from "dns";
 import { print } from "./docker-printer";
+import { print as prettyPrint } from "./docker-pretty-printer";
 import File from "./file";
+import { parse as yamlParser } from "yaml";
 
 export type DockerOpsNodeType =
   | AsString
@@ -155,9 +157,9 @@ export class Position {
   public file: File = null;
   constructor(
     public lineStart: number,
-    readonly columnStart: number,
-    readonly lineEnd?: number,
-    readonly columnEnd?: number
+    public columnStart: number,
+    public lineEnd?: number,
+    public columnEnd?: number
   ) {}
 
   clone() {
@@ -171,10 +173,22 @@ export class Position {
     return c;
   }
 
+  equals(other: Position) {
+    return (
+      other !== undefined &&
+      this.lineStart === other.lineStart &&
+      this.columnStart === other.columnStart &&
+      this.lineEnd === other.lineEnd &&
+      this.columnEnd === other.columnEnd
+    );
+  }
+
   toString() {
     return (
       `${this.lineStart + 1}:${this.columnStart}` +
-      (this.lineEnd ? ` to ${this.lineEnd + 1}:${this.columnEnd}` : "")
+      (this.lineEnd !== undefined
+        ? ` to ${this.lineEnd + 1}:${this.columnEnd}`
+        : "")
     );
   }
 }
@@ -189,10 +203,6 @@ export abstract class DockerOpsNode {
    * The parent node
    */
   parent: DockerOpsNodeType | null = null;
-  /**
-   * The original node. it is used after enrich and abstract
-   */
-  original: DockerOpsNodeType | null = null;
 
   public isChanged = false;
 
@@ -209,6 +219,11 @@ export abstract class DockerOpsNode {
     return this;
   }
 
+  /**
+   * Add a child to this node
+   * @param child the child to add
+   * @returns this
+   */
   addChild(child: DockerOpsNodeType | DockerOpsNodeType[]) {
     if (child == null) return;
     if (Array.isArray(child)) {
@@ -224,6 +239,11 @@ export abstract class DockerOpsNode {
     return this;
   }
 
+  /**
+   * Check if this node has the given child
+   * @param child the child to check
+   * @returns true if this node has the given child
+   */
   hasChild(child: DockerOpsNodeType): boolean {
     let out = false;
     this.traverse((node) => {
@@ -235,9 +255,13 @@ export abstract class DockerOpsNode {
     });
     return out;
   }
-
-  getChild<T extends DockerOpsNode>(element: new (t: any) => T): T | null {
-    const type = new element(undefined).type;
+  /**
+   * Get the first child of the given type
+   * @param nodeType the type of the node to find
+   * @returns the first child of the given type
+   */
+  getChild<T extends DockerOpsNode>(nodeType: new (t: any) => T): T | null {
+    const type = new nodeType(undefined).type;
     let out: T = null;
     this.iterate((node) => {
       if (node.type == type) {
@@ -249,8 +273,13 @@ export abstract class DockerOpsNode {
     return out;
   }
 
-  getChildren<T extends DockerOpsNode>(element: new (t: any) => T): T[] {
-    const type = new element(undefined).type;
+  /**
+   * Get all the children of the given type
+   * @param nodeType the type of the node to find
+   * @returns the children of the given type
+   */
+  getChildren<T extends DockerOpsNode>(nodeType: new (t: any) => T): T[] {
+    const type = new nodeType(undefined).type;
     const out: T[] = [];
     this.iterate((node) => {
       if (node.type == type) {
@@ -260,8 +289,13 @@ export abstract class DockerOpsNode {
     return out;
   }
 
-  getElement<T extends DockerOpsNode>(element: new (t: any) => T): T | null {
-    const type = new element(undefined).type;
+  /**
+   * Get the first node of the given type
+   * @param nodeType the type of the node to find
+   * @returns the node of the given type or null if not found
+   */
+  getElement<T extends DockerOpsNode>(nodeType: new (t: any) => T): T | null {
+    const type = new nodeType(undefined).type;
     let out: T = null;
     this.traverse((node) => {
       if (node.type == type) {
@@ -273,8 +307,13 @@ export abstract class DockerOpsNode {
     return out;
   }
 
-  getElements<T extends DockerOpsNode>(element: new (t: any) => T): T[] {
-    const type = new element(undefined).type;
+  /**
+   * Get all nodes of the given type
+   * @param nodeType the type of the node to find
+   * @returns the list of nodes
+   */
+  getElements<T extends DockerOpsNode>(nodeType: new (t: any) => T): T[] {
+    const type = new nodeType(undefined).type;
     const out: T[] = [];
     this.traverse((node) => {
       if (node.type == type) out.push(node as T);
@@ -282,9 +321,15 @@ export abstract class DockerOpsNode {
     return out;
   }
 
+  /**
+   * Find the parent node of the given type
+   * @param element the type of the parent to find
+   * @returns the parent node or null if not found
+   */
   getParent<T extends DockerOpsNode>(
-    element: new (t: AnyRecord) => T
+    element?: new (t: AnyRecord) => T
   ): T | null {
+    if (!element) return this.parent as T;
     const type = new element(undefined).type;
     let currentParent: T = this.parent as T;
     while (currentParent != null) {
@@ -296,6 +341,11 @@ export abstract class DockerOpsNode {
     return null;
   }
 
+  /**
+   * Iterate over the children nodes (non recursive)
+   * @param callback callback function to call for each node
+   * @param filter
+   */
   iterate(
     callback: (node: DockerOpsNodeType, index: number) => void,
     filter?: (node: DockerOpsNodeType) => boolean
@@ -332,8 +382,8 @@ export abstract class DockerOpsNode {
       if (callback(this as DockerOpsNodeType) === false) return false;
     }
     this.children.sort((a, b) => {
-      if (a.position === undefined) return 0;
-      if (b.position === undefined) return 0;
+      if (a.position == undefined) return 0;
+      if (b.position == undefined) return 0;
       if (a.position.lineStart > b.position.lineStart) return 1;
       if (a.position.lineStart < b.position.lineStart) return -1;
       if (a.position.columnStart > b.position.columnStart) return 1;
@@ -354,22 +404,31 @@ export abstract class DockerOpsNode {
     return true;
   }
 
-  replace(element: DockerOpsNodeType) {
+  /**
+   * Replace this by the given node
+   * @param node the replacement node
+   * @returns this
+   */
+  replace(node: DockerOpsNodeType) {
     const indexInParent = this.parent.children.indexOf(
       this as DockerOpsNodeType
     );
-    element.isChanged = true;
-    element.parent = this.parent;
+    node.isChanged = true;
+    node.parent = this.parent;
     if (indexInParent === -1) {
-      const e = this.parent.children.filter((e) => e.original == this)[0];
-      if (e) e.original = element;
+      // const e = this.parent.children.filter((e) => e.original == this)[0];
+      // if (e) e.original = element;
       return this;
     }
-    if (element.position == null) element.setPosition(this._position);
-    this.parent.children[indexInParent] = element;
+    if (node.position == null) node.setPosition(this._position);
+    this.parent.children[indexInParent] = node;
     return this;
   }
 
+  /**
+   * Remove this node from the tree
+   * @returns this
+   */
   remove() {
     const indexInParent = this.parent.children.indexOf(
       this as DockerOpsNodeType
@@ -379,17 +438,50 @@ export abstract class DockerOpsNode {
     return this;
   }
 
+  /**
+   * Check if this node is before the other node
+   * @param query check if this node match the query
+   * @returns true if this node matches the query
+   */
   public match(query: TreeSignatureI) {
     const type =
       typeof query.type === "string" ? query.type : new query.type().type;
 
-    if (type == "ALL") {
-      if (this.match(query.children[0])) return true;
-      return !this.traverse((node) => {
-        if (node.match(query.children[0])) return false;
-      });
+    if (type === "ALL" || type === "ANY") {
+      let previousMatch: DockerOpsNode = undefined;
+      for (const subQuery of query.children) {
+        let foundedNode = undefined;
+        this.traverse(
+          (node) => {
+            if (
+              node.match(subQuery) &&
+              (previousMatch === undefined || previousMatch.isBefore(node))
+            ) {
+              foundedNode = node;
+              return false;
+            }
+          },
+          { includeSelf: true }
+        );
+        previousMatch = foundedNode;
+        if (!previousMatch) {
+          return false;
+        }
+      }
+      return previousMatch != undefined;
     }
-    if (this.type !== type && !this.annotations.includes(type)) return false;
+    // if (type == "ALL") {
+    //   if (this.match(query.children[0])) return true;
+    //   return !this.traverse((node) => {
+    //     if (node.match(query.children[0])) return false;
+    //   });
+    // }
+    if (
+      this.type !== type &&
+      !this.annotations.includes(type) &&
+      query.value == undefined
+    )
+      return false;
     if (query.value !== undefined && (this as any).value !== query.value)
       return false;
 
@@ -401,13 +493,78 @@ export abstract class DockerOpsNode {
     }
     return true;
   }
+  /**
+   * Check if arg is inside this node
+   * @param arg the node to check
+   * @returns true if arg is inside this node
+   */
+  isInside(arg: DockerOpsNodeType): boolean {
+    if (arg.position == null || this.position == null)
+      return this.hasChild(arg);
+    if (arg.position.lineStart > this.position.lineEnd) {
+      return false;
+    }
+    if (arg.position.lineStart < this.position.lineStart) {
+      return false;
+    }
+    if (
+      arg.position.lineStart === this.position.lineStart &&
+      arg.position.columnStart < this.position.columnStart
+    ) {
+      return false;
+    }
+    if (
+      arg.position.lineEnd === this.position.lineEnd &&
+      arg.position.columnEnd > this.position.columnEnd
+    ) {
+      return false;
+    }
+    if (arg.position.lineEnd > this.position.lineEnd) {
+      return false;
+    }
+    return true;
+  }
+  /**
+   * Check if this is before arg
+   * @param arg
+   * @returns true if this is before arg
+   */
+  isBefore(arg: DockerOpsNodeType): boolean {
+    if (this.isInside(arg)) return false;
+    if (this.position.lineStart < arg.position.lineStart) {
+      return true;
+    }
+    if (this.position.lineStart == arg.position.lineStart) {
+      if (this.position.columnStart < arg.position.columnStart) {
+        return true;
+      }
+      if (this.position.columnStart == arg.position.columnStart) {
+        if (this.position.lineEnd < arg.position.lineEnd) {
+          return true;
+        }
+        if (this.position.lineEnd == arg.position.lineEnd) {
+          if (this.position.columnEnd < arg.position.columnEnd) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
 
   /**
    * Find all the nodes that match the query
    * @param query
    * @returns the list of nodes that match query
    */
-  public find(query: TreeSignatureI) {
+  public find(input: TreeSignatureI | string) {
+    let query: TreeSignatureI = undefined;
+    if (typeof input === "string") {
+      console.log(yamlParser(input));
+      query = { type: input };
+    } else {
+      query = input;
+    }
     const out: DockerOpsNodeType[] = [];
     if (this.match(query)) out.push(this as DockerOpsNodeType);
 
@@ -417,6 +574,10 @@ export abstract class DockerOpsNode {
     return out;
   }
 
+  /**
+   * check if this node or one of its children has been changed
+   * @returns true if this node or one of its children has been changed
+   */
   public hasChanges() {
     if (this.isChanged) return true;
     let hasChanges = false;
@@ -429,7 +590,11 @@ export abstract class DockerOpsNode {
     return hasChanges;
   }
 
-  public clone() {
+  /**
+   * Clone this node
+   * @returns a clone of this node
+   */
+  public clone(): this {
     var cloneObj = new (this.constructor as any)();
     cloneObj.isChanged = true;
     for (const attribut in this) {
@@ -462,8 +627,16 @@ export abstract class DockerOpsNode {
     return cloneObj;
   }
 
-  toString(original = false) {
-    return print(this as any, original);
+  /**
+   * Return a string representation of this node
+   * @param asPrettyPrint true if the output should be pretty printed
+   * @returns a string representation of this node
+   */
+  toString(asPrettyPrint = false) {
+    if (asPrettyPrint) {
+      return prettyPrint(this as DockerOpsNodeType);
+    }
+    return print(this as DockerOpsNodeType);
   }
 }
 
@@ -487,6 +660,7 @@ export class DockerOpsValueNode extends DockerOpsNode {
 }
 
 export class BashStatement extends DockerOpsNode {
+  semicolonPosition: Position;
   semicolon: boolean;
   isBackground: boolean;
   isCoprocess: boolean;
@@ -539,7 +713,7 @@ export class BashBackticked extends DockerOpsNode {
 export class BashBanged extends DockerOpsNode {
   type: "BASH-BANGED" = "BASH-BANGED";
 }
-export class BashBraceExpansion extends DockerOpsValueNode {
+export class BashBraceExpansion extends DockerOpsNode {
   type: "BASH-BRACE-EXPANSION" = "BASH-BRACE-EXPANSION";
 }
 export class BashBraceGroup extends DockerOpsNode {
@@ -755,6 +929,9 @@ export class BashIfElseIfExpression extends DockerOpsNode {
 export class BashIfExpression extends BashStatement {
   type: "BASH-IF-EXPRESSION" = "BASH-IF-EXPRESSION";
 
+  ifPosition: Position;
+  fiPosition: Position;
+
   get condition(): BashIfCondition {
     return this.getElement(BashIfCondition);
   }
@@ -769,6 +946,8 @@ export class BashIfExpression extends BashStatement {
 }
 export class BashIfThen extends DockerOpsNode {
   type: "BASH-IF-THEN" = "BASH-IF-THEN";
+
+  thenPosition: Position;
 }
 export class BashIoDupeStderr extends DockerOpsNode {
   type: "BASH-IO-DUPE-STDERR" = "BASH-IO-DUPE-STDERR";
@@ -792,6 +971,57 @@ export class BashWord extends DockerOpsNode {
 }
 export class BashOp extends DockerOpsValueNode {
   type: "BASH-OP" = "BASH-OP";
+
+  toString() {
+    switch (this.value) {
+      case "9":
+        return "&";
+      case "10":
+        return "&&";
+      case "11":
+        return "||";
+      case "12":
+        return "|";
+      case "38":
+        return "*";
+      case "68":
+        return "+";
+      case "70":
+        return "-";
+      case "85":
+        return "/";
+      case "72":
+        return "?";
+      case "76":
+        return "%";
+      case "77":
+        return "%%";
+      case "78":
+        return "#";
+      case "79":
+        return "##";
+      case "87":
+        return ":";
+      case "54":
+        return ">";
+      case "56":
+        return " ";
+      case "69":
+      case "71":
+      case "73":
+      case "75":
+      case "65":
+      default:
+        if (this.position?.file) {
+          this.position.columnEnd = this.position.columnStart + 2;
+          console.log(
+            "Unknown BASH-OP:" + this.value,
+            this.position.file.contentAtPosition(this.position, 2)
+          );
+        }
+        throw new Error("Unknown BASH-OP:" + this.value + " " + this.position);
+    }
+  }
 }
 export class BashOrIf extends DockerOpsNode {
   type: "BASH-OR-IF" = "BASH-OR-IF";

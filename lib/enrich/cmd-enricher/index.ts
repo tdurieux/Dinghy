@@ -1,7 +1,15 @@
 import * as fs from "fs";
-import * as yaml from "js-yaml";
-import yargs, { Argv } from "yargs";
-import { DockerOpsNodeType, Position } from "../../ast/docker-type";
+import { parse as yamlParser } from "yaml";
+import { Argv } from "yargs";
+import {
+  BashCommandArgs,
+  BashCommandCommand,
+  DockerOpsNodeType,
+  MaybeSemanticCommand,
+  Position,
+} from "../../ast/docker-type";
+import { Matcher } from "../../repair/rule-matcher";
+import { abstract } from "../abstraction";
 
 const YAML_DIR = __dirname;
 
@@ -43,6 +51,7 @@ interface Scenario {
       source: string;
       tag: string;
     };
+    subCommand?: string;
   }[];
 }
 interface Command {
@@ -72,13 +81,14 @@ function getArgsFromList(list: string[] = []) {
 
 function addToArgv(
   arg: string,
-  argv: yargs.Argv<{}>,
+  argv: Argv<{}>,
   adder: <K extends string>(
     key: K | ReadonlyArray<K>
   ) => Argv<{ [key in K]: number | string | boolean }>
 ) {
   const out = processArg(arg);
   if (out.length == 1) return adder.call(argv, out[0]);
+  // return adder.call(argv, out[1]).alias(out[1], out[0]);
   return adder.call(argv, out[0]).alias(out[0], out[1]);
 }
 
@@ -112,7 +122,7 @@ const getOptions = (scenario: Scenario) => {
   return scenario.options;
 };
 
-function getValuedOptions(argv: yargs.Argv<{}>): string[] {
+function getValuedOptions(argv: Argv<{}>): string[] {
   const theOpts: { [key: string]: any } = (argv as any).getOptions();
 
   return theOpts.string
@@ -201,12 +211,15 @@ function buildScenarioParser(
 
     // Set all of these properties up so we have controllable
     // behavior from argv
-    let argv = ((yargs as any)() as Argv)
+    require.cache["/usr/local/lib/node_modules/yargs/index.js"];
+    let yargs = require("yargs/yargs");
+    let argv: Argv = yargs()
       .help(false)
       .version(false)
       .exitProcess(false)
       .showHelpOnFail(false)
       .parserConfiguration({
+        "short-option-groups": true,
         "boolean-negation": false,
         "camel-case-expansion": false,
       })
@@ -273,7 +286,10 @@ function buildScenarioParser(
                 arg.startsWith(`--${selection}`));
 
             if (matches) {
-              const leftovers = arg.replace(/^--?${selection}\=?/, "");
+              const leftovers = arg.replace(
+                new RegExp(`^(-{1,2}${selection})\=?`),
+                ""
+              );
 
               if (leftovers.length === 0) {
                 return [arg];
@@ -352,6 +368,16 @@ function buildScenarioParser(
         }
 
         skipNext = valuedOpts.indexOf(args[i]) !== -1;
+        if (!skipNext) {
+          if (!args[i].startsWith("--") && args[i].length > 2) {
+            let allMatch = false;
+            for (let j = 1; j < args[i].length; j++) {
+              allMatch =
+                allMatch || valuedOpts.indexOf(`-${args[i][j]}`) !== -1;
+            }
+            skipNext = allMatch;
+          }
+        }
         newArgs.push(args[i]);
       }
 
@@ -498,7 +524,9 @@ function nodify(
   key: string,
   aliases: string[],
   value: string,
-  opts: any,
+  opts: {
+    [key: string]: any;
+  },
   paths: string[],
   cmdAST: DockerOpsNodeType,
   oargs: {
@@ -551,8 +579,13 @@ function nodify(
     }
   }
 
-  // add the value as a child of the command option
-  if (keyAST && valueAST && keyAST != valueAST) {
+  // add the value as a child of the command option if not boolean
+  if (
+    keyAST &&
+    valueAST &&
+    keyAST != valueAST &&
+    opts.boolean.indexOf(key) === -1
+  ) {
     valueAST.remove();
     const isChanged = valueAST.isChanged;
     keyAST.addChild(valueAST);
@@ -732,10 +765,34 @@ const buildPostProcessor =
       });
     if (output.scenario.postProcess) {
       for (const p of output.scenario.postProcess) {
-        if (p.tagLastElement) {
+        if (p.tagLastElement && output.result[p.tagLastElement.source]) {
           const v = output.result[p.tagLastElement.source]?.at(-1);
           if (argsASTCache[v]) {
             argsASTCache[v].annotations.push(p.tagLastElement.tag);
+          }
+        } else if (p.subCommand) {
+          const v = output.result[p.subCommand];
+          if (v) {
+            const p = argsASTCache[v[0]].position.clone();
+            p.columnEnd = argsASTCache[v[v.length - 1]].position.columnEnd;
+            p.lineEnd = argsASTCache[v[v.length - 1]].position.lineEnd;
+            const command = new MaybeSemanticCommand()
+              .setPosition(p)
+              .addChild(
+                new BashCommandCommand()
+                  .addChild(argsASTCache[v[0]].children)
+                  .setPosition(argsASTCache[v[0]].position)
+              );
+            for (let i = 1; i < v.length; i++) {
+              command.addChild(
+                new BashCommandArgs()
+                  .addChild(argsASTCache[v[i]].children)
+                  .setPosition(argsASTCache[v[i]].position)
+              );
+              argsASTCache[v[i]].remove();
+            }
+            abstract(command);
+            argsASTCache[v[0]].replace(command);
           }
         }
       }
@@ -750,7 +807,7 @@ export function createEnrichers(): {
     .filter((x) => x.endsWith(".yml"))
     .map((fname) => {
       const command = (
-        yaml.load(
+        yamlParser(
           fs.readFileSync(`${YAML_DIR}/${fname}`, "utf8")
         ) as CommandFile
       ).command;

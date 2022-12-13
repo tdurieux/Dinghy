@@ -1,5 +1,5 @@
 command:
-  prefix: SC-APT-GET
+  prefix: SC-APT
   providerFor:
     - apt-get
   optionsAll: &optionsAll
@@ -57,40 +57,40 @@ command:
     - cmd: $0 install [packages...]
       options:
         merge: [*optionsAll, *optionsInstall]
-      name: SC-APT-GET-INSTALL
+      name: SC-APT-INSTALL
     - cmd: $0 purge [packages...]
       options: *optionsAll
-      name: SC-APT-GET-PURGE
+      name: SC-APT-PURGE
     - cmd: $0 remove [packages...]
       options: *optionsAll
-      name: SC-APT-GET-REMOVE
+      name: SC-APT-REMOVE
     - cmd: $0 source <package>
       options: *optionsAll
-      name: SC-APT-GET-SOURCE
+      name: SC-APT-SOURCE
     - cmd: $0 build-dep [packages...]
       options: *optionsAll
-      name: SC-APT-GET-BUILD-DEP
+      name: SC-APT-BUILD-DEP
     - cmd: $0 clean
       options: *optionsAll
-      name: SC-APT-GET-CLEAN
+      name: SC-APT-CLEAN
     - cmd: $0 autoclean
       options: *optionsAll
-      name: SC-APT-GET-AUTO-CLEAN
+      name: SC-APT-AUTO-CLEAN
     - cmd: $0 autoremove [packages...]
       options: *optionsAll
-      name: SC-APT-GET-AUTO-REMOVE
+      name: SC-APT-AUTO-REMOVE
     - cmd: $0 check
       options: *optionsAll
-      name: SC-APT-GET-CHECK
+      name: SC-APT-CHECK
     - cmd: $0 update
       options: *optionsAll
-      name: SC-APT-GET-UPDATE
+      name: SC-APT-UPDATE
     - cmd: $0 upgrade [packages...]
       options: *optionsAll
-      name: SC-APT-GET-UPGRADE
+      name: SC-APT-UPGRADE
     - cmd: $0 dist-upgrade
       options: *optionsAll
-      name: SC-APT-GET-DIST-UPGRADE
+      name: SC-APT-DIST-UPGRADE
     - cmd: $0 clean
       options: *optionsAll
-      name: SC-APT-GET-CLEAN
+      name: SC-APT-CLEAN

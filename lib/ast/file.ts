@@ -20,9 +20,13 @@ export default class File {
 
   contentAtPosition(position: Position, length?: number): string {
     const lineStart = position.lineStart;
-    const lineEnd = position.lineEnd || lineStart;
+    const lineEnd =
+      position.lineEnd !== undefined ? position.lineEnd : lineStart;
     const columnStart = position.columnStart;
-    const columnEnd = position.columnEnd || columnStart + length;
+    const columnEnd =
+      position.columnEnd !== undefined
+        ? position.columnEnd
+        : columnStart + length;
 
     const lines = this.content.split("\n");
 

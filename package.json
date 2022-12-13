@@ -1,36 +1,37 @@
 {
-  "name": "dockerfile-debloat",
+  "name": "dinghy",
   "version": "1.0.0",
   "description": "",
   "main": "./lib/index.ts",
   "scripts": {
     "test": "jest --coverage",
     "build": "tsc",
-    "debloat": "ts-node lib/index.ts"
+    "debloat": "ts-node lib/index.ts",
+    "doc": "rm -rf ./docs && typedoc --name Dinghy lib"
   },
   "author": "Thomas Durieux",
   "license": "ISC",
   "dependencies": {
+    "@tdurieux/dockerfile-ast": "^0.5.1",
     "bash-parser": "^0.5.0",
     "commander": "^9.4.1",
     "diff": "^5.1.0",
-    "@tdurieux/dockerfile-ast": "^0.5.1",
-    "js-yaml": "^4.1.0",
     "mvdan-sh": "^0.10.1",
     "sh-syntax": "^0.3.7",
-    "yargs": "^17.6.0"
+    "yaml": "^2.1.3",
+    "yargs": "^17.6.2"
   },
   "devDependencies": {
     "@types/diff": "^5.0.2",
     "@types/jest": "^29.2.1",
-    "@types/js-yaml": "^4.0.5",
     "@types/mvdan-sh": "^0.10.0",
     "@types/node": "^18.11.8",
-    "@types/yargs": "^17.0.13",
+    "@types/yargs": "^17.0.14",
     "jest": "^29.0.3",
     "ts-jest": "^29.0.3",
     "ts-node": "^10.9.1",
     "tslib": "^2.4.1",
+    "typedoc": "^0.23.22",
     "typescript": "^4.8.4"
   }
 }

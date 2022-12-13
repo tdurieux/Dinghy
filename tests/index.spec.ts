@@ -111,7 +111,7 @@ describe("Testing docker parser with bash", () => {
 
     const matcher = new Matcher(dockerfile);
     expect(matcher.match(wgetUseHttpsUrl)).toHaveLength(4);
-    expect(matcher.match(sha256sumEchoOneSpaces)).toHaveLength(2);
+    expect(matcher.match(sha256sumEchoOneSpaces)).toHaveLength(0);
     expect(matcher.matchAll()).toHaveLength(6);
   });
   test("0bab414ad6285c04798e5f4480c10bf65da0e982", async () => {
@@ -121,11 +121,11 @@ describe("Testing docker parser with bash", () => {
     expect(dockerfile).toBeInstanceOf(DockerFile);
 
     const matcher = new Matcher(dockerfile);
-    expect(matcher.match(wgetUseHttpsUrl)).toHaveLength(3);
+    expect(matcher.match(wgetUseHttpsUrl)).toHaveLength(2);
     expect(matcher.match(configureShouldUseBuildFlag)).toHaveLength(3);
     expect(matcher.match(yumInstallRmVarCacheYum)).toHaveLength(1);
     expect(matcher.match(tarSomethingRmTheSomething)).toHaveLength(3);
-    expect(matcher.matchAll()).toHaveLength(10);
+    expect(matcher.matchAll()).toHaveLength(9);
   });
   test("087ced569a2e70e178c18bcf18426fa8fbc4f098", async () => {
     const dockerfile = await praseFile(
@@ -421,9 +421,9 @@ describe("Testing docker parser with bash", () => {
     expect(dockerfile).toBeInstanceOf(DockerFile);
     const matcher = new Matcher(dockerfile);
     expect(matcher.match(npmCacheCleanAfterInstall)).toHaveLength(2);
-    expect(matcher.match(ruleAptGetInstallUseNoRec)).toHaveLength(5);
-    expect(matcher.match(ruleAptGetInstallThenRemoveAptLists)).toHaveLength(5);
-    expect(matcher.matchAll()).toHaveLength(12);
+    expect(matcher.match(ruleAptGetInstallUseNoRec)).toHaveLength(6);
+    expect(matcher.match(ruleAptGetInstallThenRemoveAptLists)).toHaveLength(6);
+    expect(matcher.matchAll()).toHaveLength(14);
   });
   test("1fd3f7693e00a8689ba6fa2d34a6d1803166bae6", async () => {
     const dockerfile = await praseFile(
@@ -433,7 +433,10 @@ describe("Testing docker parser with bash", () => {
     const matcher = new Matcher(dockerfile);
     expect(matcher.match(curlUseHttpsUrl)).toHaveLength(2);
     expect(matcher.match(curlUseFlagF)).toHaveLength(2);
-    expect(matcher.matchAll()).toHaveLength(4);
+    expect(matcher.match(ruleAptGetUpdatePrecedesInstall)).toHaveLength(2);
+    expect(matcher.match(ruleAptGetInstallUseNoRec)).toHaveLength(6);
+    expect(matcher.match(ruleAptGetInstallThenRemoveAptLists)).toHaveLength(6);
+    expect(matcher.matchAll()).toHaveLength(19);
   });
   test("46ae47ac608f1b0bb5c1e66d0fd307542f1cd86c", async () => {
     const dockerfile = await praseFile(

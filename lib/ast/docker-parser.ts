@@ -7,7 +7,7 @@ import {
   Line,
   Shell,
 } from "@tdurieux/dockerfile-ast";
-import { existsSync, readFileSync } from "fs";
+import { existsSync } from "fs";
 import File from "./file";
 import { ShellParser } from "./docker-bash-parser";
 import {
@@ -366,6 +366,20 @@ export class DockerParser {
               this.rangeToPos(line.getInstructionRange())
             )
           );
+
+          // const cmdString = line
+          //   .getRawArgumentsContent()
+          //   // required to consider that the comments are in the bash AST otherwise they will break lines and make the AST invalid
+          //   .replace(/\r\n/gm, "\n")
+          //   .replace(/#([^\\\n]*)$/gm, "#$1\\")
+          //   .replace(/\\ +\n/gm, "\\\n")
+          //   .replace(/^( *)\n/gm, "$1\\\n");
+          // const cmdParser = new ShellParser(
+          //   cmdString,
+          //   this.rangeToPos(line.getArgumentsRange())
+          // );
+          // const cmdNode = await cmdParser.parse();
+          // cmd.addChild(cmdNode);
 
           let argus: Argument[] = (line as JSONInstruction).getJSONStrings();
           if (argus.length == 0) argus = line.getArguments();

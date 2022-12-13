@@ -1,22 +1,28 @@
-import { createEnrichers } from "./enrich";
-import {
-  BashCommandArgs,
-  BashCommandCommand,
-  BashLiteral,
-  DockerOpsNodeType,
-  MaybeSemanticCommand,
-} from "../ast/docker-type";
-import { abstract as abstraction } from "./abstraction";
+import { abstract } from "../enrich/";
+import { DockerFile, DockerOpsNodeType } from "../ast/docker-type";
 import { Rule, RULES } from "./rules";
-import { print } from "../ast/docker-printer";
-
+import { print } from "../ast/docker-pretty-printer";
 export class Violation {
   constructor(readonly rule: Rule, readonly node: DockerOpsNodeType) {}
 
-  public async repair() {
+  public async repair(opt = { clone: false }) {
     if (this.isStillValid()) {
-      return this.rule.repair(this.node);
+      let node = this.node;
+      if (opt.clone) {
+        const parent = this.node.getParent(DockerFile).clone();
+        parent.traverse((n) => {
+          if (
+            node.position.equals(n.position) &&
+            this.node.toString() == n.toString()
+          ) {
+            node = n;
+          }
+        });
+      }
+      await this.rule.repair(node);
+      return node;
     }
+    return this.node;
   }
 
   public isStillValid(): boolean {
@@ -28,7 +34,7 @@ export class Violation {
 
   public toString(): string {
     return `[VIOLATION] -> ${this.rule.description}
-                           ${print(this.node, true).replace(/\n */g, " ")} at ${
+                           ${print(this.node).replace(/\n */g, " ")} at ${
       this.node.position
     }`;
   }
@@ -38,38 +44,7 @@ export class Matcher {
   private _root: DockerOpsNodeType;
 
   constructor(root: DockerOpsNodeType, { toAbstract } = { toAbstract: true }) {
-    this._root = toAbstract ? Matcher.abstract(root) : root;
-  }
-
-  public static enrich(root: DockerOpsNodeType) {
-    const COMMAND_MAP = createEnrichers();
-
-    root.traverse(
-      (node) => {
-        if (node instanceof MaybeSemanticCommand) {
-          const commandAST = node.command;
-          if (!commandAST) return true;
-
-          const command = commandAST.getElement(BashLiteral)?.value;
-          if (!command) return true;
-
-          if (COMMAND_MAP[command]) {
-            const commandArgs = node.args.filter(
-              (e) => e.toString(true).trim() != "--"
-            );
-
-            // enrich the arguments of the command
-            COMMAND_MAP[command](
-              node,
-              commandArgs.map((c) => c.toString(true).trim()),
-              commandArgs
-            );
-          }
-        }
-      },
-      { includeSelf: true }
-    );
-    return root;
+    this._root = toAbstract ? abstract(root) : root;
   }
 
   /**
@@ -77,15 +52,6 @@ export class Matcher {
    */
   get node() {
     return this._root;
-  }
-
-  /**
-   * Abstract the node as a pre-step for the matching
-   * @param root
-   * @returns
-   */
-  private static abstract(root: DockerOpsNodeType) {
-    return abstraction(Matcher.enrich(root));
   }
 
   /**
@@ -143,8 +109,23 @@ export class Matcher {
       // if the 3 checks are good a violation has been found
       violations.push(new Violation(rule, candidate));
     }
-
-    return violations;
+    const toRemove = new Set<Violation>();
+    firstLoop: for (let i = 0; i < violations.length; i++) {
+      const v = violations[i];
+      for (let j = i + 1; j < violations.length; j++) {
+        const v2 = violations[j];
+        if (v.rule.name != v2.rule.name) continue;
+        if (
+          (v.node.position.lineEnd == v2.node.position.lineEnd &&
+            v.node.position.columnEnd == v2.node.position.columnEnd) ||
+          v == v2
+        ) {
+          toRemove.add(v);
+          continue firstLoop;
+        }
+      }
+    }
+    return violations.filter((e) => !toRemove.has(e));
   }
 
   public matchAll() {

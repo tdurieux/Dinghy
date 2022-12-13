@@ -33,3 +33,5 @@ command:
       options: *options
       name: SC-SUDO
       captureAfterFirstNonOption: args
+      postProcess:
+        - subCommand: args

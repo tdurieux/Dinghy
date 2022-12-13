@@ -20,3 +20,7 @@ command:
         strings:
           - --interactive
       name: SC-RM
+      postProcess:
+        - tagLastElement:
+            source: paths
+            tag: BASH-PATH

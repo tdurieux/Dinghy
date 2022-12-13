@@ -16,3 +16,7 @@ command:
     - cmd: $0 [paths...]
       options: *options
       name: SC-MKDIR
+      postProcess:
+        - tagLastElement:
+            source: paths
+            tag: BASH-PATH

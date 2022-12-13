@@ -31,7 +31,7 @@ describe("Testing enrich", () => {
     );
     const r = Matcher.enrich(root);
     expect(r.getElement(MaybeSemanticCommand)?.annotations).toEqual([
-      "SC-APT-GET-UPDATE",
+      "SC-APT-UPDATE",
     ]);
   });
 
@@ -39,6 +39,6 @@ describe("Testing enrich", () => {
     const root = await parseShell("cd ~;");
     const r = Matcher.enrich(root);
     expect(r.getElement(MaybeSemanticCommand)?.annotations).toEqual(["SC-CD"]);
-    expect(r.getElement(BashCommandArgs)?.annotations).toEqual(["SC-CD-PATH"]);
+    expect(r.getElement(BashCommandArgs)?.annotations).toContain("SC-CD-PATH");
   });
 });

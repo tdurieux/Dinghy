@@ -6,15 +6,16 @@ import {
   BashConditionBinaryLhs,
   BashConditionBinaryOp,
   BashConditionBinaryRhs,
+  BashIfThen,
   BashLiteral,
   BashOp,
   BashScript,
+  BashStatement,
   BashWord,
   DockerFile,
   DockerOpsNodeType,
   DockerOpsValueNode,
   DockerRun,
-  Position,
   Q,
   TreeSignature,
 } from "../ast/docker-type";
@@ -47,7 +48,10 @@ async function postFixWith(
     toInsert = toInsert.children[0];
   }
   new Matcher(toInsert);
-  const script = node.getParent(BashScript);
+  let script: DockerOpsNodeType = node.getParent(BashScript);
+  if (node.getParent(BashIfThen)) {
+    script = node.getParent(BashIfThen);
+  }
   let child = script.children[0];
   for (const c of script.children) {
     if (c === node || c.hasChild(node)) {
@@ -55,20 +59,38 @@ async function postFixWith(
       break;
     }
   }
+  const position = child.position.clone();
+  // position.lineStart = (child.position.lineEnd || 0) + 1;
+  toInsert.traverse(
+    (n) => {
+      n.setPosition(position);
+    },
+    { includeSelf: true }
+  );
 
-  // add at the end of the command
-  const binary = new BashConditionBinary();
-  binary.parent = child.parent;
-  child.replace(binary);
+  if (child instanceof BashStatement && child.semicolon) {
+    script.addChild(toInsert);
+  } else {
+    // add at the end of the command
+    const binary = new BashConditionBinary();
+    binary.parent = child.parent;
+    child.replace(binary);
 
-  binary
-    .addChild(new BashConditionBinaryLhs().addChild(child))
-    .addChild(new BashConditionBinaryOp().addChild(new BashOp("10")))
-    .addChild(
-      new BashConditionBinaryRhs().addChild(
-        toInsert.setPosition(new Position(node.position.lineEnd || 0 + 1, 0))
+    binary
+      .addChild(
+        new BashConditionBinaryLhs().setPosition(child.position).addChild(child)
       )
-    );
+      .addChild(
+        new BashConditionBinaryOp()
+          .setPosition(position)
+          .addChild(new BashOp("10").setPosition(position))
+      )
+      .addChild(
+        new BashConditionBinaryRhs()
+          .setPosition(position)
+          .addChild(toInsert.setPosition(position))
+      );
+  }
 }
 
 export const curlUseFlagF: Rule = {
@@ -82,7 +104,7 @@ export const curlUseFlagF: Rule = {
   source:
     "https://github.com/docker-library/python/pull/73/commits/033320b278e78732e5739f19bca5f8f29573b553",
   repair: async (violation) => {
-    const node = violation.original ? violation.original : violation;
+    const node = violation;
     node.addChild(
       new BashCommandArgs()
         .setPosition(node.children[0].position)
@@ -119,7 +141,7 @@ export const npmCacheCleanUseForce: Rule = {
   notes:
     "Had to split into two rules to describe both adding npm cache clean and using the --force flag",
   repair: async (violation) => {
-    const node = violation.original ? violation.original : violation;
+    const node = violation;
     node.addChild(
       new BashCommandArgs()
         .setPosition(node.children[2].position)
@@ -138,7 +160,7 @@ export const rmRecursiveAfterMktempD: Rule = {
   },
   source: "IMPLICIT --- you should remove temporary dirs in docker images",
   repair: async (violation) => {
-    const node = violation.original ? violation.original : violation;
+    const node = violation;
 
     postFixWith(
       node,
@@ -158,11 +180,16 @@ export const curlUseHttpsUrl: Rule = {
   source:
     "https://github.com/docker-library/php/pull/293/commits/2f96a00aaa90ee1c503140724936ca7005273df5",
   repair: async (violation) => {
-    const node = violation.original ? violation.original : violation;
-    node
-      .getElements(BashLiteral)
-      .filter((e) => e.value && e.value.includes("http:"))
-      .forEach((e) => (e.value = e.value.replace("http:", "https:")));
+    const node = violation;
+    node.traverse((x) => {
+      if (
+        x instanceof DockerOpsValueNode &&
+        x.value &&
+        x.value.includes("http:")
+      ) {
+        x.value = x.value.replace("http", "https");
+      }
+    });
   },
 };
 
@@ -170,18 +197,26 @@ export const wgetUseHttpsUrl: Rule = {
   scope: "INTRA-DIRECTIVE",
   name: "wgetUseHttpsUrl",
   description: "Use https:// urls with wget",
-  query: Q("SC-WGET", Q("SC-WGET-URL", Q("ALL", Q("ABS-URL-PROTOCOL-HTTP")))),
+  query: Q(
+    "SC-WGET",
+    Q("ALL", Q("SC-WGET-URL", Q("ALL", Q("ABS-URL-PROTOCOL-HTTP"))))
+  ),
   consequent: {
     inNode: Q("ABS-URL-PROTOCOL-HTTPS"),
   },
   source:
     "https://github.com/docker-library/php/pull/293/commits/2f96a00aaa90ee1c503140724936ca7005273df5",
   repair: async (violation) => {
-    const node = violation.original ? violation.original : violation;
-    node
-      .getElements(BashLiteral)
-      .filter((e) => e.value.includes("http:"))
-      .forEach((e) => (e.value = e.value.replace("http:", "https:")));
+    const node = violation;
+    node.traverse((x) => {
+      if (
+        x instanceof DockerOpsValueNode &&
+        x.value &&
+        x.value.includes("http:")
+      ) {
+        x.value = x.value.replace("http", "https");
+      }
+    });
   },
 };
 
@@ -196,7 +231,7 @@ export const pipUseNoCacheDir: Rule = {
   source:
     "https://github.com/docker-library/python/pull/50/commits/7663560df7547e69d13b1b548675502f4e0917d1",
   repair: async (violation) => {
-    const node = violation.original ? violation.original : violation;
+    const node = violation;
     node.addChild(
       new BashCommandArgs()
         .setPosition(node.children[1].position)
@@ -241,7 +276,7 @@ export const configureShouldUseBuildFlag: Rule = {
   source:
     "https://github.com/docker-library/ruby/pull/127/commits/be55938d970a392e7d41f17131a091b0a9f4bebc",
   repair: async (violation) => {
-    const node = violation.original ? violation.original : violation;
+    const node = violation;
     node.addChild(
       new BashCommandArgs()
         .setPosition(node.children[0].position.clone())
@@ -287,23 +322,21 @@ export const sha256sumEchoOneSpaces: Rule = {
   // query: Q("SC-SHA-256-SUM", Q("SC-SHA-256-SUM-F-CHECK")),
   query: Q(
     BashConditionBinary,
-    Q("ALL", Q("SC-ECHO")),
+    Q("ALL", Q("SC-ECHO", Q("ALL", Q("ABS-DOUBLE-SPACE")))),
     Q("ALL", Q("SC-SHA-256-SUM", Q("SC-SHA-256-SUM-F-CHECK")))
   ),
   consequent: {
-    inNode: Q("SC-ECHO", Q("SC-ECHO-ITEM", Q("ALL", Q("ABS-SINGLE-SPACE")))),
+    inNode: Q("SC-ECHO", Q("ALL", Q("ABS-SINGLE-SPACE"))),
   },
   source:
     "https://github.com/docker-library/memcached/pull/6/commits/a8c4206768821aa47579c6413be85be914875caa",
   notes:
     "sha1sum is old --- transliterated to use more modern sha256sum which most images are using",
   async repair(violation) {
-    const node = violation.original ? violation.original : violation;
-    const echoWithDoubleSpace = node
-      .getParent(BashConditionBinary)
-      .left.find(
-        Q("SC-ECHO", Q("SC-ECHO-ITEM", Q("ALL", Q("ABS-DOUBLE-SPACE"))))
-      );
+    const node = violation;
+    const echoWithDoubleSpace = node.find(
+      Q("SC-ECHO", Q("ALL", Q("ABS-DOUBLE-SPACE")))
+    );
     if (echoWithDoubleSpace) {
       echoWithDoubleSpace.forEach((n) =>
         n
@@ -386,7 +419,7 @@ export const yumInstallForceYes: Rule = {
   },
   source: "IMPLICIT -- based on apt-get install -y rule",
   repair: async (violation) => {
-    const node = violation.original ? violation.original : violation;
+    const node = violation;
     node.addChild(
       new BashCommandArgs()
         .setPosition(node.children[1].position)
@@ -428,12 +461,14 @@ export const tarSomethingRmTheSomething: Rule = {
   source:
     "IMPLICIT --- no reason to keep around duplicates (the compressed version and the uncompressed version)",
   repair: async (violation) => {
-    postFixWith(
-      violation,
-      await parseShell(
-        "rm " + violation.find(Q("ABS-EXTENSION-TAR"))[0]?.toString()
-      )
-    );
+    let file = violation.find(Q("ABS-EXTENSION-TAR"))[0]?.toString();
+    if (file.startsWith("-") && file.includes("=")) {
+      file = file.split("=")[1];
+    } else if (file.startsWith("-f")) {
+      file = file.substring(2);
+    }
+
+    postFixWith(violation, await parseShell("rm " + file));
   },
 };
 
@@ -448,7 +483,7 @@ export const gpgUseBatchFlag: Rule = {
   source:
     "https://github.com/docker-library/php/pull/747/commits/b99209cc078ebb7bf4614e870c2d69e0b3bed399",
   repair: async (violation) => {
-    const node = violation.original ? violation.original : violation;
+    const node = violation;
     node.addChild(
       new BashCommandArgs()
         .setPosition(node.children[0].position)
@@ -468,7 +503,7 @@ export const gpgUseHaPools: Rule = {
   source:
     "https://github.com/docker-library/httpd/pull/5/commits/63cd0ad57a12c76ff70d0f501f6c2f1580fa40f5",
   repair: async (violation) => {
-    const node = violation.original ? violation.original : violation;
+    const node = violation;
     node
       .getElements(BashLiteral)
       .filter((e) => e.value.includes("pool."))
@@ -481,14 +516,14 @@ export const ruleAptGetInstallUseY: Rule = {
   name: "ruleAptGetInstallUseY",
   description:
     "Must use the -y flag to avoid apt-get install requesting user interaction.",
-  query: Q("SC-APT-GET-INSTALL"),
+  query: Q("SC-APT-INSTALL"),
   consequent: {
-    inNode: Q("SC-APT-GET-F-YES"),
+    inNode: Q("SC-APT-F-YES"),
   },
   source:
     "IMPLICIT --- need to use non-interactive mode during image build except for very rare exceptions.",
   repair: async (violation) => {
-    const node = violation.original ? violation.original : violation;
+    const node = violation;
     node.addChild(
       new BashCommandArgs()
         .setPosition(node.children[1].position)
@@ -497,25 +532,37 @@ export const ruleAptGetInstallUseY: Rule = {
   },
 };
 
+export const ruleMoreThanOneInstall: Rule = {
+  scope: "INTER-DIRECTIVE",
+  name: "ruleMoreThanOneInstall",
+  description: "all apt-get install should group into one.",
+  source: "IMPLICIT --- slow down the build",
+  query: Q("ANY", Q("SC-APT-INSTALL"), Q("SC-APT-INSTALL")),
+  consequent: {},
+  repair: async (violation) => {
+    throw new Error("Not implemented");
+  },
+};
+
 export const ruleAptGetUpdatePrecedesInstall: Rule = {
   scope: "INTRA-DIRECTIVE",
   name: "ruleAptGetUpdatePrecedesInstall",
   description:
     "apt-get update && apt-get install should happen in a single layer.",
-  query: Q("SC-APT-GET-INSTALL"),
+  query: Q("SC-APT-INSTALL"),
   consequent: {
-    beforeNode: Q("SC-APT-GET-UPDATE"),
+    beforeNode: Q("SC-APT-UPDATE"),
   },
   source:
     "IMPLICIT --- one of Hadolint's recommendations and a docker best practice.",
   repair: async (violation) => {
     const root = violation.getParent(DockerFile);
-    const installs = root.find(Q("SC-APT-GET-INSTALL"));
+    const installs = root.find(Q("SC-APT-INSTALL"));
     if (installs.length !== 1) {
       // do not support more than one install
       return;
     }
-    const updates = root.find(Q("SC-APT-GET-UPDATE"));
+    const updates = root.find(Q("SC-APT-UPDATE"));
     if (updates.length !== 1) {
       // do not support more than one update
       return;
@@ -544,14 +591,14 @@ export const ruleAptGetInstallUseNoRec: Rule = {
   scope: "INTRA-DIRECTIVE",
   description:
     "Use the --no-install-recommends flag to save layer space and avoid hidden dependencies.",
-  query: Q("SC-APT-GET-INSTALL"),
+  query: Q("SC-APT-INSTALL"),
   consequent: {
-    inNode: Q("SC-APT-GET-F-NO-INSTALL-RECOMMENDS"),
+    inNode: Q("SC-APT-F-NO-INSTALL-RECOMMENDS"),
   },
   source:
     "https://github.com/docker-library/openjdk/pull/193/commits/1d6fa42735002d61625d18378f1ca2df39cb26a0",
   repair: async (violation) => {
-    const node = violation.original ? violation.original : violation;
+    const node = violation;
     node.addChild(
       new BashCommandArgs()
         .setPosition(node.children[1].position)
@@ -567,7 +614,7 @@ export const ruleAptGetInstallThenRemoveAptLists: Rule = {
   name: "ruleAptGetInstallThenRemoveAptLists",
   description:
     "rm -rf /var/lib/apt/lists/* after apt-get install to save layer space.",
-  query: Q("SC-APT-GET-INSTALL"),
+  query: Q("SC-APT-INSTALL"),
   consequent: {
     afterNode: Q(
       "SC-RM",
@@ -592,7 +639,7 @@ export const apkAddUseNoCache: Rule = {
   source:
     "https://github.com/docker-library/php/pull/228/commits/85d48c88b3e3dae303118275202327f14a8106f4",
   repair: async (violation) => {
-    const node = violation.original ? violation.original : violation;
+    const node = violation;
     node.addChild(
       new BashCommandArgs()
         .setPosition(node.children[1].position)
@@ -621,8 +668,9 @@ export const RULES: Rule[] = [
   gpgUseBatchFlag,
   gpgUseHaPools,
   ruleAptGetInstallUseY,
-  ruleAptGetUpdatePrecedesInstall,
   ruleAptGetInstallUseNoRec,
+  ruleAptGetUpdatePrecedesInstall,
   ruleAptGetInstallThenRemoveAptLists,
+  // ruleMoreThanOneInstall,
   apkAddUseNoCache,
 ];

@@ -48,7 +48,6 @@ export const abtractionRegex = {
 };
 
 const KEEP_TYPES = [
-  "SC-APT-GET-PACKAGE",
   "SC-APT-PACKAGE",
   "SC-APK-PACKAGE",
   "SC-YUM-PACKAGE",
@@ -80,9 +79,14 @@ export function abstract(node: DockerOpsNodeType) {
       node instanceof DockerOpsValueNode &&
       typeof node.value === "string"
     ) {
-      const value = node.toString(true);
+      let value = undefined;
+      if (node.position?.file) {
+        value = node.position.file.contentOfNode(node);
+      } else {
+        value = node.toString();
+      }
       for (const r in abtractionRegex) {
-        if (value.match(abtractionRegex[r])) {
+        if (value.match(abtractionRegex[r]) && !node.annotations.includes(r)) {
           node.annotations.push(r);
         }
       }
@@ -91,7 +95,12 @@ export function abstract(node: DockerOpsNodeType) {
       node instanceof BashDoubleQuoted ||
       node instanceof BashWord
     ) {
-      const value = node.toString(true);
+      let value = undefined;
+      if (node.position?.file) {
+        value = node.position.file.contentOfNode(node);
+      } else {
+        value = node.toString();
+      }
       for (const r in abtractionRegex) {
         if (value.match(abtractionRegex[r])) {
           node.annotations.push(r);

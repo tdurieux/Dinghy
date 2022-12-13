@@ -46,3 +46,5 @@ command:
         name: args
       rejectIf: [ '-a', '-o', '(', ')', '!', '-and', '-or', '-not' ]
       replaceEmptyArgsWith: [ '~' ]
+      postProcess:
+        - subCommand: args
