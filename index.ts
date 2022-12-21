@@ -1,4 +1,4 @@
-import { Command, Option } from "commander";
+import { Command } from "commander";
 import { Matcher } from "./lib/repair/rule-matcher";
 import { DockerParser } from "./lib/ast/docker-parser";
 import * as Diff from "diff";

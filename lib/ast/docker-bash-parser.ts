@@ -865,13 +865,13 @@ export class ShellParser {
     } catch (error) {
       if (error.Error) {
         error.message = (error as bashAST.ParseError).Error();
-        console.error(error.message);
         if (
           error.message.includes("bash/mksh feature") &&
           variant != syntax.LangBash
         ) {
           return this.parse(syntax.LangBash);
         }
+        console.error(error.message);
         this.errors.push(error);
       } else {
         console.error(error);
@@ -883,5 +883,5 @@ export class ShellParser {
 export async function parseShell(shString: string) {
   const p = new Position(0, 0);
   p.file = new File(undefined, shString);
-  return new ShellParser(shString).parse();
+  return new ShellParser(shString, p).parse();
 }
