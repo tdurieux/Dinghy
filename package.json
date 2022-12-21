@@ -3,6 +3,9 @@
   "version": "0.0.1",
   "description": "Dinghy is a tool to parse and manipulate Dockerfile",
   "main": "./lib/index.ts",
+  "engines": {
+    "node": ">=16.0.0"
+  },
   "scripts": {
     "test": "jest --coverage",
     "build": "tsc",
