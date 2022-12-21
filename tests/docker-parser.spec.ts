@@ -1,21 +1,14 @@
-import { parseDocker } from "../lib/ast/docker-parser";
-import { Matcher } from "../lib/debloat/rule-matcher";
+import { parseDocker } from "../lib/parser/docker-parser";
 
-describe("Testing shell parser", () => {
-  test("dollar", async () => {
+describe("Testing Docker parser", () => {
+  test("parse gemrc configuration", async () => {
     const root = await parseDocker(
-      `RUN mkdir -p /usr/local/etc \\
-  && { \\
-  echo 'install: --no-document'; \\
-  echo 'update: --no-document'; \\
-  } >> /usr/local/etc/gemrc`
-    );
-    expect(root.toString()).toBe(
       `RUN mkdir -p /usr/local/etc \\
   && { \\
     echo 'install: --no-document'; \\
     echo 'update: --no-document'; \\
-  } >> /usr/local/etc/gemrc\n`
+  } >> /usr/local/etc/gemrc`
     );
+    expect(root.toString()).toBe(root.position.file.content);
   });
 });

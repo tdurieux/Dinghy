@@ -1,4 +1,4 @@
-import { parseDocker } from "../lib/ast/docker-parser";
+import { parseDocker } from "../lib/parser/docker-parser";
 import {
   BashLiteral,
   BashScript,
@@ -7,7 +7,7 @@ import {
   DockerOpsNodeType,
   DockerRun,
   Q,
-} from "../lib/ast/docker-type";
+} from "../lib/docker-type";
 
 describe("Testing docker-types", () => {
   test("match", async () => {

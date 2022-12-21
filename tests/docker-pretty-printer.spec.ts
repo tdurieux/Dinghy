@@ -1,77 +1,84 @@
-import { parseDocker } from "../lib/ast/docker-parser";
-import { print } from "../lib/ast/docker-pretty-printer";
-import { Matcher } from "../lib/debloat/rule-matcher";
-import { praseFile } from "./test-utils";
+import { parseDocker } from "../lib/parser/docker-parser";
 
-describe("Testing docker-pretty-printer", () => {
-  test("print reprint_issue", async () => {
-    const dockerfile = await praseFile("reprint_issue");
-    expect(print(dockerfile)).toBe(dockerfile.position.file.content);
-  });
-  test("test repair non sha256", async () => {
-    const dockerfile = await praseFile("non_sha256echo");
-    expect(print(dockerfile)).toBe(dockerfile.position.file.content);
-    const matcher = new Matcher(dockerfile);
-    const violations = matcher.matchAll();
-    expect(violations.length).toBe(0);
-    violations.forEach(async (e) => {
-      await e.repair();
-    });
-    expect(print(dockerfile)).toBe(dockerfile.position.file.content);
-  });
-  test("print 7cb0093bfdd6688528619ff0af54cdf0f95243b3", async () => {
-    const dockerfile = await praseFile(
-      "7cb0093bfdd6688528619ff0af54cdf0f95243b3"
-    );
-    // expect(print(dockerfile)).toBe(dockerfile.fileContent);
-    const matcher = new Matcher(dockerfile);
-    matcher.matchAll().forEach(async (e) => {
-      await e.repair();
-    });
-    expect(print(dockerfile)).toBe(dockerfile.position.file.content);
+async function testPrint(original: string) {
+  const root = await parseDocker(original);
+  expect(root.toString(true)).toBe(original);
+}
+
+describe("Testing docker-printer", () => {
+  test("print RUN", async () => {
+    await testPrint("RUN wget localhost");
+    await testPrint("RUN wget localhost;");
+    await testPrint("RUN echo 'toto';");
+
+    await testPrint(`RUN set -eux; \\
+
+  savedAptMark = "\${apt-mark showmanual}"; \\
+  apt-get update;`);
+    await testPrint(`RUN case "\${dpkgArch}" in \\
+  armel) \\
+    extraConfigureArgs = "\${extraConfigureArgs} --with-arch=armv4t --with-float=soft" \\
+    ;; \\
+  armhf) \\
+    extraConfigureArgs = "\${extraConfigureArgs} --with-arch=armv7-a --with-float=hard --with-fpu=vfpv3-d16 --with-mode=thumb" \\
+    ;; \\
+esac;`);
   });
 
-  test("print 0001a177c159ca47f359c34cfdce78ecf80e7eb0", async () => {
-    const dockerfile = await praseFile(
-      "0001a177c159ca47f359c34cfdce78ecf80e7eb0"
-    );
-    // expect(print(dockerfile)).toBe(dockerfile.fileContent);
-    const matcher = new Matcher(dockerfile);
-    matcher.matchAll().forEach(async (e) => {
-      console.log(e.toString());
-      try {
-        await e.repair();
-      } catch (error) {}
-    });
-    expect(print(dockerfile)).toBe(dockerfile.position.file.content);
+  test("print FROM", async () => {
+    await testPrint("FROM adoptopenjdk:8-jdk-openj9");
+    await testPrint("FROM ubuntu:10");
+    await testPrint("FROM microsoft/windowsservercore:ltsc2016");
+    await testPrint("FROM ubuntu@10");
+    await testPrint("FROM ubuntu@10 as stage");
   });
 
-  test("print 0ce06af56644fb21ee96178f60c2d57eb73c8226", async () => {
-    const dockerfile = await praseFile(
-      "0ce06af56644fb21ee96178f60c2d57eb73c8226"
-    );
-    // expect(print(dockerfile)).toBe(dockerfile.fileContent);
-    const matcher = new Matcher(dockerfile);
-    matcher.matchAll().forEach(async (e) => {
-      console.log(e.toString());
-      try {
-        await e.repair();
-      } catch (error) {}
-    });
-    expect(print(dockerfile)).toBe(dockerfile.position.file.content);
+  test("print USER", async () => {
+    await testPrint("USER root");
   });
-  test("print 9cae314c3410c74d2267c7c71eeb17a83b13f07f", async () => {
-    const dockerfile = await praseFile(
-      "9cae314c3410c74d2267c7c71eeb17a83b13f07f"
-    );
-    // expect(print(dockerfile)).toBe(dockerfile.fileContent);
-    const matcher = new Matcher(dockerfile);
-    matcher.matchAll().forEach(async (e) => {
-      console.log(e.toString());
-      try {
-        await e.repair();
-      } catch (error) {}
-    });
-    expect(print(dockerfile)).toBe(dockerfile.position.file.content);
+  test("print ENV", async () => {
+    await testPrint("ENV GPG_KEYS 05AB33110949707C93A279E3D3EFE6B686867BA6");
+  });
+  test("print EXPOSE", async () => {
+    await testPrint("EXPOSE 8080");
+  });
+  test("print SHELL", async () => {
+    await testPrint("SHELL ['ls', '-l']");
+  });
+  test("print CMD", async () => {
+    await testPrint('CMD ["catalina.sh", "run"]');
+  });
+  test("print VOLUME", async () => {
+    await testPrint("VOLUME C:\\data\\db C:\\data\\configdb");
+  });
+  test("print WORKDIR", async () => {
+    await testPrint("WORKDIR $GOPATH");
+  });
+  test("print COPY", async () => {
+    await testPrint("COPY docker-entrypoint.sh /usr/local/bin/");
+  });
+  test("print ENTRYPOINT", async () => {
+    await testPrint(`ENTRYPOINT ["docker-entrypoint.sh"]`);
+  });
+  test("print LABEL", async () => {
+    await testPrint(`LABEL com.circleci.preserve-entrypoint=true`);
+  });
+  test("print MAINTAINER", async () => {
+    await testPrint(`MAINTAINER tdurieux`);
+  });
+  test("print comment", async () => {
+    await testPrint(`# comment`);
+  });
+});
+
+describe("Testing docker-printer of shell", () => {
+  test("Bash-OP", async () => {
+    await testPrint(`RUN make -j $(( nproc > 2 ? nproc - 2 : 1 ))`);
+    await testPrint(`RUN $(( nproc - 2 ))`);
+    await testPrint(`RUN $(( nproc + 2 ))`);
+    await testPrint(`RUN $(( nproc & 2 ))`);
+    await testPrint(`RUN $(( nproc * 2 ))`);
+    await testPrint(`RUN $(( nproc / 2 ))`);
+    await testPrint(`RUN $(( nproc | 2 ))`);
   });
 });

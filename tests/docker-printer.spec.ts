@@ -1,4 +1,4 @@
-import { parseDocker } from "../lib/ast/docker-parser";
+import { parseDocker } from "../lib/parser/docker-parser";
 
 async function testPrint(original: string) {
   const root = await parseDocker(original);

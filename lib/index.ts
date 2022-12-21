@@ -1,9 +1,6 @@
-export * as nodeType from "./ast/docker-type";
-export * as dockerParser from "./ast/docker-parser";
-export * as shellParser from "./ast/docker-bash-parser";
-export * as printer from "./ast/docker-printer";
-export * as prettyPrinter from "./ast/docker-pretty-printer";
-
-export * as runMatcher from "./repair/rule-matcher";
-export * as enricher from "./enrich/";
-export * as rules from "./repair/rules";
+export { default as File } from "./file";
+export * as nodeType from "./docker-type";
+export * as dockerfileParser from "./parser/docker-parser";
+export * as shellParser from "./parser/docker-bash-parser";
+export * as printer from "./printer/docker-printer";
+export * as prettyPrinter from "./printer/docker-pretty-printer";
