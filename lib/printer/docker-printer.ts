@@ -9,6 +9,8 @@ import {
   BashStatement,
   DockerFile,
   DockerKeyword,
+  DockerLiteral,
+  DockerName,
   DockerOpsNodeType,
   DockerRun,
   DockerShellArg,
@@ -210,6 +212,11 @@ export class Printer {
       case "DOCKER-NAME":
       case "DOCKER-KEYWORD":
         this.append(node.value).space();
+        break;
+      case "DOCKER-FLAG":
+        this.append("--" + node.getChild(DockerName).value)
+          .append("=")
+          .append(node.getChild(DockerLiteral).value);
         break;
       case "DOCKER-IMAGE-REPO":
         this.append(node.value + "/");

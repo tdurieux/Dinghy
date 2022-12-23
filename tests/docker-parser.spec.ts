@@ -11,4 +11,9 @@ describe("Testing Docker parser", () => {
     );
     expect(root.toString()).toBe(root.position.file.content);
   });
+
+  test("parse instruction tag", async () => {
+    const root = await parseDocker(`COPY --from=test source destination`);
+    expect(root.toString()).toBe(root.position.file.content);
+  });
 });

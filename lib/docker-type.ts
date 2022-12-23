@@ -144,7 +144,8 @@ export type DockerOpsNodeType =
   | DockerOnBuild
   | DockerStopSignal
   | DockerHealthCheck
-  | BashReplace;
+  | BashReplace
+  | DockerFlag;
 
 export interface QueryI {
   /**
@@ -1197,6 +1198,9 @@ export class DockerImageTag extends DockerOpsValueNode {
 }
 export class DockerLiteral extends DockerOpsValueNode {
   type: "DOCKER-LITERAL" = "DOCKER-LITERAL";
+}
+export class DockerFlag extends DockerOpsNode {
+  type: "DOCKER-FLAG" = "DOCKER-FLAG";
 }
 export class DockerName extends DockerOpsValueNode {
   type: "DOCKER-NAME" = "DOCKER-NAME";
