@@ -50,12 +50,10 @@ import {
   BashWhileExpression,
   BashWord,
   DockerOpsNodeType,
-  MaybeSemanticCommand,
+  BashCommand,
   Unknown,
   BashFunctionName,
   BashFunctionBody,
-  BashForInVariable,
-  BashForInItems,
   Position,
   BashComment,
   BashBraceGroup,
@@ -70,6 +68,7 @@ import {
   BashReplace,
   BashDollarBrace,
   BashArithmeticExpression,
+  BashWordIteration as BashWordIteration,
 } from "../docker-type";
 import File from "../file";
 
@@ -96,12 +95,16 @@ export class ShellParser {
   }
 
   private pos(node: bashAST.Node[] | bashAST.Node | bashAST.Pos): Position {
+    if (node == null) {
+      return null;
+    }
     if (Array.isArray(node)) {
+      node = node.filter((n) => n != null);
       if (node.length == 0) {
         return null;
       }
       const firstP = this.pos(node[0]);
-      const firstL = this.pos(node.at(-1));
+      const firstL = this.pos(node[node.length - 1]);
       firstP.lineEnd = firstL.lineEnd;
       firstP.columnEnd = firstL.columnEnd;
       return firstP;
@@ -344,7 +347,7 @@ export class ShellParser {
           ) as DockerOpsNodeType[];
         case "CallExpr":
           const CallExpr = node as bashAST.CallExpr;
-          const cmd = new MaybeSemanticCommand().setPosition(this.pos(node));
+          const cmd = new BashCommand().setPosition(this.pos(node));
           this.stackIn(cmd);
           for (let i = 0; i < CallExpr.Assigns.length; i++) {
             const arg = CallExpr.Assigns[i];
@@ -428,7 +431,7 @@ export class ShellParser {
           return bdp;
         case "Command":
           const Command = node as bashAST.Command;
-          const bCmd = new MaybeSemanticCommand().setPosition(this.pos(node));
+          const bCmd = new BashCommand().setPosition(this.pos(node));
           this.stackIn(bCmd);
           bCmd.addChild(this.handleNode(Command.Node));
           this.stackOut();
@@ -462,18 +465,15 @@ export class ShellParser {
         case "ForClause":
           const ForClause = node as bashAST.ForClause;
           const bfi = new BashForIn().setPosition(this.pos(node));
+          bfi.doPosition = this.pos(ForClause.DoPos);
+          bfi.donePosition = this.pos(ForClause.DonePos);
+          bfi.forPosition = this.pos(ForClause.ForPos);
 
           this.stackIn(bfi);
 
-          const loop = this.handleNode(ForClause.Loop) as BashWord;
-
-          bfi
-            .addChild(new BashForInVariable().addChild(loop.variable))
-            .addChild(new BashForInItems().addChild(loop.items));
-          const bfib = new BashForInBody().setPosition(
-            this.pos(ForClause.DoPos)
-          );
-          bfi.addChild(bfib);
+          const bfib = new BashForInBody().setPosition(this.pos(ForClause.Do));
+          const loop = this.handleNode(ForClause.Loop) as BashWordIteration;
+          bfi.addChild(loop).addChild(bfib);
           this.stackIn(bfib);
           this.handleNodes(ForClause.Do, bfib);
           this.stackOut();
@@ -614,9 +614,9 @@ export class ShellParser {
             return redirects;
           }
 
-          let cmdStmt = this.handleNode(Stmt.Cmd) as MaybeSemanticCommand;
+          let cmdStmt = this.handleNode(Stmt.Cmd) as BashCommand;
           if (Array.isArray(cmdStmt)) {
-            const tmp = new MaybeSemanticCommand()
+            const tmp = new BashCommand()
               .setPosition(this.pos(node))
               .addChild(new BashBraceGroup().setPosition(this.pos(node)));
             cmdStmt.map((i) => tmp.children[0].addChild(i));
@@ -688,6 +688,8 @@ export class ShellParser {
           const WhileClause = node as bashAST.WhileClause;
           const whileE = new BashWhileExpression().setPosition(this.pos(node));
           this.stackIn(whileE);
+          whileE.doPosition = this.pos(WhileClause.DoPos);
+          whileE.donePosition = this.pos(WhileClause.DonePos);
           whileE
             .addChild(
               this.handleNodes(
@@ -718,7 +720,8 @@ export class ShellParser {
           return bW;
         case "WordIter":
           const WordIter = node as bashAST.WordIter;
-          const bWW = new BashWord().setPosition(this.pos(node));
+          const bWW = new BashWordIteration().setPosition(this.pos(node));
+          bWW.inPosition = this.pos(WordIter.InPos);
           this.stackIn(bWW);
 
           const bV = new BashVariable(WordIter.Name.Value).setPosition(
@@ -748,8 +751,8 @@ export class ShellParser {
             const opP = this.pos(Expansion.Word);
             opP.columnStart -= 1;
             opP.lineEnd = opP.lineStart;
-            opP.columnEnd = opP.columnStart + bOp.toString().length;
             bOp.setPosition(opP);
+            opP.columnEnd = opP.columnStart + bOp.toString().length;
 
             const p = this.pos(Expansion.Word);
             p.columnStart -= bOp.toString().length;
@@ -795,7 +798,11 @@ export class ShellParser {
         case "Replace":
           const Replace = node as bashAST.Replace;
           // TODO: handle position
-          const brep = new BashReplace().setPosition(this.pos(Replace.Orig));
+          const brep = new BashReplace().setPosition(
+            this.pos([Replace.Orig, Replace.With])
+          );
+
+          brep.replaceAll = Replace.All;
           this.stackIn(brep);
           brep.addChild(this.handleNode(Replace.Orig));
           if (Replace.With) {

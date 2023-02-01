@@ -5,8 +5,9 @@ import {
   BashIfElse,
   BashIfExpression,
   BashLiteral,
-  BashOp,
   BashStatement,
+  BashWord,
+  BashWordIteration,
   DockerFile,
   DockerKeyword,
   DockerLiteral,
@@ -171,8 +172,6 @@ export class Printer {
       case "BASH-CONDITION-BINARY-RHS":
       case "BASH-CONDITION-BINARY-OP":
       case "BASH-CONDITION-UNARY-EXP":
-      case "BASH-FOR-IN-ITEMS":
-      case "BASH-FOR-IN-VARIABLE":
       case "BASH-FUNCTION-NAME":
       case "BASH-WORD":
       case "BASH-PATH":
@@ -184,6 +183,7 @@ export class Printer {
       case "BASH-ARITHMETIC-BINARY-RHS":
       case "BASH-ARITHMETIC-BINARY-LHS":
       case "BASH-ARITHMETIC-BINARY-OP":
+      case "BASH-BRACE-EXPANSION":
       case "BASH-UNTIL-CONDITION":
       case "BASH-UNTIL-BODY":
       case "DOCKER-FILE":
@@ -202,7 +202,6 @@ export class Printer {
       case "BASH-EXT-GLOB":
       case "BASH-DOLLAR-SINGLE-QUOTED":
       case "BASH-CONDITION-OP":
-      case "AS-STRING":
       case "DOCKER-ENTRYPOINT-EXECUTABLE":
       case "DOCKER-SHELL-ARG":
       case "DOCKER-SHELL-EXECUTABLE":
@@ -278,28 +277,56 @@ export class Printer {
         this.append("'").append(node.value).append("'");
         break;
       case "BASH-WHILE-EXPRESSION":
-        this.append("while ")
-          ._generate(node.condition)
-          .append("; do")
-          .indent()
-          .newLine()
-          ._generate(node.body)
-          .deindent()
-          .newLine()
-          .append("done");
+        this.append("while").space()._generate(node.condition).append(";");
+        const tmpDoNode = new BashLiteral("do").setPosition(node.doPosition);
+        this._printLineUntilPreviousNode(tmpDoNode);
+        this.previousNode = tmpDoNode;
+        this.space().append("do").space();
+        this.indent()._generate(node.body).deindent();
+        const tmpDoneNode = new BashLiteral("done").setPosition(
+          node.donePosition
+        );
+        this._printLineUntilPreviousNode(tmpDoneNode);
+        this.previousNode = tmpDoneNode;
+        this.append("done");
+        break;
+      case "BASH-WORD-ITERATION":
+        this._generate(node.variable);
+
+        if (node.items.length > 0) {
+          const tmpForInNode = new BashLiteral("in").setPosition(
+            node.inPosition
+          );
+          this._printLineUntilPreviousNode(tmpForInNode);
+          this.previousNode = tmpForInNode;
+          this.space().append("in");
+          // print items
+          node.iterate(
+            (node) => this.space()._generate(node),
+            (node) => node instanceof BashWord
+          );
+        }
         break;
       case "BASH-FOR-IN":
-        this.append("for ")
-          ._generate(node.variable)
-          .append(" in ")
-          ._generate(node.items)
-          .append("; do")
-          .indent()
-          .newLine()
-          ._generate(node.body)
-          .deindent()
-          .newLine()
-          .append("done");
+        const tmpForNode = new BashLiteral("for").setPosition(node.forPosition);
+        this._printLineUntilPreviousNode(tmpForNode);
+        this.previousNode = tmpForNode;
+        this.append("for").space();
+        this._generate(node.getChild(BashWordIteration));
+        this.append(";").space();
+
+        const tmpForDoNode = new BashLiteral("do").setPosition(node.doPosition);
+        this._printLineUntilPreviousNode(tmpForDoNode);
+        this.previousNode = tmpForDoNode;
+        this.append("do").indent();
+
+        this._generate(node.body).deindent();
+        const tmpForDoneNode = new BashLiteral("done").setPosition(
+          node.donePosition
+        );
+        this._printLineUntilPreviousNode(tmpForDoneNode);
+        this.previousNode = tmpForDoneNode;
+        this.append("done");
         break;
       case "BASH-FUNCTION":
         this._generate(node.name).append("() {").indent().newLine();
@@ -317,7 +344,7 @@ export class Printer {
         // print the if/elif/else before the condition
         const tmpNode = new BashLiteral(ifChar).setPosition(node.ifPosition);
         this._printLineUntilPreviousNode(tmpNode);
-        this.space().append(ifChar).space();
+        this.append(ifChar).space();
         this.previousNode = tmpNode;
 
         this._generate(node.condition)
@@ -325,16 +352,19 @@ export class Printer {
           ._generate(node.else);
 
         // dont print fi if elif, fi will be handled by the parent if
-        if (!(node.parent instanceof BashIfElse)) {
+        if (node.getChild(BashIfElse) === null) {
           const tmpNode = new BashLiteral("fi").setPosition(node.fiPosition);
           this._printLineUntilPreviousNode(tmpNode);
-          this.space().append("fi");
+          this.append("fi");
           this.previousNode = tmpNode;
         }
         break;
       case "BASH-IF-CONDITION":
         node.iterate((i) => this._generate(i));
-        this.append(";");
+        const lastChild = node.children[node.children.length - 1];
+        if (lastChild instanceof BashStatement && !lastChild.semicolon) {
+          this.append(";");
+        }
         break;
       case "BASH-IF-THEN":
         if (node.getParent(BashIfExpression).condition) {
@@ -436,12 +466,17 @@ export class Printer {
         this.space().append("<").space();
         node.iterate((node) => this._generate(node));
         break;
-      case "BASH-BRACE-EXPANSION":
-        this._generate(node.getChild(BashOp));
-        node.iterate(
-          (node) => this._generate(node),
-          (n) => !(n instanceof BashOp)
-        );
+
+      case "BASH-REPLACE":
+        this.append("/");
+        if (node.replaceAll) {
+          this.append("/");
+        }
+        this._generate(node.children[0]);
+        if (node.children.length > 1) {
+          this.append("/");
+          this._generate(node.children[1]);
+        }
         break;
       case "BASH-OP":
         try {
@@ -470,7 +505,12 @@ export class Printer {
       case "BASH-COMMAND-COMMAND":
       case "BASH-COMMAND-ARGS":
       case "BASH-COMMAND-PREFIX":
-        node.iterate((node) => this.space()._generate(node));
+        node.iterate((node) => {
+          if (this.output.length > 0 && this.output.at(-1).match(/\w/)) {
+            this.space();
+          }
+          this._generate(node);
+        });
         break;
       case "BASH-SUBSHELL":
         this.append("(");
@@ -488,7 +528,7 @@ export class Printer {
           delete this._previousNode["new"];
         }
         break;
-      case "MAYBE-SEMANTIC-COMMAND":
+      case "BASH-COMMAND":
         const prefix = node.getChildren(BashCommandPrefix);
         if (prefix) {
           prefix.forEach((i) => this._generate(i).space());
@@ -610,7 +650,11 @@ export class Printer {
         this.errors.push(er);
         break;
       default:
-        console.trace("Type not supported: ", node.type);
+        console.trace(
+          "Type not supported: " +
+            node.type +
+            node.position.file.contentOfNode(node)
+        );
         const e = new Error("Type not supported: " + node.type);
         (e as any).node = node;
         this.errors.push(e);
@@ -625,11 +669,11 @@ export class Printer {
         this._printLineUntilPreviousNode(tmpNode, node);
         this.previousNode = tmpNode;
         if (node.isBackground) {
-          this.space().append("&");
+          this.space().append("&").space();
         } else if (node.isCoprocess) {
-          this.space().append("|&");
+          this.space().append("|&").space();
         } else {
-          this.append(";");
+          this.append(";").space();
         }
       }
     }
@@ -638,6 +682,7 @@ export class Printer {
 
   print(): string {
     this._generate(this.root);
+    this.trimSpace();
     return this.output;
   }
 }

@@ -1,5 +1,7 @@
 # Dinghy
 
+[![CI](https://github.com/tdurieux/Dinghy/actions/workflows/build-test.yml/badge.svg)](https://github.com/tdurieux/Dinghy/actions/workflows/build-test.yml)
+
 A library to parse and modify Dockerfiles
 
 ## Install

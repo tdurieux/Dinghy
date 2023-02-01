@@ -18,8 +18,6 @@ import { existsSync } from "fs";
 import File from "../file";
 import { ShellParser } from "./docker-bash-parser";
 import {
-  AsString,
-  BashLiteral,
   DockerAdd,
   DockerAddSource,
   DockerAddTarget,
@@ -65,7 +63,6 @@ import {
   DockerOpsNode,
 } from "../docker-type";
 
-
 export class DockerParser {
   public readonly errors: Error[] = [];
 
@@ -83,7 +80,10 @@ export class DockerParser {
     return p;
   }
 
-  private addFlag2Node(instruction: ModifiableInstruction, node: DockerOpsNode) {
+  private addFlag2Node(
+    instruction: ModifiableInstruction,
+    node: DockerOpsNode
+  ) {
     instruction.getFlags().forEach((flag) => {
       node.addChild(
         new DockerFlag()
@@ -198,8 +198,10 @@ export class DockerParser {
             // required to consider that the comments are in the bash AST otherwise they will break lines and make the AST invalid
             .replace(/\r\n/gm, "\n")
             .replace(/#([^\\\n]*)$/gm, "#$1\\")
-            .replace(/\\ +\n/gm, "\\\n")
-            .replace(/^( *)\n/gm, "$1\\\n");
+            // empty space after \
+            .replace(/\\([ \t]+)\n/gm, "$1\\\n")
+            // empty line
+            .replace(/^(\s*)\n/gm, "$1\\\n");
           const shellParser = new ShellParser(
             shellString,
             this.rangeToPos(line.getArgumentsRange())
@@ -441,9 +443,9 @@ export class DockerParser {
           dockerfileAST.addChild(shell);
           break;
         case "user":
-          const user = new DockerUser().addChild(
-            new DockerLiteral(line.getArgumentsContent())
-          ).setPosition(position);
+          const user = new DockerUser()
+            .addChild(new DockerLiteral(line.getArgumentsContent()))
+            .setPosition(position);
 
           user.addChild(
             new DockerKeyword(line.getInstruction()).setPosition(
@@ -470,7 +472,7 @@ export class DockerParser {
         case "stopsignal":
           const stopsignal = new DockerStopSignal()
             .setPosition(position)
-            .addChild(new AsString(line.getArgumentsContent()));
+            .addChild(new DockerLiteral(line.getArgumentsContent()));
 
           stopsignal.addChild(
             new DockerKeyword(line.getInstruction()).setPosition(
@@ -546,7 +548,7 @@ export class DockerParser {
           dockerfileAST.addChild(
             new Unknown()
               .setPosition(position)
-              .addChild(new BashLiteral(command))
+              .addChild(new DockerLiteral(command))
           );
       }
     }

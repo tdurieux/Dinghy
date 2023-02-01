@@ -1,4 +1,4 @@
-<!DOCTYPE html><html class="default" lang="en"><head><meta charSet="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>AsString | Dinghy</title><meta name="description" content="Documentation for Dinghy"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="../assets/style.css"/><link rel="stylesheet" href="../assets/highlight.css"/><script async src="../assets/search.js" id="search-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os"</script><header class="tsd-page-toolbar">
+<!DOCTYPE html><html class="default" lang="en"><head><meta charSet="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>DockerFlag | Dinghy</title><meta name="description" content="Documentation for Dinghy"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="../assets/style.css"/><link rel="stylesheet" href="../assets/highlight.css"/><script async src="../assets/search.js" id="search-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os"</script><header class="tsd-page-toolbar">
 <div class="tsd-toolbar-contents container">
 <div class="table-cell" id="tsd-search" data-base="..">
 <div class="field"><label for="tsd-search-field" class="tsd-widget tsd-toolbar-icon search no-caption"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M15.7824 13.833L12.6666 10.7177C12.5259 10.5771 12.3353 10.499 12.1353 10.499H11.6259C12.4884 9.39596 13.001 8.00859 13.001 6.49937C13.001 2.90909 10.0914 0 6.50048 0C2.90959 0 0 2.90909 0 6.49937C0 10.0896 2.90959 12.9987 6.50048 12.9987C8.00996 12.9987 9.39756 12.4863 10.5008 11.6239V12.1332C10.5008 12.3332 10.5789 12.5238 10.7195 12.6644L13.8354 15.7797C14.1292 16.0734 14.6042 16.0734 14.8948 15.7797L15.7793 14.8954C16.0731 14.6017 16.0731 14.1267 15.7824 13.833ZM6.50048 10.499C4.29094 10.499 2.50018 8.71165 2.50018 6.49937C2.50018 4.29021 4.28781 2.49976 6.50048 2.49976C8.71001 2.49976 10.5008 4.28708 10.5008 6.49937C10.5008 8.70852 8.71314 10.499 6.50048 10.499Z" fill="var(--color-text)"></path></svg></label><input type="text" id="tsd-search-field" aria-label="Search"/></div>
@@ -14,16 +14,16 @@
 <ul class="tsd-breadcrumb">
 <li><a href="../modules.html">Dinghy</a></li>
 <li><a href="../modules/nodeType.html">nodeType</a></li>
-<li><a href="nodeType.AsString.html">AsString</a></li></ul>
-<h1>Class AsString</h1></div>
+<li><a href="nodeType.DockerFlag.html">DockerFlag</a></li></ul>
+<h1>Class DockerFlag</h1></div>
 <section class="tsd-panel tsd-hierarchy">
 <h4>Hierarchy</h4>
 <ul class="tsd-hierarchy">
-<li><a href="nodeType.DockerOpsValueNode.html" class="tsd-signature-type" data-tsd-kind="Class">DockerOpsValueNode</a>
+<li><a href="nodeType.DockerOpsNode.html" class="tsd-signature-type" data-tsd-kind="Class">DockerOpsNode</a>
 <ul class="tsd-hierarchy">
-<li><span class="target">AsString</span></li></ul></li></ul></section><aside class="tsd-sources">
+<li><span class="target">DockerFlag</span></li></ul></li></ul></section><aside class="tsd-sources">
 <ul>
-<li>Defined in docker-type.ts:689</li></ul></aside>
+<li>Defined in <a href="https://github.com/tdurieux/Dinghy/blob/e287cf9/lib/docker-type.ts#L1224">docker-type.ts:1224</a></li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-index-accordion" open><summary class="tsd-accordion-summary tsd-index-summary">
@@ -31,95 +31,87 @@
 <div class="tsd-accordion-details">
 <section class="tsd-index-section">
 <h3 class="tsd-index-heading">Constructors</h3>
-<div class="tsd-index-list"><a href="nodeType.AsString.html#constructor" class="tsd-index-link tsd-kind-constructor tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><rect fill="var(--color-icon-background)" stroke="#4D7FFF" stroke-width="1.5" x="1" y="1" width="22" height="22" rx="12" id="icon-512-path"></rect><path d="M11.898 16.1201C11.098 16.1201 10.466 15.8961 10.002 15.4481C9.53803 15.0001 9.30603 14.3841 9.30603 13.6001V9.64012C9.30603 8.85612 9.53803 8.24012 10.002 7.79212C10.466 7.34412 11.098 7.12012 11.898 7.12012C12.682 7.12012 13.306 7.34812 13.77 7.80412C14.234 8.25212 14.466 8.86412 14.466 9.64012H13.386C13.386 9.14412 13.254 8.76412 12.99 8.50012C12.734 8.22812 12.37 8.09212 11.898 8.09212C11.426 8.09212 11.054 8.22412 10.782 8.48812C10.518 8.75212 10.386 9.13212 10.386 9.62812V13.6001C10.386 14.0961 10.518 14.4801 10.782 14.7521C11.054 15.0161 11.426 15.1481 11.898 15.1481C12.37 15.1481 12.734 15.0161 12.99 14.7521C13.254 14.4801 13.386 14.0961 13.386 13.6001H14.466C14.466 14.3761 14.234 14.9921 13.77 15.4481C13.306 15.8961 12.682 16.1201 11.898 16.1201Z" fill="var(--color-text)" id="icon-512-text"></path></svg><span>constructor</span></a>
+<div class="tsd-index-list"><a href="nodeType.DockerFlag.html#constructor" class="tsd-index-link tsd-kind-constructor tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><rect fill="var(--color-icon-background)" stroke="#4D7FFF" stroke-width="1.5" x="1" y="1" width="22" height="22" rx="12" id="icon-512-path"></rect><path d="M11.898 16.1201C11.098 16.1201 10.466 15.8961 10.002 15.4481C9.53803 15.0001 9.30603 14.3841 9.30603 13.6001V9.64012C9.30603 8.85612 9.53803 8.24012 10.002 7.79212C10.466 7.34412 11.098 7.12012 11.898 7.12012C12.682 7.12012 13.306 7.34812 13.77 7.80412C14.234 8.25212 14.466 8.86412 14.466 9.64012H13.386C13.386 9.14412 13.254 8.76412 12.99 8.50012C12.734 8.22812 12.37 8.09212 11.898 8.09212C11.426 8.09212 11.054 8.22412 10.782 8.48812C10.518 8.75212 10.386 9.13212 10.386 9.62812V13.6001C10.386 14.0961 10.518 14.4801 10.782 14.7521C11.054 15.0161 11.426 15.1481 11.898 15.1481C12.37 15.1481 12.734 15.0161 12.99 14.7521C13.254 14.4801 13.386 14.0961 13.386 13.6001H14.466C14.466 14.3761 14.234 14.9921 13.77 15.4481C13.306 15.8961 12.682 16.1201 11.898 16.1201Z" fill="var(--color-text)" id="icon-512-text"></path></svg><span>constructor</span></a>
 </div></section>
 <section class="tsd-index-section">
 <h3 class="tsd-index-heading">Properties</h3>
-<div class="tsd-index-list"><a href="nodeType.AsString.html#annotations" class="tsd-index-link tsd-kind-property tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><rect fill="var(--color-icon-background)" stroke="#FF984D" stroke-width="1.5" x="1" y="1" width="22" height="22" rx="12" id="icon-1024-path"></rect><path d="M9.354 16V7.24H12.174C12.99 7.24 13.638 7.476 14.118 7.948C14.606 8.412 14.85 9.036 14.85 9.82C14.85 10.604 14.606 11.232 14.118 11.704C13.638 12.168 12.99 12.4 12.174 12.4H10.434V16H9.354ZM10.434 11.428H12.174C12.646 11.428 13.022 11.284 13.302 10.996C13.59 10.7 13.734 10.308 13.734 9.82C13.734 9.324 13.59 8.932 13.302 8.644C13.022 8.356 12.646 8.212 12.174 8.212H10.434V11.428Z" fill="var(--color-text)" id="icon-1024-text"></path></svg><span>annotations</span></a>
-<a href="nodeType.AsString.html#children" class="tsd-index-link tsd-kind-property tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-1024-path"></use><use href="#icon-1024-text"></use></svg><span>children</span></a>
-<a href="nodeType.AsString.html#isChanged" class="tsd-index-link tsd-kind-property tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-1024-path"></use><use href="#icon-1024-text"></use></svg><span>is<wbr/>Changed</span></a>
-<a href="nodeType.AsString.html#parent" class="tsd-index-link tsd-kind-property tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-1024-path"></use><use href="#icon-1024-text"></use></svg><span>parent</span></a>
-<a href="nodeType.AsString.html#type" class="tsd-index-link tsd-kind-property tsd-parent-kind-class"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-1024-path"></use><use href="#icon-1024-text"></use></svg><span>type</span></a>
+<div class="tsd-index-list"><a href="nodeType.DockerFlag.html#annotations" class="tsd-index-link tsd-kind-property tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><rect fill="var(--color-icon-background)" stroke="#FF984D" stroke-width="1.5" x="1" y="1" width="22" height="22" rx="12" id="icon-1024-path"></rect><path d="M9.354 16V7.24H12.174C12.99 7.24 13.638 7.476 14.118 7.948C14.606 8.412 14.85 9.036 14.85 9.82C14.85 10.604 14.606 11.232 14.118 11.704C13.638 12.168 12.99 12.4 12.174 12.4H10.434V16H9.354ZM10.434 11.428H12.174C12.646 11.428 13.022 11.284 13.302 10.996C13.59 10.7 13.734 10.308 13.734 9.82C13.734 9.324 13.59 8.932 13.302 8.644C13.022 8.356 12.646 8.212 12.174 8.212H10.434V11.428Z" fill="var(--color-text)" id="icon-1024-text"></path></svg><span>annotations</span></a>
+<a href="nodeType.DockerFlag.html#children" class="tsd-index-link tsd-kind-property tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-1024-path"></use><use href="#icon-1024-text"></use></svg><span>children</span></a>
+<a href="nodeType.DockerFlag.html#isChanged" class="tsd-index-link tsd-kind-property tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-1024-path"></use><use href="#icon-1024-text"></use></svg><span>is<wbr/>Changed</span></a>
+<a href="nodeType.DockerFlag.html#parent" class="tsd-index-link tsd-kind-property tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-1024-path"></use><use href="#icon-1024-text"></use></svg><span>parent</span></a>
+<a href="nodeType.DockerFlag.html#type" class="tsd-index-link tsd-kind-property tsd-parent-kind-class"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-1024-path"></use><use href="#icon-1024-text"></use></svg><span>type</span></a>
 </div></section>
 <section class="tsd-index-section">
 <h3 class="tsd-index-heading">Accessors</h3>
-<div class="tsd-index-list"><a href="nodeType.AsString.html#position" class="tsd-index-link tsd-kind-accessor tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><rect fill="var(--color-icon-background)" stroke="#FF4D4D" stroke-width="1.5" x="1" y="1" width="22" height="22" rx="12" id="icon-262144-path"></rect><path d="M8.85 16L11.13 7.24H12.582L14.85 16H13.758L13.182 13.672H10.53L9.954 16H8.85ZM10.746 12.76H12.954L12.282 10.06C12.154 9.548 12.054 9.12 11.982 8.776C11.91 8.432 11.866 8.208 11.85 8.104C11.834 8.208 11.79 8.432 11.718 8.776C11.646 9.12 11.546 9.544 11.418 10.048L10.746 12.76Z" fill="var(--color-text)" id="icon-262144-text"></path></svg><span>position</span></a>
-<a href="nodeType.AsString.html#value" class="tsd-index-link tsd-kind-accessor tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-262144-path"></use><use href="#icon-262144-text"></use></svg><span>value</span></a>
+<div class="tsd-index-list"><a href="nodeType.DockerFlag.html#position" class="tsd-index-link tsd-kind-accessor tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><rect fill="var(--color-icon-background)" stroke="#FF4D4D" stroke-width="1.5" x="1" y="1" width="22" height="22" rx="12" id="icon-262144-path"></rect><path d="M8.85 16L11.13 7.24H12.582L14.85 16H13.758L13.182 13.672H10.53L9.954 16H8.85ZM10.746 12.76H12.954L12.282 10.06C12.154 9.548 12.054 9.12 11.982 8.776C11.91 8.432 11.866 8.208 11.85 8.104C11.834 8.208 11.79 8.432 11.718 8.776C11.646 9.12 11.546 9.544 11.418 10.048L10.746 12.76Z" fill="var(--color-text)" id="icon-262144-text"></path></svg><span>position</span></a>
 </div></section>
 <section class="tsd-index-section">
 <h3 class="tsd-index-heading">Methods</h3>
-<div class="tsd-index-list"><a href="nodeType.AsString.html#addChild" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><rect fill="var(--color-icon-background)" stroke="#FF4DB8" stroke-width="1.5" x="1" y="1" width="22" height="22" rx="12" id="icon-2048-path"></rect><path d="M9.162 16V7.24H10.578L11.514 10.072C11.602 10.328 11.674 10.584 11.73 10.84C11.794 11.088 11.842 11.28 11.874 11.416C11.906 11.28 11.954 11.088 12.018 10.84C12.082 10.584 12.154 10.324 12.234 10.06L13.122 7.24H14.538V16H13.482V12.82C13.482 12.468 13.49 12.068 13.506 11.62C13.53 11.172 13.558 10.716 13.59 10.252C13.622 9.78 13.654 9.332 13.686 8.908C13.726 8.476 13.762 8.1 13.794 7.78L12.366 12.16H11.334L9.894 7.78C9.934 8.092 9.97 8.456 10.002 8.872C10.042 9.28 10.078 9.716 10.11 10.18C10.142 10.636 10.166 11.092 10.182 11.548C10.206 12.004 10.218 12.428 10.218 12.82V16H9.162Z" fill="var(--color-text)" id="icon-2048-text"></path></svg><span>add<wbr/>Child</span></a>
-<a href="nodeType.AsString.html#clone" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>clone</span></a>
-<a href="nodeType.AsString.html#find" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>find</span></a>
-<a href="nodeType.AsString.html#getChild" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>get<wbr/>Child</span></a>
-<a href="nodeType.AsString.html#getChildren" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>get<wbr/>Children</span></a>
-<a href="nodeType.AsString.html#getElement" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>get<wbr/>Element</span></a>
-<a href="nodeType.AsString.html#getElements" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>get<wbr/>Elements</span></a>
-<a href="nodeType.AsString.html#getParent" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>get<wbr/>Parent</span></a>
-<a href="nodeType.AsString.html#hasChanges" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>has<wbr/>Changes</span></a>
-<a href="nodeType.AsString.html#hasChild" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>has<wbr/>Child</span></a>
-<a href="nodeType.AsString.html#isBefore" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>is<wbr/>Before</span></a>
-<a href="nodeType.AsString.html#isInside" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>is<wbr/>Inside</span></a>
-<a href="nodeType.AsString.html#iterate" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>iterate</span></a>
-<a href="nodeType.AsString.html#match" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>match</span></a>
-<a href="nodeType.AsString.html#remove" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>remove</span></a>
-<a href="nodeType.AsString.html#replace" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>replace</span></a>
-<a href="nodeType.AsString.html#setPosition" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>set<wbr/>Position</span></a>
-<a href="nodeType.AsString.html#toString" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>to<wbr/>String</span></a>
-<a href="nodeType.AsString.html#traverse" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>traverse</span></a>
+<div class="tsd-index-list"><a href="nodeType.DockerFlag.html#addChild" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><rect fill="var(--color-icon-background)" stroke="#FF4DB8" stroke-width="1.5" x="1" y="1" width="22" height="22" rx="12" id="icon-2048-path"></rect><path d="M9.162 16V7.24H10.578L11.514 10.072C11.602 10.328 11.674 10.584 11.73 10.84C11.794 11.088 11.842 11.28 11.874 11.416C11.906 11.28 11.954 11.088 12.018 10.84C12.082 10.584 12.154 10.324 12.234 10.06L13.122 7.24H14.538V16H13.482V12.82C13.482 12.468 13.49 12.068 13.506 11.62C13.53 11.172 13.558 10.716 13.59 10.252C13.622 9.78 13.654 9.332 13.686 8.908C13.726 8.476 13.762 8.1 13.794 7.78L12.366 12.16H11.334L9.894 7.78C9.934 8.092 9.97 8.456 10.002 8.872C10.042 9.28 10.078 9.716 10.11 10.18C10.142 10.636 10.166 11.092 10.182 11.548C10.206 12.004 10.218 12.428 10.218 12.82V16H9.162Z" fill="var(--color-text)" id="icon-2048-text"></path></svg><span>add<wbr/>Child</span></a>
+<a href="nodeType.DockerFlag.html#clone" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>clone</span></a>
+<a href="nodeType.DockerFlag.html#find" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>find</span></a>
+<a href="nodeType.DockerFlag.html#getChild" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>get<wbr/>Child</span></a>
+<a href="nodeType.DockerFlag.html#getChildren" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>get<wbr/>Children</span></a>
+<a href="nodeType.DockerFlag.html#getElement" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>get<wbr/>Element</span></a>
+<a href="nodeType.DockerFlag.html#getElements" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>get<wbr/>Elements</span></a>
+<a href="nodeType.DockerFlag.html#getParent" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>get<wbr/>Parent</span></a>
+<a href="nodeType.DockerFlag.html#hasChanges" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>has<wbr/>Changes</span></a>
+<a href="nodeType.DockerFlag.html#hasChild" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>has<wbr/>Child</span></a>
+<a href="nodeType.DockerFlag.html#isBefore" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>is<wbr/>Before</span></a>
+<a href="nodeType.DockerFlag.html#isInside" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>is<wbr/>Inside</span></a>
+<a href="nodeType.DockerFlag.html#iterate" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>iterate</span></a>
+<a href="nodeType.DockerFlag.html#match" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>match</span></a>
+<a href="nodeType.DockerFlag.html#remove" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>remove</span></a>
+<a href="nodeType.DockerFlag.html#replace" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>replace</span></a>
+<a href="nodeType.DockerFlag.html#setPosition" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>set<wbr/>Position</span></a>
+<a href="nodeType.DockerFlag.html#toString" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>to<wbr/>String</span></a>
+<a href="nodeType.DockerFlag.html#traverse" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>traverse</span></a>
 </div></section></div></details></section></section>
 <section class="tsd-panel-group tsd-member-group">
 <h2>Constructors</h2>
 <section class="tsd-panel tsd-member tsd-kind-constructor tsd-parent-kind-class tsd-is-inherited"><a id="constructor" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>constructor</span><a href="#constructor" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" id="icon-anchor-a"></path><path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5" id="icon-anchor-b"></path><path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5" id="icon-anchor-c"></path></svg></a></h3>
 <ul class="tsd-signatures tsd-kind-constructor tsd-parent-kind-class tsd-is-inherited">
-<li class="tsd-signature tsd-anchor-link" id="constructor.new_AsString">new <wbr/>As<wbr/>String<span class="tsd-signature-symbol">(</span>_value<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="nodeType.AsString.html" class="tsd-signature-type" data-tsd-kind="Class">AsString</a><a href="#constructor.new_AsString" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></li>
+<li class="tsd-signature tsd-anchor-link" id="constructor.new_DockerFlag">new <wbr/>Docker<wbr/>Flag<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="nodeType.DockerFlag.html" class="tsd-signature-type" data-tsd-kind="Class">DockerFlag</a><a href="#constructor.new_DockerFlag" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></li>
 <li class="tsd-description">
-<div class="tsd-parameters">
-<h4 class="tsd-parameters-title">Parameters</h4>
-<ul class="tsd-parameter-list">
-<li>
-<h5>_value: <span class="tsd-signature-type">string</span></h5></li></ul></div>
-<h4 class="tsd-returns-title">Returns <a href="nodeType.AsString.html" class="tsd-signature-type" data-tsd-kind="Class">AsString</a></h4><aside class="tsd-sources">
-<p>Inherited from <a href="nodeType.DockerOpsValueNode.html">DockerOpsValueNode</a>.<a href="nodeType.DockerOpsValueNode.html#constructor">constructor</a></p>
-<ul>
-<li>Defined in docker-type.ts:665</li></ul></aside></li></ul></section></section>
+<h4 class="tsd-returns-title">Returns <a href="nodeType.DockerFlag.html" class="tsd-signature-type" data-tsd-kind="Class">DockerFlag</a></h4><aside class="tsd-sources">
+<p>Inherited from <a href="nodeType.DockerOpsNode.html">DockerOpsNode</a>.<a href="nodeType.DockerOpsNode.html#constructor">constructor</a></p></aside></li></ul></section></section>
 <section class="tsd-panel-group tsd-member-group">
 <h2>Properties</h2>
 <section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class tsd-is-inherited"><a id="annotations" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><code class="tsd-tag ts-flagReadonly">Readonly</code> <span>annotations</span><a href="#annotations" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
 <div class="tsd-signature">annotations<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol"> = []</span></div><aside class="tsd-sources">
-<p>Inherited from <a href="nodeType.DockerOpsValueNode.html">DockerOpsValueNode</a>.<a href="nodeType.DockerOpsValueNode.html#annotations">annotations</a></p>
+<p>Inherited from <a href="nodeType.DockerOpsNode.html">DockerOpsNode</a>.<a href="nodeType.DockerOpsNode.html#annotations">annotations</a></p>
 <ul>
-<li>Defined in docker-type.ts:227</li></ul></aside></section>
+<li>Defined in <a href="https://github.com/tdurieux/Dinghy/blob/e287cf9/lib/docker-type.ts#L225">docker-type.ts:225</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class tsd-is-inherited"><a id="children" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>children</span><a href="#children" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
 <div class="tsd-signature">children<span class="tsd-signature-symbol">:</span> <a href="../types/nodeType.DockerOpsNodeType.html" class="tsd-signature-type" data-tsd-kind="Type alias">DockerOpsNodeType</a><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol"> = []</span></div>
 <div class="tsd-comment tsd-typography"><p>The children nodes</p>
 </div><aside class="tsd-sources">
-<p>Inherited from <a href="nodeType.DockerOpsValueNode.html">DockerOpsValueNode</a>.<a href="nodeType.DockerOpsValueNode.html#children">children</a></p>
+<p>Inherited from <a href="nodeType.DockerOpsNode.html">DockerOpsNode</a>.<a href="nodeType.DockerOpsNode.html#children">children</a></p>
 <ul>
-<li>Defined in docker-type.ts:217</li></ul></aside></section>
+<li>Defined in <a href="https://github.com/tdurieux/Dinghy/blob/e287cf9/lib/docker-type.ts#L215">docker-type.ts:215</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class tsd-is-inherited"><a id="isChanged" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>is<wbr/>Changed</span><a href="#isChanged" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
 <div class="tsd-signature">is<wbr/>Changed<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol"> = false</span></div><aside class="tsd-sources">
-<p>Inherited from <a href="nodeType.DockerOpsValueNode.html">DockerOpsValueNode</a>.<a href="nodeType.DockerOpsValueNode.html#isChanged">isChanged</a></p>
+<p>Inherited from <a href="nodeType.DockerOpsNode.html">DockerOpsNode</a>.<a href="nodeType.DockerOpsNode.html#isChanged">isChanged</a></p>
 <ul>
-<li>Defined in docker-type.ts:223</li></ul></aside></section>
+<li>Defined in <a href="https://github.com/tdurieux/Dinghy/blob/e287cf9/lib/docker-type.ts#L221">docker-type.ts:221</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class tsd-is-inherited"><a id="parent" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>parent</span><a href="#parent" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
 <div class="tsd-signature">parent<span class="tsd-signature-symbol">:</span> <a href="../types/nodeType.DockerOpsNodeType.html" class="tsd-signature-type" data-tsd-kind="Type alias">DockerOpsNodeType</a><span class="tsd-signature-symbol"> = null</span></div>
 <div class="tsd-comment tsd-typography"><p>The parent node</p>
 </div><aside class="tsd-sources">
-<p>Inherited from <a href="nodeType.DockerOpsValueNode.html">DockerOpsValueNode</a>.<a href="nodeType.DockerOpsValueNode.html#parent">parent</a></p>
+<p>Inherited from <a href="nodeType.DockerOpsNode.html">DockerOpsNode</a>.<a href="nodeType.DockerOpsNode.html#parent">parent</a></p>
 <ul>
-<li>Defined in docker-type.ts:221</li></ul></aside></section>
+<li>Defined in <a href="https://github.com/tdurieux/Dinghy/blob/e287cf9/lib/docker-type.ts#L219">docker-type.ts:219</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class"><a id="type" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>type</span><a href="#type" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
-<div class="tsd-signature">type<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">&quot;AS-STRING&quot;</span><span class="tsd-signature-symbol"> = &quot;AS-STRING&quot;</span></div><aside class="tsd-sources">
-<p>Overrides <a href="nodeType.DockerOpsValueNode.html">DockerOpsValueNode</a>.<a href="nodeType.DockerOpsValueNode.html#type">type</a></p>
+<div class="tsd-signature">type<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">&quot;DOCKER-FLAG&quot;</span><span class="tsd-signature-symbol"> = &quot;DOCKER-FLAG&quot;</span></div><aside class="tsd-sources">
+<p>Overrides <a href="nodeType.DockerOpsNode.html">DockerOpsNode</a>.<a href="nodeType.DockerOpsNode.html#type">type</a></p>
 <ul>
-<li>Defined in docker-type.ts:690</li></ul></aside></section></section>
+<li>Defined in <a href="https://github.com/tdurieux/Dinghy/blob/e287cf9/lib/docker-type.ts#L1225">docker-type.ts:1225</a></li></ul></aside></section></section>
 <section class="tsd-panel-group tsd-member-group">
 <h2>Accessors</h2>
 <section class="tsd-panel tsd-member tsd-kind-accessor tsd-parent-kind-class tsd-is-inherited"><a id="position" class="tsd-anchor"></a>
@@ -128,35 +120,15 @@
 <li class="tsd-signature" id="position.position-1"><span class="tsd-signature-symbol">get</span> position<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="nodeType.Position.html" class="tsd-signature-type" data-tsd-kind="Class">Position</a></li>
 <li class="tsd-description">
 <h4 class="tsd-returns-title">Returns <a href="nodeType.Position.html" class="tsd-signature-type" data-tsd-kind="Class">Position</a></h4><aside class="tsd-sources">
-<p>Inherited from DockerOpsValueNode.position</p>
+<p>Inherited from DockerOpsNode.position</p>
 <ul>
-<li>Defined in docker-type.ts:229</li></ul></aside></li></ul></section>
-<section class="tsd-panel tsd-member tsd-kind-accessor tsd-parent-kind-class tsd-is-inherited"><a id="value" class="tsd-anchor"></a>
-<h3 class="tsd-anchor-link"><span>value</span><a href="#value" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
-<ul class="tsd-signatures tsd-kind-accessor tsd-parent-kind-class tsd-is-inherited">
-<li class="tsd-signature" id="value.value-1"><span class="tsd-signature-symbol">get</span> value<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></li>
-<li class="tsd-description">
-<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">string</span></h4><aside class="tsd-sources">
-<p>Inherited from DockerOpsValueNode.value</p>
-<ul>
-<li>Defined in docker-type.ts:668</li></ul></aside></li>
-<li class="tsd-signature" id="value.value-2"><span class="tsd-signature-symbol">set</span> value<span class="tsd-signature-symbol">(</span>value<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
-<li class="tsd-description">
-<div class="tsd-parameters">
-<h4 class="tsd-parameters-title">Parameters</h4>
-<ul class="tsd-parameter-list">
-<li>
-<h5>value: <span class="tsd-signature-type">string</span></h5></li></ul></div>
-<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
-<p>Inherited from DockerOpsValueNode.value</p>
-<ul>
-<li>Defined in docker-type.ts:671</li></ul></aside></li></ul></section></section>
+<li>Defined in <a href="https://github.com/tdurieux/Dinghy/blob/e287cf9/lib/docker-type.ts#L227">docker-type.ts:227</a></li></ul></aside></li></ul></section></section>
 <section class="tsd-panel-group tsd-member-group">
 <h2>Methods</h2>
 <section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a id="addChild" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>add<wbr/>Child</span><a href="#addChild" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
-<li class="tsd-signature tsd-anchor-link" id="addChild.addChild-1">add<wbr/>Child<span class="tsd-signature-symbol">(</span>child<span class="tsd-signature-symbol">: </span><a href="../types/nodeType.DockerOpsNodeType.html" class="tsd-signature-type" data-tsd-kind="Type alias">DockerOpsNodeType</a><span class="tsd-signature-symbol"> | </span><a href="../types/nodeType.DockerOpsNodeType.html" class="tsd-signature-type" data-tsd-kind="Type alias">DockerOpsNodeType</a><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="nodeType.AsString.html" class="tsd-signature-type" data-tsd-kind="Class">AsString</a><a href="#addChild.addChild-1" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></li>
+<li class="tsd-signature tsd-anchor-link" id="addChild.addChild-1">add<wbr/>Child<span class="tsd-signature-symbol">(</span>child<span class="tsd-signature-symbol">: </span><a href="../types/nodeType.DockerOpsNodeType.html" class="tsd-signature-type" data-tsd-kind="Type alias">DockerOpsNodeType</a><span class="tsd-signature-symbol"> | </span><a href="../types/nodeType.DockerOpsNodeType.html" class="tsd-signature-type" data-tsd-kind="Type alias">DockerOpsNodeType</a><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="nodeType.DockerFlag.html" class="tsd-signature-type" data-tsd-kind="Class">DockerFlag</a><a href="#addChild.addChild-1" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></li>
 <li class="tsd-description">
 <div class="tsd-comment tsd-typography"><p>Add a child to this node</p>
 
@@ -169,23 +141,23 @@
 <h5>child: <a href="../types/nodeType.DockerOpsNodeType.html" class="tsd-signature-type" data-tsd-kind="Type alias">DockerOpsNodeType</a><span class="tsd-signature-symbol"> | </span><a href="../types/nodeType.DockerOpsNodeType.html" class="tsd-signature-type" data-tsd-kind="Type alias">DockerOpsNodeType</a><span class="tsd-signature-symbol">[]</span></h5>
 <div class="tsd-comment tsd-typography"><p>the child to add</p>
 </div></li></ul></div>
-<h4 class="tsd-returns-title">Returns <a href="nodeType.AsString.html" class="tsd-signature-type" data-tsd-kind="Class">AsString</a></h4><aside class="tsd-sources">
-<p>Inherited from <a href="nodeType.DockerOpsValueNode.html">DockerOpsValueNode</a>.<a href="nodeType.DockerOpsValueNode.html#addChild">addChild</a></p>
+<h4 class="tsd-returns-title">Returns <a href="nodeType.DockerFlag.html" class="tsd-signature-type" data-tsd-kind="Class">DockerFlag</a></h4><aside class="tsd-sources">
+<p>Inherited from <a href="nodeType.DockerOpsNode.html">DockerOpsNode</a>.<a href="nodeType.DockerOpsNode.html#addChild">addChild</a></p>
 <ul>
-<li>Defined in docker-type.ts:243</li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/tdurieux/Dinghy/blob/e287cf9/lib/docker-type.ts#L241">docker-type.ts:241</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a id="clone" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>clone</span><a href="#clone" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
-<li class="tsd-signature tsd-anchor-link" id="clone.clone-1">clone<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="nodeType.AsString.html" class="tsd-signature-type" data-tsd-kind="Class">AsString</a><a href="#clone.clone-1" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></li>
+<li class="tsd-signature tsd-anchor-link" id="clone.clone-1">clone<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="nodeType.DockerFlag.html" class="tsd-signature-type" data-tsd-kind="Class">DockerFlag</a><a href="#clone.clone-1" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></li>
 <li class="tsd-description">
 <div class="tsd-comment tsd-typography"><p>Clone this node</p>
 
 <h3>Returns</h3><p>a clone of this node</p>
 </div>
-<h4 class="tsd-returns-title">Returns <a href="nodeType.AsString.html" class="tsd-signature-type" data-tsd-kind="Class">AsString</a></h4><aside class="tsd-sources">
-<p>Inherited from <a href="nodeType.DockerOpsValueNode.html">DockerOpsValueNode</a>.<a href="nodeType.DockerOpsValueNode.html#clone">clone</a></p>
+<h4 class="tsd-returns-title">Returns <a href="nodeType.DockerFlag.html" class="tsd-signature-type" data-tsd-kind="Class">DockerFlag</a></h4><aside class="tsd-sources">
+<p>Inherited from <a href="nodeType.DockerOpsNode.html">DockerOpsNode</a>.<a href="nodeType.DockerOpsNode.html#clone">clone</a></p>
 <ul>
-<li>Defined in docker-type.ts:612</li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/tdurieux/Dinghy/blob/e287cf9/lib/docker-type.ts#L616">docker-type.ts:616</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a id="find" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>find</span><a href="#find" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
@@ -201,9 +173,9 @@
 <li>
 <h5>input: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><a href="../interfaces/nodeType.QueryI.html" class="tsd-signature-type" data-tsd-kind="Interface">QueryI</a></h5></li></ul></div>
 <h4 class="tsd-returns-title">Returns <a href="../types/nodeType.DockerOpsNodeType.html" class="tsd-signature-type" data-tsd-kind="Type alias">DockerOpsNodeType</a><span class="tsd-signature-symbol">[]</span></h4><aside class="tsd-sources">
-<p>Inherited from <a href="nodeType.DockerOpsValueNode.html">DockerOpsValueNode</a>.<a href="nodeType.DockerOpsValueNode.html#find">find</a></p>
+<p>Inherited from <a href="nodeType.DockerOpsNode.html">DockerOpsNode</a>.<a href="nodeType.DockerOpsNode.html#find">find</a></p>
 <ul>
-<li>Defined in docker-type.ts:576</li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/tdurieux/Dinghy/blob/e287cf9/lib/docker-type.ts#L579">docker-type.ts:579</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a id="getChild" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>get<wbr/>Child</span><a href="#getChild" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
@@ -237,9 +209,9 @@
 <h5>t: <span class="tsd-signature-type">any</span></h5></li></ul></div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span></h4></li></ul></li></ul></li></ul></div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span></h4><aside class="tsd-sources">
-<p>Inherited from <a href="nodeType.DockerOpsValueNode.html">DockerOpsValueNode</a>.<a href="nodeType.DockerOpsValueNode.html#getChild">getChild</a></p>
+<p>Inherited from <a href="nodeType.DockerOpsNode.html">DockerOpsNode</a>.<a href="nodeType.DockerOpsNode.html#getChild">getChild</a></p>
 <ul>
-<li>Defined in docker-type.ts:279</li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/tdurieux/Dinghy/blob/e287cf9/lib/docker-type.ts#L278">docker-type.ts:278</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a id="getChildren" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>get<wbr/>Children</span><a href="#getChildren" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
@@ -273,9 +245,9 @@
 <h5>t: <span class="tsd-signature-type">any</span></h5></li></ul></div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span></h4></li></ul></li></ul></li></ul></div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span><span class="tsd-signature-symbol">[]</span></h4><aside class="tsd-sources">
-<p>Inherited from <a href="nodeType.DockerOpsValueNode.html">DockerOpsValueNode</a>.<a href="nodeType.DockerOpsValueNode.html#getChildren">getChildren</a></p>
+<p>Inherited from <a href="nodeType.DockerOpsNode.html">DockerOpsNode</a>.<a href="nodeType.DockerOpsNode.html#getChildren">getChildren</a></p>
 <ul>
-<li>Defined in docker-type.ts:297</li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/tdurieux/Dinghy/blob/e287cf9/lib/docker-type.ts#L296">docker-type.ts:296</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a id="getElement" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>get<wbr/>Element</span><a href="#getElement" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
@@ -309,9 +281,9 @@
 <h5>t: <span class="tsd-signature-type">any</span></h5></li></ul></div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span></h4></li></ul></li></ul></li></ul></div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span></h4><aside class="tsd-sources">
-<p>Inherited from <a href="nodeType.DockerOpsValueNode.html">DockerOpsValueNode</a>.<a href="nodeType.DockerOpsValueNode.html#getElement">getElement</a></p>
+<p>Inherited from <a href="nodeType.DockerOpsNode.html">DockerOpsNode</a>.<a href="nodeType.DockerOpsNode.html#getElement">getElement</a></p>
 <ul>
-<li>Defined in docker-type.ts:313</li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/tdurieux/Dinghy/blob/e287cf9/lib/docker-type.ts#L312">docker-type.ts:312</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a id="getElements" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>get<wbr/>Elements</span><a href="#getElements" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
@@ -345,9 +317,9 @@
 <h5>t: <span class="tsd-signature-type">any</span></h5></li></ul></div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span></h4></li></ul></li></ul></li></ul></div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span><span class="tsd-signature-symbol">[]</span></h4><aside class="tsd-sources">
-<p>Inherited from <a href="nodeType.DockerOpsValueNode.html">DockerOpsValueNode</a>.<a href="nodeType.DockerOpsValueNode.html#getElements">getElements</a></p>
+<p>Inherited from <a href="nodeType.DockerOpsNode.html">DockerOpsNode</a>.<a href="nodeType.DockerOpsNode.html#getElements">getElements</a></p>
 <ul>
-<li>Defined in docker-type.ts:331</li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/tdurieux/Dinghy/blob/e287cf9/lib/docker-type.ts#L330">docker-type.ts:330</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a id="getParent" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>get<wbr/>Parent</span><a href="#getParent" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
@@ -381,9 +353,9 @@
 <h5>t: <span class="tsd-signature-type">AnyRecord</span></h5></li></ul></div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span></h4></li></ul></li></ul></li></ul></div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span></h4><aside class="tsd-sources">
-<p>Inherited from <a href="nodeType.DockerOpsValueNode.html">DockerOpsValueNode</a>.<a href="nodeType.DockerOpsValueNode.html#getParent">getParent</a></p>
+<p>Inherited from <a href="nodeType.DockerOpsNode.html">DockerOpsNode</a>.<a href="nodeType.DockerOpsNode.html#getParent">getParent</a></p>
 <ul>
-<li>Defined in docker-type.ts:345</li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/tdurieux/Dinghy/blob/e287cf9/lib/docker-type.ts#L344">docker-type.ts:344</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a id="hasChanges" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>has<wbr/>Changes</span><a href="#hasChanges" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
@@ -394,9 +366,9 @@
 <h3>Returns</h3><p>true if this node or one of its children has been changed</p>
 </div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">boolean</span></h4><aside class="tsd-sources">
-<p>Inherited from <a href="nodeType.DockerOpsValueNode.html">DockerOpsValueNode</a>.<a href="nodeType.DockerOpsValueNode.html#hasChanges">hasChanges</a></p>
+<p>Inherited from <a href="nodeType.DockerOpsNode.html">DockerOpsNode</a>.<a href="nodeType.DockerOpsNode.html#hasChanges">hasChanges</a></p>
 <ul>
-<li>Defined in docker-type.ts:596</li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/tdurieux/Dinghy/blob/e287cf9/lib/docker-type.ts#L600">docker-type.ts:600</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a id="hasChild" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>has<wbr/>Child</span><a href="#hasChild" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
@@ -414,9 +386,9 @@
 <div class="tsd-comment tsd-typography"><p>the child to check</p>
 </div></li></ul></div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">boolean</span></h4><aside class="tsd-sources">
-<p>Inherited from <a href="nodeType.DockerOpsValueNode.html">DockerOpsValueNode</a>.<a href="nodeType.DockerOpsValueNode.html#hasChild">hasChild</a></p>
+<p>Inherited from <a href="nodeType.DockerOpsNode.html">DockerOpsNode</a>.<a href="nodeType.DockerOpsNode.html#hasChild">hasChild</a></p>
 <ul>
-<li>Defined in docker-type.ts:263</li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/tdurieux/Dinghy/blob/e287cf9/lib/docker-type.ts#L262">docker-type.ts:262</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a id="isBefore" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>is<wbr/>Before</span><a href="#isBefore" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
@@ -432,9 +404,9 @@
 <li>
 <h5>arg: <a href="../types/nodeType.DockerOpsNodeType.html" class="tsd-signature-type" data-tsd-kind="Type alias">DockerOpsNodeType</a></h5></li></ul></div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">boolean</span></h4><aside class="tsd-sources">
-<p>Inherited from <a href="nodeType.DockerOpsValueNode.html">DockerOpsValueNode</a>.<a href="nodeType.DockerOpsValueNode.html#isBefore">isBefore</a></p>
+<p>Inherited from <a href="nodeType.DockerOpsNode.html">DockerOpsNode</a>.<a href="nodeType.DockerOpsNode.html#isBefore">isBefore</a></p>
 <ul>
-<li>Defined in docker-type.ts:548</li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/tdurieux/Dinghy/blob/e287cf9/lib/docker-type.ts#L551">docker-type.ts:551</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a id="isInside" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>is<wbr/>Inside</span><a href="#isInside" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
@@ -452,9 +424,9 @@
 <div class="tsd-comment tsd-typography"><p>the node to check</p>
 </div></li></ul></div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">boolean</span></h4><aside class="tsd-sources">
-<p>Inherited from <a href="nodeType.DockerOpsValueNode.html">DockerOpsValueNode</a>.<a href="nodeType.DockerOpsValueNode.html#isInside">isInside</a></p>
+<p>Inherited from <a href="nodeType.DockerOpsNode.html">DockerOpsNode</a>.<a href="nodeType.DockerOpsNode.html#isInside">isInside</a></p>
 <ul>
-<li>Defined in docker-type.ts:517</li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/tdurieux/Dinghy/blob/e287cf9/lib/docker-type.ts#L520">docker-type.ts:520</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a id="iterate" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>iterate</span><a href="#iterate" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
@@ -496,9 +468,9 @@
 <h5>node: <a href="../types/nodeType.DockerOpsNodeType.html" class="tsd-signature-type" data-tsd-kind="Type alias">DockerOpsNodeType</a></h5></li></ul></div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">boolean</span></h4></li></ul></li></ul></li></ul></div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
-<p>Inherited from <a href="nodeType.DockerOpsValueNode.html">DockerOpsValueNode</a>.<a href="nodeType.DockerOpsValueNode.html#iterate">iterate</a></p>
+<p>Inherited from <a href="nodeType.DockerOpsNode.html">DockerOpsNode</a>.<a href="nodeType.DockerOpsNode.html#iterate">iterate</a></p>
 <ul>
-<li>Defined in docker-type.ts:365</li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/tdurieux/Dinghy/blob/e287cf9/lib/docker-type.ts#L364">docker-type.ts:364</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a id="match" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>match</span><a href="#match" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
@@ -516,26 +488,26 @@
 <div class="tsd-comment tsd-typography"><p>check if this node match the query</p>
 </div></li></ul></div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">any</span></h4><aside class="tsd-sources">
-<p>Inherited from <a href="nodeType.DockerOpsValueNode.html">DockerOpsValueNode</a>.<a href="nodeType.DockerOpsValueNode.html#match">match</a></p>
+<p>Inherited from <a href="nodeType.DockerOpsNode.html">DockerOpsNode</a>.<a href="nodeType.DockerOpsNode.html#match">match</a></p>
 <ul>
-<li>Defined in docker-type.ts:462</li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/tdurieux/Dinghy/blob/e287cf9/lib/docker-type.ts#L461">docker-type.ts:461</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a id="remove" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>remove</span><a href="#remove" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
-<li class="tsd-signature tsd-anchor-link" id="remove.remove-1">remove<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="nodeType.AsString.html" class="tsd-signature-type" data-tsd-kind="Class">AsString</a><a href="#remove.remove-1" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></li>
+<li class="tsd-signature tsd-anchor-link" id="remove.remove-1">remove<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="nodeType.DockerFlag.html" class="tsd-signature-type" data-tsd-kind="Class">DockerFlag</a><a href="#remove.remove-1" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></li>
 <li class="tsd-description">
 <div class="tsd-comment tsd-typography"><p>Remove this node from the tree</p>
 
 <h3>Returns</h3><p>this</p>
 </div>
-<h4 class="tsd-returns-title">Returns <a href="nodeType.AsString.html" class="tsd-signature-type" data-tsd-kind="Class">AsString</a></h4><aside class="tsd-sources">
-<p>Inherited from <a href="nodeType.DockerOpsValueNode.html">DockerOpsValueNode</a>.<a href="nodeType.DockerOpsValueNode.html#remove">remove</a></p>
+<h4 class="tsd-returns-title">Returns <a href="nodeType.DockerFlag.html" class="tsd-signature-type" data-tsd-kind="Class">DockerFlag</a></h4><aside class="tsd-sources">
+<p>Inherited from <a href="nodeType.DockerOpsNode.html">DockerOpsNode</a>.<a href="nodeType.DockerOpsNode.html#remove">remove</a></p>
 <ul>
-<li>Defined in docker-type.ts:448</li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/tdurieux/Dinghy/blob/e287cf9/lib/docker-type.ts#L447">docker-type.ts:447</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a id="replace" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>replace</span><a href="#replace" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
-<li class="tsd-signature tsd-anchor-link" id="replace.replace-1">replace<span class="tsd-signature-symbol">(</span>node<span class="tsd-signature-symbol">: </span><a href="../types/nodeType.DockerOpsNodeType.html" class="tsd-signature-type" data-tsd-kind="Type alias">DockerOpsNodeType</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="nodeType.AsString.html" class="tsd-signature-type" data-tsd-kind="Class">AsString</a><a href="#replace.replace-1" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></li>
+<li class="tsd-signature tsd-anchor-link" id="replace.replace-1">replace<span class="tsd-signature-symbol">(</span>node<span class="tsd-signature-symbol">: </span><a href="../types/nodeType.DockerOpsNodeType.html" class="tsd-signature-type" data-tsd-kind="Type alias">DockerOpsNodeType</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="nodeType.DockerFlag.html" class="tsd-signature-type" data-tsd-kind="Class">DockerFlag</a><a href="#replace.replace-1" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></li>
 <li class="tsd-description">
 <div class="tsd-comment tsd-typography"><p>Replace this by the given node</p>
 
@@ -548,28 +520,28 @@
 <h5>node: <a href="../types/nodeType.DockerOpsNodeType.html" class="tsd-signature-type" data-tsd-kind="Type alias">DockerOpsNodeType</a></h5>
 <div class="tsd-comment tsd-typography"><p>the replacement node</p>
 </div></li></ul></div>
-<h4 class="tsd-returns-title">Returns <a href="nodeType.AsString.html" class="tsd-signature-type" data-tsd-kind="Class">AsString</a></h4><aside class="tsd-sources">
-<p>Inherited from <a href="nodeType.DockerOpsValueNode.html">DockerOpsValueNode</a>.<a href="nodeType.DockerOpsValueNode.html#replace">replace</a></p>
+<h4 class="tsd-returns-title">Returns <a href="nodeType.DockerFlag.html" class="tsd-signature-type" data-tsd-kind="Class">DockerFlag</a></h4><aside class="tsd-sources">
+<p>Inherited from <a href="nodeType.DockerOpsNode.html">DockerOpsNode</a>.<a href="nodeType.DockerOpsNode.html#replace">replace</a></p>
 <ul>
-<li>Defined in docker-type.ts:428</li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/tdurieux/Dinghy/blob/e287cf9/lib/docker-type.ts#L427">docker-type.ts:427</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a id="setPosition" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>set<wbr/>Position</span><a href="#setPosition" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
-<li class="tsd-signature tsd-anchor-link" id="setPosition.setPosition-1">set<wbr/>Position<span class="tsd-signature-symbol">(</span>position<span class="tsd-signature-symbol">: </span><a href="nodeType.Position.html" class="tsd-signature-type" data-tsd-kind="Class">Position</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="nodeType.AsString.html" class="tsd-signature-type" data-tsd-kind="Class">AsString</a><a href="#setPosition.setPosition-1" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></li>
+<li class="tsd-signature tsd-anchor-link" id="setPosition.setPosition-1">set<wbr/>Position<span class="tsd-signature-symbol">(</span>position<span class="tsd-signature-symbol">: </span><a href="nodeType.Position.html" class="tsd-signature-type" data-tsd-kind="Class">Position</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="nodeType.DockerFlag.html" class="tsd-signature-type" data-tsd-kind="Class">DockerFlag</a><a href="#setPosition.setPosition-1" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></li>
 <li class="tsd-description">
 <div class="tsd-parameters">
 <h4 class="tsd-parameters-title">Parameters</h4>
 <ul class="tsd-parameter-list">
 <li>
 <h5>position: <a href="nodeType.Position.html" class="tsd-signature-type" data-tsd-kind="Class">Position</a></h5></li></ul></div>
-<h4 class="tsd-returns-title">Returns <a href="nodeType.AsString.html" class="tsd-signature-type" data-tsd-kind="Class">AsString</a></h4><aside class="tsd-sources">
-<p>Inherited from <a href="nodeType.DockerOpsValueNode.html">DockerOpsValueNode</a>.<a href="nodeType.DockerOpsValueNode.html#setPosition">setPosition</a></p>
+<h4 class="tsd-returns-title">Returns <a href="nodeType.DockerFlag.html" class="tsd-signature-type" data-tsd-kind="Class">DockerFlag</a></h4><aside class="tsd-sources">
+<p>Inherited from <a href="nodeType.DockerOpsNode.html">DockerOpsNode</a>.<a href="nodeType.DockerOpsNode.html#setPosition">setPosition</a></p>
 <ul>
-<li>Defined in docker-type.ts:233</li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/tdurieux/Dinghy/blob/e287cf9/lib/docker-type.ts#L231">docker-type.ts:231</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a id="toString" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>to<wbr/>String</span><a href="#toString" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
-<li class="tsd-signature tsd-anchor-link" id="toString.toString-1">to<wbr/>String<span class="tsd-signature-symbol">(</span>asPrettyPrint<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span><a href="#toString.toString-1" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></li>
+<li class="tsd-signature tsd-anchor-link" id="toString.toString-1">to<wbr/>String<span class="tsd-signature-symbol">(</span>asPrettyPrint<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><a href="#toString.toString-1" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></li>
 <li class="tsd-description">
 <div class="tsd-comment tsd-typography"><p>Return a string representation of this node</p>
 
@@ -582,10 +554,10 @@
 <h5>asPrettyPrint: <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol"> = false</span></h5>
 <div class="tsd-comment tsd-typography"><p>true if the output should be pretty printed</p>
 </div></li></ul></div>
-<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">any</span></h4><aside class="tsd-sources">
-<p>Inherited from <a href="nodeType.DockerOpsValueNode.html">DockerOpsValueNode</a>.<a href="nodeType.DockerOpsValueNode.html#toString">toString</a></p>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">string</span></h4><aside class="tsd-sources">
+<p>Inherited from <a href="nodeType.DockerOpsNode.html">DockerOpsNode</a>.<a href="nodeType.DockerOpsNode.html#toString">toString</a></p>
 <ul>
-<li>Defined in docker-type.ts:650</li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/tdurieux/Dinghy/blob/e287cf9/lib/docker-type.ts#L654">docker-type.ts:654</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a id="traverse" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>traverse</span><a href="#traverse" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
@@ -619,9 +591,9 @@
 <li class="tsd-parameter">
 <h5>include<wbr/>Self<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span></h5></li></ul></li></ul></div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">boolean</span></h4><aside class="tsd-sources">
-<p>Inherited from <a href="nodeType.DockerOpsValueNode.html">DockerOpsValueNode</a>.<a href="nodeType.DockerOpsValueNode.html#traverse">traverse</a></p>
+<p>Inherited from <a href="nodeType.DockerOpsNode.html">DockerOpsNode</a>.<a href="nodeType.DockerOpsNode.html#traverse">traverse</a></p>
 <ul>
-<li>Defined in docker-type.ts:393</li></ul></aside></li></ul></section></section></div>
+<li>Defined in <a href="https://github.com/tdurieux/Dinghy/blob/e287cf9/lib/docker-type.ts#L392">docker-type.ts:392</a></li></ul></aside></li></ul></section></section></div>
 <div class="col-4 col-menu menu-sticky-wrap menu-highlight">
 <div class="tsd-navigation settings">
 <details class="tsd-index-accordion"><summary class="tsd-accordion-summary">
@@ -645,40 +617,39 @@
 <ul>
 <li class="tsd-kind-namespace"><a href="../modules/dockerfileParser.html">dockerfile<wbr/>Parser</a></li>
 <li class="current tsd-kind-namespace"><a href="../modules/nodeType.html">node<wbr/>Type</a></li>
-<li class="tsd-kind-namespace"><a href="../modules/prettyPrinter.html">pretty<wbr/>Printer</a></li>
-<li class="tsd-kind-namespace"><a href="../modules/printer.html">printer</a></li>
-<li class="tsd-kind-namespace"><a href="../modules/shellParser.html">shell<wbr/>Parser</a></li></ul></li></ul></div></details></nav>
+<li class="tsd-kind-namespace"><a href="../modules/prettyPrinter-1.html">pretty<wbr/>Printer</a></li>
+<li class="tsd-kind-namespace"><a href="../modules/printer-1.html">printer</a></li>
+<li class="tsd-kind-namespace"><a href="../modules/shellParser-1.html">shell<wbr/>Parser</a></li></ul></li></ul></div></details></nav>
 <nav class="tsd-navigation secondary menu-sticky">
 <ul>
-<li class="current tsd-kind-class tsd-parent-kind-namespace"><a href="nodeType.AsString.html" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><rect fill="var(--color-icon-background)" stroke="var(--color-ts-class)" stroke-width="1.5" x="1" y="1" width="22" height="22" rx="6" id="icon-128-path"></rect><path d="M11.898 16.1201C11.098 16.1201 10.466 15.8961 10.002 15.4481C9.53803 15.0001 9.30603 14.3841 9.30603 13.6001V9.64012C9.30603 8.85612 9.53803 8.24012 10.002 7.79212C10.466 7.34412 11.098 7.12012 11.898 7.12012C12.682 7.12012 13.306 7.34812 13.77 7.80412C14.234 8.25212 14.466 8.86412 14.466 9.64012H13.386C13.386 9.14412 13.254 8.76412 12.99 8.50012C12.734 8.22812 12.37 8.09212 11.898 8.09212C11.426 8.09212 11.054 8.22412 10.782 8.48812C10.518 8.75212 10.386 9.13212 10.386 9.62812V13.6001C10.386 14.0961 10.518 14.4801 10.782 14.7521C11.054 15.0161 11.426 15.1481 11.898 15.1481C12.37 15.1481 12.734 15.0161 12.99 14.7521C13.254 14.4801 13.386 14.0961 13.386 13.6001H14.466C14.466 14.3761 14.234 14.9921 13.77 15.4481C13.306 15.8961 12.682 16.1201 11.898 16.1201Z" fill="var(--color-text)" id="icon-128-text"></path></svg><span>As<wbr/>String</span></a>
+<li class="current tsd-kind-class tsd-parent-kind-namespace"><a href="nodeType.DockerFlag.html" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><rect fill="var(--color-icon-background)" stroke="var(--color-ts-class)" stroke-width="1.5" x="1" y="1" width="22" height="22" rx="6" id="icon-128-path"></rect><path d="M11.898 16.1201C11.098 16.1201 10.466 15.8961 10.002 15.4481C9.53803 15.0001 9.30603 14.3841 9.30603 13.6001V9.64012C9.30603 8.85612 9.53803 8.24012 10.002 7.79212C10.466 7.34412 11.098 7.12012 11.898 7.12012C12.682 7.12012 13.306 7.34812 13.77 7.80412C14.234 8.25212 14.466 8.86412 14.466 9.64012H13.386C13.386 9.14412 13.254 8.76412 12.99 8.50012C12.734 8.22812 12.37 8.09212 11.898 8.09212C11.426 8.09212 11.054 8.22412 10.782 8.48812C10.518 8.75212 10.386 9.13212 10.386 9.62812V13.6001C10.386 14.0961 10.518 14.4801 10.782 14.7521C11.054 15.0161 11.426 15.1481 11.898 15.1481C12.37 15.1481 12.734 15.0161 12.99 14.7521C13.254 14.4801 13.386 14.0961 13.386 13.6001H14.466C14.466 14.3761 14.234 14.9921 13.77 15.4481C13.306 15.8961 12.682 16.1201 11.898 16.1201Z" fill="var(--color-text)" id="icon-128-text"></path></svg><span>Docker<wbr/>Flag</span></a>
 <ul>
-<li class="tsd-kind-constructor tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.AsString.html#constructor" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-512-path"></use><use href="#icon-512-text"></use></svg>constructor</a></li>
-<li class="tsd-kind-property tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.AsString.html#annotations" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-1024-path"></use><use href="#icon-1024-text"></use></svg>annotations</a></li>
-<li class="tsd-kind-property tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.AsString.html#children" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-1024-path"></use><use href="#icon-1024-text"></use></svg>children</a></li>
-<li class="tsd-kind-property tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.AsString.html#isChanged" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-1024-path"></use><use href="#icon-1024-text"></use></svg>is<wbr/>Changed</a></li>
-<li class="tsd-kind-property tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.AsString.html#parent" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-1024-path"></use><use href="#icon-1024-text"></use></svg>parent</a></li>
-<li class="tsd-kind-property tsd-parent-kind-class"><a href="nodeType.AsString.html#type" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-1024-path"></use><use href="#icon-1024-text"></use></svg>type</a></li>
-<li class="tsd-kind-accessor tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.AsString.html#position" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-262144-path"></use><use href="#icon-262144-text"></use></svg>position</a></li>
-<li class="tsd-kind-accessor tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.AsString.html#value" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-262144-path"></use><use href="#icon-262144-text"></use></svg>value</a></li>
-<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.AsString.html#addChild" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>add<wbr/>Child</a></li>
-<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.AsString.html#clone" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>clone</a></li>
-<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.AsString.html#find" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>find</a></li>
-<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.AsString.html#getChild" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>get<wbr/>Child</a></li>
-<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.AsString.html#getChildren" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>get<wbr/>Children</a></li>
-<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.AsString.html#getElement" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>get<wbr/>Element</a></li>
-<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.AsString.html#getElements" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>get<wbr/>Elements</a></li>
-<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.AsString.html#getParent" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>get<wbr/>Parent</a></li>
-<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.AsString.html#hasChanges" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>has<wbr/>Changes</a></li>
-<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.AsString.html#hasChild" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>has<wbr/>Child</a></li>
-<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.AsString.html#isBefore" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>is<wbr/>Before</a></li>
-<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.AsString.html#isInside" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>is<wbr/>Inside</a></li>
-<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.AsString.html#iterate" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>iterate</a></li>
-<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.AsString.html#match" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>match</a></li>
-<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.AsString.html#remove" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>remove</a></li>
-<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.AsString.html#replace" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>replace</a></li>
-<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.AsString.html#setPosition" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>set<wbr/>Position</a></li>
-<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.AsString.html#toString" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>to<wbr/>String</a></li>
-<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.AsString.html#traverse" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>traverse</a></li></ul></li></ul></nav></div></div>
+<li class="tsd-kind-constructor tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.DockerFlag.html#constructor" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-512-path"></use><use href="#icon-512-text"></use></svg>constructor</a></li>
+<li class="tsd-kind-property tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.DockerFlag.html#annotations" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-1024-path"></use><use href="#icon-1024-text"></use></svg>annotations</a></li>
+<li class="tsd-kind-property tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.DockerFlag.html#children" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-1024-path"></use><use href="#icon-1024-text"></use></svg>children</a></li>
+<li class="tsd-kind-property tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.DockerFlag.html#isChanged" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-1024-path"></use><use href="#icon-1024-text"></use></svg>is<wbr/>Changed</a></li>
+<li class="tsd-kind-property tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.DockerFlag.html#parent" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-1024-path"></use><use href="#icon-1024-text"></use></svg>parent</a></li>
+<li class="tsd-kind-property tsd-parent-kind-class"><a href="nodeType.DockerFlag.html#type" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-1024-path"></use><use href="#icon-1024-text"></use></svg>type</a></li>
+<li class="tsd-kind-accessor tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.DockerFlag.html#position" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-262144-path"></use><use href="#icon-262144-text"></use></svg>position</a></li>
+<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.DockerFlag.html#addChild" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>add<wbr/>Child</a></li>
+<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.DockerFlag.html#clone" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>clone</a></li>
+<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.DockerFlag.html#find" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>find</a></li>
+<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.DockerFlag.html#getChild" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>get<wbr/>Child</a></li>
+<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.DockerFlag.html#getChildren" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>get<wbr/>Children</a></li>
+<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.DockerFlag.html#getElement" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>get<wbr/>Element</a></li>
+<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.DockerFlag.html#getElements" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>get<wbr/>Elements</a></li>
+<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.DockerFlag.html#getParent" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>get<wbr/>Parent</a></li>
+<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.DockerFlag.html#hasChanges" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>has<wbr/>Changes</a></li>
+<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.DockerFlag.html#hasChild" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>has<wbr/>Child</a></li>
+<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.DockerFlag.html#isBefore" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>is<wbr/>Before</a></li>
+<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.DockerFlag.html#isInside" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>is<wbr/>Inside</a></li>
+<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.DockerFlag.html#iterate" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>iterate</a></li>
+<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.DockerFlag.html#match" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>match</a></li>
+<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.DockerFlag.html#remove" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>remove</a></li>
+<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.DockerFlag.html#replace" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>replace</a></li>
+<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.DockerFlag.html#setPosition" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>set<wbr/>Position</a></li>
+<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.DockerFlag.html#toString" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>to<wbr/>String</a></li>
+<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="nodeType.DockerFlag.html#traverse" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>traverse</a></li></ul></li></ul></nav></div></div>
 <div class="container tsd-generator">
 <p>Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></div>
 <div class="overlay"></div><script src="../assets/main.js"></script></body></html>

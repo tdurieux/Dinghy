@@ -4,7 +4,6 @@ import { print as prettyPrint } from "./printer/docker-pretty-printer";
 import File from "./file";
 
 export type DockerOpsNodeType =
-  | AsString
   | BashAndIf
   | BashAndMem
   | BashArray
@@ -53,8 +52,6 @@ export type DockerOpsNodeType =
   | BashExtGlob
   | BashForIn
   | BashForInBody
-  | BashForInItems
-  | BashForInVariable
   | BashFunction
   | BashGlob
   | BashIfCondition
@@ -67,6 +64,7 @@ export type DockerOpsNodeType =
   | BashIoDupeStdout
   | BashLiteral
   | BashWord
+  | BashWordIteration
   | BashOp
   | BashOrIf
   | BashOrMem
@@ -124,8 +122,7 @@ export type DockerOpsNodeType =
   | DockerUser
   | DockerVolume
   | DockerWorkdir
-  | MaybeSemanticCommand
-  | SemanticCommand
+  | BashCommand
   | Unknown
   | BashArithmeticExpression
   | BashArithmeticSequence
@@ -245,6 +242,7 @@ export abstract class DockerOpsNode {
     if (child == null) return;
     if (Array.isArray(child)) {
       for (const c of child) {
+        if (c == null) continue;
         c.isChanged = true;
         this.addChild(c);
       }
@@ -464,7 +462,11 @@ export abstract class DockerOpsNode {
     const type =
       typeof query.type === "string" ? query.type : new query.type().type;
 
-    if (type === "ALL" || type === "ANY") {
+    if (type === "ONE" || type === "_") {
+      return query.children.every((sub) =>
+        this.children.some((child) => child.match(sub))
+      );
+    } else if (type === "ALL" || type === "ANY" || type === "*") {
       let previousMatch: DockerOpsNode = undefined;
       for (const subQuery of query.children) {
         let foundedNode = undefined;
@@ -582,11 +584,12 @@ export abstract class DockerOpsNode {
       query = input;
     }
     const out: DockerOpsNodeType[] = [];
-    if (this.match(query)) out.push(this as DockerOpsNodeType);
-
-    this.traverse((child) => {
-      if (child.match(query)) out.push(child);
-    });
+    this.traverse(
+      (child) => {
+        if (child.match(query)) out.push(child);
+      },
+      { includeSelf: true }
+    );
     return out;
   }
 
@@ -687,9 +690,6 @@ export class MaybeBash extends DockerOpsValueNode {
   type: "MAYBE-BASH" = "MAYBE-BASH";
 }
 
-export class AsString extends DockerOpsValueNode {
-  type: "AS-STRING" = "AS-STRING";
-}
 export class BashAndIf extends DockerOpsNode {
   type: "BASH-AND-IF" = "BASH-AND-IF";
 }
@@ -887,28 +887,26 @@ export class BashExtGlob extends DockerOpsValueNode {
 }
 export class BashForIn extends BashStatement {
   type: "BASH-FOR-IN" = "BASH-FOR-IN";
+  doPosition: Position | null;
+  donePosition: Position | null;
+  forPosition: Position | null;
 
   get body(): BashForInBody {
     return this.getElement(BashForInBody);
   }
 
-  get items(): BashForInItems {
-    return this.getElement(BashForInItems);
+  get items(): BashWord[] {
+    return this.getElement(BashWordIteration).items;
   }
 
-  get variable(): BashForInVariable {
-    return this.getElement(BashForInVariable);
+  get variable(): BashVariable {
+    return this.getElement(BashWordIteration).variable;
   }
 }
 export class BashForInBody extends DockerOpsNode {
   type: "BASH-FOR-IN-BODY" = "BASH-FOR-IN-BODY";
 }
-export class BashForInItems extends DockerOpsNode {
-  type: "BASH-FOR-IN-ITEMS" = "BASH-FOR-IN-ITEMS";
-}
-export class BashForInVariable extends DockerOpsNode {
-  type: "BASH-FOR-IN-VARIABLE" = "BASH-FOR-IN-VARIABLE";
-}
+
 export class BashFunction extends DockerOpsNode {
   type: "BASH-FUNCTION" = "BASH-FUNCTION";
 
@@ -976,19 +974,33 @@ export class BashLiteral extends DockerOpsValueNode {
 }
 export class BashWord extends DockerOpsNode {
   type: "BASH-WORD" = "BASH-WORD";
+}
+
+/**
+ * @example
+ * file in files
+ */
+export class BashWordIteration extends DockerOpsNode {
+  type: "BASH-WORD-ITERATION" = "BASH-WORD-ITERATION";
+
+  inPosition: Position | null;
 
   get items() {
-    return this.children.filter((c) => c.type !== "BASH-VARIABLE");
+    return this.getChildren(BashWord);
   }
 
   get variable() {
-    return this.getElement(BashVariable);
+    return this.getChild(BashVariable);
   }
 }
 export class BashOp extends DockerOpsValueNode {
   type: "BASH-OP" = "BASH-OP";
 
-  toString() {
+  toString(asPrettyPrint = false) {
+    if (asPrettyPrint) {
+      return prettyPrint(this as DockerOpsNodeType);
+    }
+
     switch (this.value) {
       case "9":
         return "&";
@@ -1002,12 +1014,22 @@ export class BashOp extends DockerOpsValueNode {
         return "*";
       case "68":
         return "+";
+      case "69":
+        return "+==";
       case "70":
         return "-";
+      case "71":
+        return ":-";
+      case "73":
+        return ":?";
       case "85":
         return "/";
       case "72":
         return "?";
+      case "74":
+        return "=";
+      case "75":
+        return ":=";
       case "76":
         return "%";
       case "77":
@@ -1022,17 +1044,14 @@ export class BashOp extends DockerOpsValueNode {
         return ">";
       case "56":
         return " ";
-      case "69":
-      case "71":
-      case "73":
-      case "75":
       case "65":
       default:
         if (this.position?.file) {
-          this.position.columnEnd = this.position.columnStart + 2;
           console.log(
             "Unknown BASH-OP:" + this.value,
-            this.position.file.contentAtPosition(this.position, 2)
+            this.position.file.contentAtPosition(this.position, 2),
+            this.position.file.path,
+            this.position.toString()
           );
         }
         throw new Error("Unknown BASH-OP:" + this.value + " " + this.position);
@@ -1104,9 +1123,12 @@ export class BashVariable extends DockerOpsValueNode {
 }
 export class BashReplace extends DockerOpsNode {
   type: "BASH-REPLACE" = "BASH-REPLACE";
+  replaceAll: boolean;
 }
 export class BashWhileExpression extends BashStatement {
   type: "BASH-WHILE-EXPRESSION" = "BASH-WHILE-EXPRESSION";
+  doPosition: Position | undefined;
+  donePosition: Position | undefined;
 
   get body(): BashUntilBody {
     return this.getElement(BashUntilBody);
@@ -1242,8 +1264,8 @@ export class DockerHealthCheck extends DockerNode {
   type: "DOCKER-HEALTHCHECK" = "DOCKER-HEALTHCHECK";
 }
 
-export class MaybeSemanticCommand extends BashStatement {
-  type: "MAYBE-SEMANTIC-COMMAND" = "MAYBE-SEMANTIC-COMMAND";
+export class BashCommand extends BashStatement {
+  type: "BASH-COMMAND" = "BASH-COMMAND";
 
   get command(): BashCommandArgs {
     return this.children.filter(
@@ -1256,9 +1278,6 @@ export class MaybeSemanticCommand extends BashStatement {
       (e) => e instanceof BashCommandArgs
     ) as BashCommandArgs[];
   }
-}
-export class SemanticCommand extends DockerOpsNode {
-  type: "SEMANTIC-COMMAND" = "SEMANTIC-COMMAND";
 }
 export class Unknown extends DockerOpsNode {
   type: "UNKNOWN" = "UNKNOWN";

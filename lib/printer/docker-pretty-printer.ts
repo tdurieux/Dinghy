@@ -3,7 +3,7 @@ import {
   BashScript,
   DockerFile,
   DockerOpsNodeType,
-  MaybeSemanticCommand,
+  BashCommand,
 } from "../docker-type";
 
 import { Printer, print as reprint } from "./docker-printer";
@@ -26,6 +26,7 @@ export class PrettyPrinter extends Printer {
       return reprint(this.root);
     }
     this._generate(this.root);
+    this.trimSpace();
     return this.output;
   }
 
@@ -96,7 +97,7 @@ export class PrettyPrinter extends Printer {
     }
 
     if (
-      node instanceof MaybeSemanticCommand ||
+      node instanceof BashCommand ||
       node instanceof BashConditionBinary
     )
       this.space();

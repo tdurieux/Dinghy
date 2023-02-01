@@ -1,7 +1,12 @@
+import { DockerOpsValueNode } from "../lib/docker-type";
 import { parseDocker } from "../lib/parser/docker-parser";
 
 async function testPrint(original: string) {
   const root = await parseDocker(original);
+  // root.isChanged = true;
+  root.traverse((n) => {
+    if (n instanceof DockerOpsValueNode) n.isChanged = true;
+  });
   expect(root.toString(true)).toBe(original);
 }
 
@@ -22,7 +27,7 @@ describe("Testing docker-printer", () => {
   armhf) \\
     extraConfigureArgs = "\${extraConfigureArgs} --with-arch=armv7-a --with-float=hard --with-fpu=vfpv3-d16 --with-mode=thumb" \\
     ;; \\
-esac;`);
+  esac;`);
   });
 
   test("print FROM", async () => {
@@ -80,5 +85,17 @@ describe("Testing docker-printer of shell", () => {
     await testPrint(`RUN $(( nproc * 2 ))`);
     await testPrint(`RUN $(( nproc / 2 ))`);
     await testPrint(`RUN $(( nproc | 2 ))`);
+  });
+});
+describe("Testing docker-printer of if", () => {
+  test("else", async () => {
+    await testPrint(`RUN curl -q https://deb.nodesource.com/gpgkey/nodesource.gpg.key
+RUN if [ -d .git ]; then \\
+    mkdir /src/_build/prod/rel/bors/.git && \\
+    git rev-parse --short HEAD > /src/_build/prod/rel/bors/.git/HEAD; \\
+elif [ -n \${SOURCE_COMMIT} ]; then \\
+    mkdir /src/_build/prod/rel/bors/.git && \\
+    echo \${SOURCE_COMMIT} > /src/_build/prod/rel/bors/.git/HEAD; \\
+fi`);
   });
 });

@@ -2,14 +2,13 @@
   "name": "@tdurieux/dinghy",
   "version": "0.0.1",
   "description": "Dinghy is a tool to parse and manipulate Dockerfile",
-  "main": "./lib/index.ts",
+  "main": "./build/index.js",
   "engines": {
     "node": ">=16.0.0"
   },
   "scripts": {
     "test": "jest --coverage",
     "build": "tsc",
-    "debloat": "ts-node lib/index.ts",
     "doc": "rm -rf ./docs && typedoc --name Dinghy lib"
   },
   "author": "Thomas Durieux",
