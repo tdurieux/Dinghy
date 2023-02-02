@@ -81,6 +81,9 @@ export class PrettyPrinter extends Printer {
     }
     const content = node.position.file.contentOfNode(node);
     this.append(content);
+    if (content.endsWith(";")) {
+      this.space();
+    }
   }
 
   _generate(node: DockerOpsNodeType) {
