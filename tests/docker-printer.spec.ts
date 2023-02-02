@@ -56,6 +56,8 @@ esac;`);
   });
   test("print COPY", async () => {
     await testPrint("COPY docker-entrypoint.sh /usr/local/bin/");
+    await testPrint("COPY source destination");
+    await testPrint("COPY source/* destination");
   });
   test("print ENTRYPOINT", async () => {
     await testPrint(`ENTRYPOINT ["docker-entrypoint.sh"]`);

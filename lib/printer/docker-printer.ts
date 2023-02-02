@@ -506,7 +506,7 @@ export class Printer {
       case "BASH-COMMAND-ARGS":
       case "BASH-COMMAND-PREFIX":
         node.iterate((node) => {
-          if (this.output.length > 0 && this.output.at(-1).match(/\w/)) {
+          if (this.output.length > 0 && this.output.at(-1).match(/[\w\/\*]/)) {
             this.space();
           }
           this._generate(node);
