@@ -1,5 +1,6 @@
-import { BashOp } from "../lib/docker-type";
+import { BashCommand, BashOp } from "../lib/docker-type";
 import { parseShell } from "../lib/parser/docker-bash-parser";
+import { parseDocker } from "../lib/parser/docker-parser";
 
 describe("Testing shell parser", () => {
   test("dollar", async () => {
@@ -26,14 +27,25 @@ puppet puppet-lint`);
     let root = await parseShell("${CUDA/./-}");
     expect(root.toString(true)).toBe(root.position.file.content);
     expect(root.toString(false)).toBe(root.position.file.content);
-    
+
     root = await parseShell("${CUDA//./-}");
     expect(root.toString(true)).toBe(root.position.file.content);
     expect(root.toString(false)).toBe(root.position.file.content);
   });
   test("BASH-BRACE-EXPANSION", async () => {
-    let root = await parseShell('"$(basename ${OPENWRT_SDK_URL%%.tar.*})"');
+    const root = await parseShell('"$(basename ${OPENWRT_SDK_URL%%.tar.*})"');
+    root.getElements(BashCommand).forEach((node) => {
+      node.isChanged = true;
+    });
     expect(root.toString(true)).toBe(root.position.file.content);
     expect(root.toString(false)).toBe(root.position.file.content);
+  });
+  test("BASH-EXPRESSION", async () => {
+    const root = await parseDocker('RUN export CHROMEDRIVER_RELEASE=$(curl --location --fail --retry 3 https://chromedriver.storage.googleapis.com/LATEST_RELEASE)');
+    root.getElements(BashCommand).forEach((node) => {
+      node.isChanged = true;
+    });
+    expect(root.toString(false)).toBe(root.position.file.content);
+    expect(root.toString(true)).toBe(root.position.file.content);
   });
 });

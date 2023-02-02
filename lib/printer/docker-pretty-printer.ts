@@ -96,9 +96,6 @@ export class PrettyPrinter extends Printer {
       this._detectIndentation(node);
     }
 
-    if (node instanceof BashCommand || node instanceof BashConditionBinary) {
-      this.space();
-    }
     if (node.hasChanges() || node.isChanged || node.position?.file == null) {
       super._generate(node);
     } else {
