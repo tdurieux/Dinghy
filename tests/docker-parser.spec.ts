@@ -17,7 +17,7 @@ describe("Testing Docker parser", () => {
     const root = await parseDocker(`RUN echo "deb-src http://nginx.org/packages/mainline/ubuntu/ xenial nginx" | tee -a /etc/apt/sources.list \\
 
 
-    && wget http://repo.ajenti.org/debian/key -O- | apt-key add -`);
+  && wget http://repo.ajenti.org/debian/key -O- | apt-key add -`);
     expect(root.toString()).toBe(root.position.file.content);
   });
   test("parse gemrc configuration", async () => {
