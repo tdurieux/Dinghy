@@ -13,6 +13,13 @@ describe("Testing Docker parser", () => {
   && rm -rf /var/lib/apt/lists/* /var/cache/apt/*`);
     expect(root.toString()).toBe(root.position.file.content);
   });
+  test("parse Dockerfile with multiple empty lines", async () => {
+    const root = await parseDocker(`RUN echo "deb-src http://nginx.org/packages/mainline/ubuntu/ xenial nginx" | tee -a /etc/apt/sources.list \\
+
+
+    && wget http://repo.ajenti.org/debian/key -O- | apt-key add -`);
+    expect(root.toString()).toBe(root.position.file.content);
+  });
   test("parse gemrc configuration", async () => {
     const root = await parseDocker(
       `RUN mkdir -p /usr/local/etc \\

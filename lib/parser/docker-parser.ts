@@ -201,7 +201,7 @@ export class DockerParser {
             // empty space after \
             .replace(/\\([ \t]+)\n/gm, "$1\\\n")
             // empty line
-            .replace(/^(\s*)\n/gm, "$1\\\n");
+            .replace(/^([ \t]*)\n/gm, "$1\\\n");
           const shellParser = new ShellParser(
             shellString,
             this.rangeToPos(line.getArgumentsRange())
