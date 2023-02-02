@@ -1,6 +1,6 @@
 {
   "name": "@tdurieux/dinghy",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "Dinghy is a tool to parse and manipulate Dockerfile",
   "main": "./build/index.js",
   "engines": {
