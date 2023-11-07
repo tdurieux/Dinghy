@@ -1,5 +1,4 @@
-import sh, { LangVariant } from "mvdan-sh";
-const { syntax } = sh;
+import { syntax } from "mvdan-sh";
 import { type } from "os";
 import * as bashAST from "./mvdan-sh-types";
 
@@ -855,9 +854,7 @@ export class ShellParser {
     }
   }
 
-  async parse(
-    variant: LangVariant = syntax.LangPOSIX
-  ): Promise<DockerOpsNodeType> {
+  async parse(variant: number = syntax.LangPOSIX): Promise<DockerOpsNodeType> {
     const parser: bashAST.Parser = syntax.NewParser(
       syntax.KeepComments(true),
       syntax.Variant(variant)
