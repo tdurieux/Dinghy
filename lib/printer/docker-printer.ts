@@ -180,6 +180,7 @@ export class Printer {
       case "BASH-CASE-EXP-TARGET":
       case "BASH-FUNCTION-BODY":
       case "BASH-FOR-IN-BODY":
+      case "BASH-PROC-SUB-BODY":
       case "BASH-ARITHMETIC-BINARY-RHS":
       case "BASH-ARITHMETIC-BINARY-LHS":
       case "BASH-ARITHMETIC-BINARY-OP":
@@ -252,7 +253,16 @@ export class Printer {
           .space()
           ._generate(node.right);
         break;
-
+      case "BASH-DECL-CLAUSE":
+        this.append(node.value).space();
+        node.iterate((i) => this._generate(i));
+        break;
+      case "BASH-PROC-SUB":
+        this._generate(node.op)
+          .append("(")
+          ._generate(node.body)
+          .append(")");
+        break;
       case "BASH-DOLLAR-BRACE":
         this.append("$");
         if (!node.short) {
@@ -493,8 +503,6 @@ export class Printer {
             console.error("Unknown BASH-OP:", node.value, node.position);
           }
           this.append(node.value);
-          this.append(node.value);
-          this.append(node.value);
         }
         break;
 
@@ -648,11 +656,7 @@ export class Printer {
         this.errors.push(er);
         break;
       default:
-        console.trace(
-          "Type not supported: " +
-            node.type +
-            node.position.file.contentOfNode(node)
-        );
+        console.trace("Type not supported: " + node.type);
         const e = new Error("Type not supported: " + node.type);
         (e as any).node = node;
         this.errors.push(e);

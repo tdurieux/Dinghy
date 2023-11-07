@@ -44,6 +44,7 @@ export type DockerOpsNodeType =
   | BashConditionUnary
   | BashConditionUnaryExp
   | BashConditionUnaryOp
+  | BashDeclClause
   | BashDollarBrace
   | BashDollarArithmetic
   | BashDollarParens
@@ -699,6 +700,9 @@ export class BashAndMem extends DockerOpsNode {
 export class BashArray extends DockerOpsNode {
   type: "BASH-ARRAY" = "BASH-ARRAY";
 }
+export class BashDeclClause extends DockerOpsValueNode {
+  type: "BASH-DECL-CLAUSE" = "BASH-DECL-CLAUSE";
+}
 export class BashAssign extends DockerOpsNode {
   type: "BASH-ASSIGN" = "BASH-ASSIGN";
 
@@ -1040,6 +1044,9 @@ export class BashOp extends DockerOpsValueNode {
         return "##";
       case "87":
         return ":";
+      case "66":
+        return "<";
+      case "67":
       case "54":
         return ">";
       case "56":
@@ -1072,6 +1079,14 @@ export class BashPipeline extends DockerOpsNode {
 }
 export class BashProcSub extends DockerOpsNode {
   type: "BASH-PROC-SUB" = "BASH-PROC-SUB";
+
+  get op() {
+    return this.getElement(BashOp);
+  }
+
+  get body() {
+    return this.getElement(BashProcSubBody);
+  }
 }
 export class BashProcSubBody extends DockerOpsNode {
   type: "BASH-PROC-SUB-BODY" = "BASH-PROC-SUB-BODY";

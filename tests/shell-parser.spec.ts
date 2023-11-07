@@ -32,6 +32,15 @@ puppet puppet-lint`);
     expect(root.toString(true)).toBe(root.position.file.content);
     expect(root.toString(false)).toBe(root.position.file.content);
   });
+  test("BASH-PROC-SUB", async () => {
+    let root = await parseShell("bash <(echo \"ls\")");
+    expect(root.toString(true)).toBe(root.position.file.content);
+    expect(root.toString(false)).toBe(root.position.file.content);
+
+    root = await parseShell("bash >(echo \"ls\")");
+    expect(root.toString(true)).toBe(root.position.file.content);
+    expect(root.toString(false)).toBe(root.position.file.content);
+  });
   test("BASH-BRACE-EXPANSION", async () => {
     const root = await parseShell('"$(basename ${OPENWRT_SDK_URL%%.tar.*})"');
     root.getElements(BashCommand).forEach((node) => {

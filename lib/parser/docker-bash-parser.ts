@@ -68,6 +68,7 @@ import {
   BashDollarBrace,
   BashArithmeticExpression,
   BashWordIteration as BashWordIteration,
+  BashDeclClause,
 } from "../docker-type";
 import File from "../file";
 
@@ -428,6 +429,15 @@ export class ShellParser {
           this.handleNodes(CmdSubst.Stmts, bdp);
           this.stackOut();
           return bdp;
+        case "DeclClause":
+          const DeclClause = node as bashAST.DeclClause;
+          const bdc = new BashDeclClause(DeclClause.Variant.Value).setPosition(
+            this.pos(node)
+          );
+          this.stackIn(bdc);
+          this.handleNodes(DeclClause.Args, bdc);
+          this.stackOut();
+          return bdc;
         case "Command":
           const Command = node as bashAST.Command;
           const bCmd = new BashCommand().setPosition(this.pos(node));
@@ -764,7 +774,7 @@ export class ShellParser {
           const o = new BashProcSub().setPosition(this.pos(node));
           this.stackIn(o);
           o.addChild(
-            new BashProcSubOp(ProcSubst.Op.toString()).setPosition(
+            new BashOp(ProcSubst.Op.toString()).setPosition(
               this.pos(ProcSubst.OpPos)
             )
           ).addChild(
@@ -824,8 +834,6 @@ export class ShellParser {
           const LetClause = node as bashAST.LetClause;
         case "GlobOperator":
           const GlobOperator = node as bashAST.GlobOperator;
-        case "DeclClause":
-          const DeclClause = node as bashAST.DeclClause;
         case "ExtGlob":
           const ExtGlob = node as bashAST.ExtGlob;
         case "CoprocClause":
@@ -854,7 +862,7 @@ export class ShellParser {
     }
   }
 
-  async parse(variant: number = syntax.LangPOSIX): Promise<DockerOpsNodeType> {
+  async parse(variant: number = syntax.LangBash): Promise<DockerOpsNodeType> {
     const parser: bashAST.Parser = syntax.NewParser(
       syntax.KeepComments(true),
       syntax.Variant(variant)

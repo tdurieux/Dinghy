@@ -133,8 +133,7 @@ export interface DeclClause extends Node {
   // Variant is one of "declare", "local", "export", "readonly",
   // "typeset", or "nameref".
   Variant: Lit;
-  Opts: Word[];
-  Assigns: Assign[];
+  Args: Assign[];
 }
 export interface Expansion extends Node {
   Op: number;
