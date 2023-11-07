@@ -760,9 +760,6 @@ export class ShellParser {
           }
           this.stackOut();
           return expansion;
-        case "Darwin":
-          console.log(node);
-          break;
         case "ProcSubst":
           const ProcSubst = node as bashAST.ProcSubst;
           const o = new BashProcSub().setPosition(this.pos(node));
@@ -854,7 +851,6 @@ export class ShellParser {
       this.errors.push(e);
       return new Unknown().addChild(new BashLiteral(nodeType));
     } catch (error) {
-      console.error(error);
       this.errors.push(error);
     }
   }
@@ -883,7 +879,6 @@ export class ShellParser {
         ) {
           return this.parse(syntax.LangBash);
         }
-        console.error(error.message);
         this.errors.push(error);
       } else {
         console.error("Unknown error happened", error);
