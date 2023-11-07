@@ -37,7 +37,6 @@ describe("Testing Docker parser", () => {
   });
   test("parse run json format", async () => {
     const root = await parseDocker(`RUN ["apt", "install", "wget"]`);
-    console.log(root.toString());
     expect(root.toString()).toBe(root.position.file.content);
   });
 
