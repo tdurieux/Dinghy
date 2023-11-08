@@ -16,6 +16,7 @@ import {
   DockerRun,
   DockerShellArg,
   DockerShellExecutable,
+  ParserError,
 } from "../docker-type";
 
 export class Printer {
@@ -24,7 +25,7 @@ export class Printer {
   output: string = "";
   _inCommand: boolean = false;
   _previousNode: Record<string, DockerOpsNodeType> = {};
-  readonly errors: Error[] = [];
+  readonly errors: ParserError[] = [];
   constructor(readonly root: DockerOpsNodeType) {}
 
   inCommand() {
@@ -175,8 +176,6 @@ export class Printer {
       case "BASH-FUNCTION-NAME":
       case "BASH-WORD":
       case "BASH-PATH":
-      case "BASH-REDIRECT-REDIRECTS":
-      case "BASH-REDIRECT":
       case "BASH-CASE-EXP-TARGET":
       case "BASH-FUNCTION-BODY":
       case "BASH-FOR-IN-BODY":
@@ -198,7 +197,6 @@ export class Printer {
       case "DOCKER-PATH":
       case "DOCKER-PORT":
       case "DOCKER-CMD-ARG":
-      case "BASH-PROC-SUB-OP":
       case "BASH-GLOB":
       case "BASH-EXT-GLOB":
       case "BASH-DOLLAR-SINGLE-QUOTED":
@@ -258,10 +256,7 @@ export class Printer {
         node.iterate((i) => this._generate(i));
         break;
       case "BASH-PROC-SUB":
-        this._generate(node.op)
-          .append("(")
-          ._generate(node.body)
-          .append(")");
+        this._generate(node.op).append("(")._generate(node.body).append(")");
         break;
       case "BASH-DOLLAR-BRACE":
         this.append("$");
@@ -444,9 +439,9 @@ export class Printer {
                 node.position?.file.contentOfNode(node)
               );
             }
-            const e = new Error("Unknown CASE-KIND:" + node.value);
-            (e as any).node = node;
-            this.errors.push(e);
+            this.errors.push(
+              new ParserError("Unknown CASE-KIND:" + node.value, node)
+            );
 
             console.error("Unknown CASE-KIND", node.value);
             this.append(node.value);
@@ -460,23 +455,13 @@ export class Printer {
         });
         this.append(")");
         break;
-      case "BASH-REDIRECT-OVERWRITE":
-        this.space().append(">").space();
-        node.iterate((node) => this._generate(node));
+      case "BASH-REDIRECT":
+        const redirectOp = node.op;
+        this.space().append(redirectOp.toString()).space();
+        node.iterate((node) => {
+          if (node != redirectOp) this._generate(node);
+        });
         break;
-      case "BASH-REDIRECT-STDERR":
-        this.space().append("2>").space();
-        node.iterate((node) => this._generate(node));
-        break;
-      case "BASH-REDIRECT-APPEND":
-        this.space().append(">>").space();
-        node.iterate((node) => this._generate(node));
-        break;
-      case "BASH-REDIRECT-STDIN":
-        this.space().append("<").space();
-        node.iterate((node) => this._generate(node));
-        break;
-
       case "BASH-REPLACE":
         this.append("/");
         if (node.replaceAll) {
@@ -644,22 +629,17 @@ export class Printer {
         );
         break;
       case "UNKNOWN":
-        console.trace(
-          "Type not supported: ",
-          node.children[0].toString(),
-          node.position?.file?.path
+        this.errors.push(
+          new ParserError(
+            "Type not supported: " + node.children[0].toString(),
+            node
+          )
         );
-        const er = new Error(
-          "Type not supported: " + node.children[0].toString()
-        );
-        (er as any).node = node;
-        this.errors.push(er);
         break;
       default:
-        console.trace("Type not supported: " + node.type);
-        const e = new Error("Type not supported: " + node.type);
-        (e as any).node = node;
-        this.errors.push(e);
+        this.errors.push(
+          new ParserError("Type not supported: " + node.type, node)
+        );
         node.iterate((i) => this._generate(i));
     }
     if (node instanceof BashStatement) {

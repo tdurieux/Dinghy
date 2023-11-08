@@ -38,10 +38,6 @@ import {
   BashOp,
   BashPath,
   BashRedirect,
-  BashRedirectAppend,
-  BashRedirectOverwrite,
-  BashRedirectRedirects,
-  BashRedirectStderr,
   BashScript,
   BashSingleQuoted,
   BashSubshell,
@@ -57,8 +53,6 @@ import {
   BashComment,
   BashBraceGroup,
   BashBraceExpansion,
-  BashRedirectStdin,
-  BashProcSubOp,
   BashProcSub,
   BashProcSubBody,
   BashConditionOp,
@@ -575,41 +569,24 @@ export class ShellParser {
         case "Redirect":
           const Redirect = node as bashAST.Redirect;
           const br = new BashRedirect().setPosition(this.pos(node));
-          const out = new BashRedirectRedirects().setPosition(this.pos(node));
           this.stackIn(br);
-          let op: DockerOpsNodeType;
-          if (Redirect.Op === 54) {
-            // >
-            op = new BashRedirectOverwrite();
-          } else if (Redirect.Op === 59) {
-            // 2>
-            op = new BashRedirectStderr();
-          } else if (Redirect.Op === 55) {
-            // >>
-            op = new BashRedirectAppend();
-          } else if (Redirect.Op === 56) {
-            // <
-            op = new BashRedirectStdin();
-          } else {
-            this.errors.push(
-              new ParserError("Unknown redirect kind " + Redirect.Op, node)
-            );
-            op = new BashRedirectAppend();
-          }
-          op.setPosition(this.pos(Redirect.OpPos)).addChild(
+          const op = new BashOp(Redirect.Op + "").setPosition(
+            this.pos(Redirect.OpPos)
+          );
+          br.addChild(op);
+          br.addChild(
             new BashPath()
               .setPosition(this.pos(Redirect.Word))
               .addChild(this.handleNode(Redirect.Word))
           );
           if (Redirect.N) {
-            op.addChild(this.handleNode(Redirect.N));
+            br.addChild(this.handleNode(Redirect.N));
           }
           if (Redirect.Hdoc) {
-            op.addChild(this.handleNode(Redirect.Hdoc));
+            br.addChild(this.handleNode(Redirect.Hdoc));
           }
-          out.addChild(op);
           this.stackOut();
-          return br.addChild(out);
+          return br;
         case "SglQuoted":
           const SglQuoted = node as bashAST.SglQuoted;
           return new BashSingleQuoted(SglQuoted.Value).setPosition(

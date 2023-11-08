@@ -75,13 +75,7 @@ export type DockerOpsNodeType =
   | BashPipeline
   | BashProcSub
   | BashProcSubBody
-  | BashProcSubOp
   | BashRedirect
-  | BashRedirectAppend
-  | BashRedirectCommand
-  | BashRedirectOverwrite
-  | BashRedirectRedirects
-  | BashRedirectStdin
   | BashScript
   | BashSingleQuoted
   | BashSubshell
@@ -138,7 +132,6 @@ export type DockerOpsNodeType =
   | MaybeBash
   | BashFunctionBody
   | BashFunctionName
-  | BashRedirectStderr
   | BashComment
   | DockerComment
   | DockerOnBuild
@@ -173,7 +166,7 @@ export interface QueryI {
 export class ParserError extends Error {
   constructor(
     message: string,
-    public node?: Node | Instruction,
+    public node?: Node | Instruction | DockerOpsNodeType,
     public originalError?: Error
   ) {
     super(message);
@@ -1064,13 +1057,19 @@ export class BashOp extends DockerOpsValueNode {
         return "##";
       case "87":
         return ":";
+      case "64":
+        return "&>";
       case "66":
         return "<";
       case "67":
       case "54":
         return ">";
+      case "55":
+        return ">>";
       case "56":
-        return " ";
+        return "<";
+      case "59":
+        return "2>";
       case "65":
       default:
         if (this.position?.file) {
@@ -1111,29 +1110,12 @@ export class BashProcSub extends DockerOpsNode {
 export class BashProcSubBody extends DockerOpsNode {
   type: "BASH-PROC-SUB-BODY" = "BASH-PROC-SUB-BODY";
 }
-export class BashProcSubOp extends DockerOpsValueNode {
-  type: "BASH-PROC-SUB-OP" = "BASH-PROC-SUB-OP";
-}
 export class BashRedirect extends DockerOpsNode {
   type: "BASH-REDIRECT" = "BASH-REDIRECT";
-}
-export class BashRedirectAppend extends DockerOpsNode {
-  type: "BASH-REDIRECT-APPEND" = "BASH-REDIRECT-APPEND";
-}
-export class BashRedirectCommand extends DockerOpsNode {
-  type: "BASH-REDIRECT-COMMAND" = "BASH-REDIRECT-COMMAND";
-}
-export class BashRedirectOverwrite extends DockerOpsNode {
-  type: "BASH-REDIRECT-OVERWRITE" = "BASH-REDIRECT-OVERWRITE";
-}
-export class BashRedirectRedirects extends DockerOpsNode {
-  type: "BASH-REDIRECT-REDIRECTS" = "BASH-REDIRECT-REDIRECTS";
-}
-export class BashRedirectStdin extends DockerOpsNode {
-  type: "BASH-REDIRECT-STDIN" = "BASH-REDIRECT-STDIN";
-}
-export class BashRedirectStderr extends DockerOpsNode {
-  type: "BASH-REDIRECT-STDERR" = "BASH-REDIRECT-STDERR";
+
+  get op() {
+    return this.getElement(BashOp);
+  }
 }
 export class BashScript extends DockerOpsNode {
   type: "BASH-SCRIPT" = "BASH-SCRIPT";
