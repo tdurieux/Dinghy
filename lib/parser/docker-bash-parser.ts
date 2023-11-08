@@ -69,6 +69,8 @@ import {
   BashArithmeticExpression,
   BashWordIteration as BashWordIteration,
   BashDeclClause,
+  ParserErrors,
+  ParserError,
 } from "../docker-type";
 import File from "../file";
 
@@ -76,7 +78,7 @@ export class ShellParser {
   /**
    * Contains all errors that occurred during parsing
    */
-  readonly errors: Error[] = [];
+  readonly errors: ParserError[] = [];
   /**
    * Contains the current parsing stack
    */
@@ -589,9 +591,9 @@ export class ShellParser {
             // <
             op = new BashRedirectStdin();
           } else {
-            const error = new Error("Unknown redirect kind " + Redirect.Op);
-            (error as any).node = node;
-            this.errors.push(error);
+            this.errors.push(
+              new ParserError("Unknown redirect kind " + Redirect.Op, node)
+            );
             op = new BashRedirectAppend();
           }
           op.setPosition(this.pos(Redirect.OpPos)).addChild(
@@ -853,16 +855,14 @@ export class ShellParser {
         case "UnaryTest":
           const UnaryTest = node as bashAST.UnaryTest;
       }
-      const e = new Error(`Unhandled bash type: ${type}`);
-      (e as any).node = node;
-      this.errors.push(e);
+      this.errors.push(new ParserError(`Unhandled bash type: ${type}`, node));
       return new Unknown().addChild(new BashLiteral(nodeType));
     } catch (error) {
-      this.errors.push(error);
+      this.errors.push(new ParserError(error.message, node, error));
     }
   }
 
-  async parse(variant: number = syntax.LangBash): Promise<DockerOpsNodeType> {
+  parse(variant: number = syntax.LangBash): DockerOpsNodeType {
     const parser: bashAST.Parser = syntax.NewParser(
       syntax.KeepComments(true),
       syntax.Variant(variant)
@@ -870,11 +870,15 @@ export class ShellParser {
 
     try {
       const result = parser.Parse(this.scriptString, "src.sh");
-      // const result2 = await sh2.parse(this.shString, {
-      //   keepComments: true,
-      //   variant: sh2.LangVariant.LangPOSIX,
-      // });
-      return this.handleNode(result as any) as BashScript;
+      const ast = this.handleNode(result as any) as BashScript;
+      if (this.errors.length > 0) {
+        throw new ParserErrors(
+          "Errors occurred during parsing",
+          ast,
+          this.errors
+        );
+      }
+      return ast;
     } catch (error) {
       if (error.Error) {
         error.message = (error as bashAST.ParseError).Error();
@@ -882,12 +886,19 @@ export class ShellParser {
           error.message.includes("bash/mksh feature") &&
           variant != syntax.LangBash
         ) {
-          return this.parse(syntax.LangBash);
+          const ast = this.parse(syntax.LangBash);
+          if (this.errors.length > 0) {
+            throw new ParserErrors(
+              "Errors occurred during parsing",
+              ast,
+              this.errors
+            );
+          }
+          return ast;
         }
-        this.errors.push(error);
-      } else {
-        console.error("Unknown error happened", error);
       }
+      this.errors.push(new ParserError(error.message, null, error));
+      throw new ParserErrors(error.message, null, this.errors);
     }
   }
 }
@@ -897,7 +908,7 @@ export class ShellParser {
  * @param shString the script to parse
  * @returns the ast of the script
  */
-export async function parseShell(shString: string) {
+export function parseShell(shString: string) {
   const p = new Position(0, 0);
   p.file = new File(undefined, shString);
   return new ShellParser(shString, p).parse();

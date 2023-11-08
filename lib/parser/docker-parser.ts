@@ -61,10 +61,12 @@ import {
   DockerMaintainer,
   DockerFlag,
   DockerOpsNode,
+  ParserErrors,
+  ParserError,
 } from "../docker-type";
 
 export class DockerParser {
-  public readonly errors: Error[] = [];
+  public readonly errors: ParserError[] = [];
 
   constructor(public readonly file: File) {}
 
@@ -102,7 +104,7 @@ export class DockerParser {
     });
   }
 
-  async parse(): Promise<DockerFile> {
+  parse(): DockerFile {
     const dockerfileAST: DockerFile = new DockerFile();
     if (!this.file || this.file.content?.trim().length == 0)
       return dockerfileAST;
@@ -206,8 +208,14 @@ export class DockerParser {
             shellString,
             this.rangeToPos(line.getArgumentsRange())
           );
-          const shellNode = await shellParser.parse();
-          dockerRun.addChild(shellNode);
+          try {
+            const shellNode = shellParser.parse();
+            dockerRun.addChild(shellNode);
+          } catch (error) {
+            if (error instanceof ParserErrors && error.ast) {
+              dockerRun.addChild(error.ast);
+            }
+          }
           // happen all errors
           shellParser.errors.forEach((v) => this.errors.push(v));
 
@@ -405,7 +413,7 @@ export class DockerParser {
           //   cmdString,
           //   this.rangeToPos(line.getArgumentsRange())
           // );
-          // const cmdNode = await cmdParser.parse();
+          // const cmdNode = cmdParser.parse();
           // cmd.addChild(cmdNode);
 
           let argus: Argument[] = (line as JSONInstruction).getJSONStrings();
@@ -465,7 +473,7 @@ export class DockerParser {
           );
 
           healthcheck.addChild(
-            (await parseDocker(line.getRawArgumentsContent())).children[0]
+            parseDocker(line.getRawArgumentsContent()).children[0]
           );
           dockerfileAST.addChild(healthcheck);
           break;
@@ -485,7 +493,7 @@ export class DockerParser {
         case "onbuild":
           const onbuild = new DockerOnBuild().setPosition(position);
           onbuild.addChild(
-            (await parseDocker(line.getRawArgumentsContent())).children[0]
+            parseDocker(line.getRawArgumentsContent()).children[0]
           );
 
           onbuild.addChild(
@@ -542,9 +550,9 @@ export class DockerParser {
           dockerfileAST.addChild(maintainer);
           break;
         default:
-          const e = new Error(`Unhandled Docker command: ${command}`);
-          (e as any).node = line;
-          this.errors.push(e);
+          this.errors.push(
+            new ParserError(`Unhandled Docker command: ${command}`, line)
+          );
           dockerfileAST.addChild(
             new Unknown()
               .setPosition(position)
@@ -579,7 +587,7 @@ export class DockerParser {
   }
 }
 
-export async function parseDocker(file: string | File) {
+export function parseDocker(file: string | File) {
   let parser: DockerParser = undefined;
   if (file instanceof File) {
     parser = new DockerParser(file);
@@ -590,5 +598,13 @@ export async function parseDocker(file: string | File) {
       parser = new DockerParser(new File(undefined, file));
     }
   }
-  return parser.parse();
+  const ast = parser.parse();
+  if (parser.errors.length > 0) {
+    throw new ParserErrors(
+      "Errors while parsing Dockerfile",
+      ast,
+      parser.errors
+    );
+  }
+  return ast;
 }

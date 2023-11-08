@@ -1,21 +1,21 @@
 import { parseDocker } from "../lib/parser/docker-parser";
 
-async function testPrint(original: string) {
-  const root = await parseDocker(original);
+function testPrint(original: string) {
+  const root = parseDocker(original);
   expect(root.toString().trimEnd()).toBe(original);
 }
 
 describe("Testing docker-printer", () => {
-  test("print RUN", async () => {
-    await testPrint("RUN wget localhost");
-    await testPrint("RUN wget localhost;");
-    await testPrint("RUN echo 'toto';");
+  test("print RUN", () => {
+    testPrint("RUN wget localhost");
+    testPrint("RUN wget localhost;");
+    testPrint("RUN echo 'toto';");
 
-    await testPrint(`RUN set -eux; \\
+    testPrint(`RUN set -eux; \\
 
   savedAptMark = "\${apt-mark showmanual}"; \\
   apt-get update;`);
-    await testPrint(`RUN case "\${dpkgArch}" in \\
+    testPrint(`RUN case "\${dpkgArch}" in \\
   armel) \\
     extraConfigureArgs = "\${extraConfigureArgs} --with-arch=armv4t --with-float=soft" \\
     ;; \\
@@ -25,62 +25,62 @@ describe("Testing docker-printer", () => {
 esac;`);
   });
 
-  test("print FROM", async () => {
-    await testPrint("FROM adoptopenjdk:8-jdk-openj9");
-    await testPrint("FROM ubuntu:10");
-    await testPrint("FROM microsoft/windowsservercore:ltsc2016");
-    await testPrint("FROM ubuntu@10");
-    await testPrint("FROM ubuntu@10 as stage");
+  test("print FROM", () => {
+    testPrint("FROM adoptopenjdk:8-jdk-openj9");
+    testPrint("FROM ubuntu:10");
+    testPrint("FROM microsoft/windowsservercore:ltsc2016");
+    testPrint("FROM ubuntu@10");
+    testPrint("FROM ubuntu@10 as stage");
   });
 
-  test("print USER", async () => {
-    await testPrint("USER root");
+  test("print USER", () => {
+    testPrint("USER root");
   });
-  test("print ENV", async () => {
-    await testPrint("ENV GPG_KEYS 05AB33110949707C93A279E3D3EFE6B686867BA6");
+  test("print ENV", () => {
+    testPrint("ENV GPG_KEYS 05AB33110949707C93A279E3D3EFE6B686867BA6");
   });
-  test("print EXPOSE", async () => {
-    await testPrint("EXPOSE 8080");
+  test("print EXPOSE", () => {
+    testPrint("EXPOSE 8080");
   });
-  test("print SHELL", async () => {
-    await testPrint("SHELL ['ls', '-l']");
+  test("print SHELL", () => {
+    testPrint("SHELL ['ls', '-l']");
   });
-  test("print CMD", async () => {
-    await testPrint('CMD ["catalina.sh", "run"]');
+  test("print CMD", () => {
+    testPrint('CMD ["catalina.sh", "run"]');
   });
-  test("print VOLUME", async () => {
-    await testPrint("VOLUME C:\\data\\db C:\\data\\configdb");
+  test("print VOLUME", () => {
+    testPrint("VOLUME C:\\data\\db C:\\data\\configdb");
   });
-  test("print WORKDIR", async () => {
-    await testPrint("WORKDIR $GOPATH");
+  test("print WORKDIR", () => {
+    testPrint("WORKDIR $GOPATH");
   });
-  test("print COPY", async () => {
-    await testPrint("COPY docker-entrypoint.sh /usr/local/bin/");
-    await testPrint("COPY source destination");
-    await testPrint("COPY source/* destination");
+  test("print COPY", () => {
+    testPrint("COPY docker-entrypoint.sh /usr/local/bin/");
+    testPrint("COPY source destination");
+    testPrint("COPY source/* destination");
   });
-  test("print ENTRYPOINT", async () => {
-    await testPrint(`ENTRYPOINT ["docker-entrypoint.sh"]`);
+  test("print ENTRYPOINT", () => {
+    testPrint(`ENTRYPOINT ["docker-entrypoint.sh"]`);
   });
-  test("print LABEL", async () => {
-    await testPrint(`LABEL com.circleci.preserve-entrypoint=true`);
+  test("print LABEL", () => {
+    testPrint(`LABEL com.circleci.preserve-entrypoint=true`);
   });
-  test("print MAINTAINER", async () => {
-    await testPrint(`MAINTAINER tdurieux`);
+  test("print MAINTAINER", () => {
+    testPrint(`MAINTAINER tdurieux`);
   });
-  test("print comment", async () => {
-    await testPrint(`# comment`);
+  test("print comment", () => {
+    testPrint(`# comment`);
   });
 });
 
 describe("Testing docker-printer of shell", () => {
-  test("Bash-OP", async () => {
-    await testPrint(`RUN make -j $(( nproc > 2 ? nproc - 2 : 1 ))`);
-    await testPrint(`RUN $(( nproc - 2 ))`);
-    await testPrint(`RUN $(( nproc + 2 ))`);
-    await testPrint(`RUN $(( nproc & 2 ))`);
-    await testPrint(`RUN $(( nproc * 2 ))`);
-    await testPrint(`RUN $(( nproc / 2 ))`);
-    await testPrint(`RUN $(( nproc | 2 ))`);
+  test("Bash-OP", () => {
+    testPrint(`RUN make -j $(( nproc > 2 ? nproc - 2 : 1 ))`);
+    testPrint(`RUN $(( nproc - 2 ))`);
+    testPrint(`RUN $(( nproc + 2 ))`);
+    testPrint(`RUN $(( nproc & 2 ))`);
+    testPrint(`RUN $(( nproc * 2 ))`);
+    testPrint(`RUN $(( nproc / 2 ))`);
+    testPrint(`RUN $(( nproc | 2 ))`);
   });
 });

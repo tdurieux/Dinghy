@@ -2,6 +2,8 @@ import { AnyRecord } from "dns";
 import { print } from "./printer/docker-printer";
 import { print as prettyPrint } from "./printer/docker-pretty-printer";
 import File from "./file";
+import { Node } from "./parser/mvdan-sh-types";
+import { Instruction } from "@tdurieux/dockerfile-ast";
 
 export type DockerOpsNodeType =
   | BashAndIf
@@ -168,6 +170,24 @@ export interface QueryI {
   children?: QueryI[];
 }
 
+export class ParserError extends Error {
+  constructor(
+    message: string,
+    public node?: Node | Instruction,
+    public originalError?: Error
+  ) {
+    super(message);
+  }
+}
+export class ParserErrors extends Error {
+  constructor(
+    message: string,
+    public ast?: DockerOpsNodeType,
+    public errors: ParserError[] = []
+  ) {
+    super(message);
+  }
+}
 export class Position {
   public file: File = null;
   constructor(
