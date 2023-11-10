@@ -1,9 +1,7 @@
 import {
-  BashConditionBinary,
   BashScript,
   DockerFile,
   DockerOpsNodeType,
-  BashCommand,
 } from "../docker-type";
 
 import { Printer, print as reprint } from "./docker-printer";

@@ -228,6 +228,12 @@ export class Printer {
       case "DOCKER-IMAGE-TAG":
         this.append(":" + node.value);
         break;
+      case "DOCKER-JSON-INSTRUCTION":
+        this.append("[");
+        const args = node.getElements(BashLiteral);
+        this.append(args.map((i) => `"${i.value}"`).join(", "));
+        this.append("]");
+        break;
       case "BASH-COMMENT":
         this.append("#" + node.value);
         break;
@@ -575,13 +581,13 @@ export class Printer {
       case "DOCKER-LABEL":
       case "DOCKER-MAINTAINER":
       case "DOCKER-ONBUILD":
+      case "DOCKER-CMD":
         this.indentLevel = 0;
         this.indent().inCommand();
         node.iterate((i) => this._generate(i));
         this.deindent().outCommand();
         break;
       case "DOCKER-ENTRYPOINT":
-      case "DOCKER-CMD":
         this.indentLevel = 0;
         this.inCommand()._generate(node.keyword).space().append("[");
         node.iterate(

@@ -112,6 +112,7 @@ export type DockerOpsNodeType =
   | DockerName
   | DockerPath
   | DockerPort
+  | DockerJSONInstruction
   | DockerRun
   | DockerShell
   | DockerShellArg
@@ -1264,6 +1265,9 @@ export class DockerPath extends DockerOpsValueNode {
 }
 export class DockerPort extends DockerOpsValueNode {
   type: "DOCKER-PORT" = "DOCKER-PORT";
+}
+export class DockerJSONInstruction extends DockerNode {
+  type: "DOCKER-JSON-INSTRUCTION" = "DOCKER-JSON-INSTRUCTION";
 }
 export class DockerRun extends DockerNode {
   type: "DOCKER-RUN" = "DOCKER-RUN";

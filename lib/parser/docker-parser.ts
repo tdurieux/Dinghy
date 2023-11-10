@@ -63,12 +63,44 @@ import {
   DockerOpsNode,
   ParserErrors,
   ParserError,
+  BashCommand,
+  BashCommandCommand,
+  BashWord,
+  BashLiteral,
+  BashCommandArgs,
+  DockerJSONInstruction,
 } from "../docker-type";
 
 export class DockerParser {
   public readonly errors: ParserError[] = [];
 
   constructor(public readonly file: File) {}
+
+  private jsonInstruction2BashCommand(line: JSONInstruction) {
+    const args = line.getJSONStrings();
+    const bashCommand = new BashCommand();
+    bashCommand.addChild(
+      new BashCommandCommand()
+        .addChild(
+          new BashWord().addChild(
+            new BashLiteral(args[0].getValue().replace(/"/g, ""))
+          )
+        )
+        .setPosition(this.rangeToPos(args[0].getRange()))
+    );
+    for (let i = 1; i < args.length; i++) {
+      bashCommand.addChild(
+        new BashCommandArgs()
+          .addChild(new BashLiteral(args[i].getValue().replace(/"/g, "")))
+          .addChild(
+            new BashWord().setPosition(this.rangeToPos(args[i].getRange()))
+          )
+      );
+    }
+    return new DockerJSONInstruction()
+      .setPosition(this.rangeToPos(line.getRange()))
+      .addChild(bashCommand);
+  }
 
   private rangeToPos(range: ReturnType<Line["getRange"]>) {
     if (!range) return undefined;
@@ -191,6 +223,15 @@ export class DockerParser {
             )
           );
           dockerfileAST.addChild(dockerRun);
+
+          if (
+            line instanceof JSONInstruction &&
+            line.getJSONStrings().length > 0
+          ) {
+            dockerRun.addChild(this.jsonInstruction2BashCommand(line));
+            break;
+          }
+
           if (line.getRawArgumentsContent() == null) {
             break;
           }
@@ -395,12 +436,21 @@ export class DockerParser {
         case "cmd":
           const cmd = new DockerCmd().setPosition(position);
           this.addFlag2Node(line as Cmd, cmd);
+          dockerfileAST.addChild(cmd);
 
           cmd.addChild(
             new DockerKeyword(line.getInstruction()).setPosition(
               this.rangeToPos(line.getInstructionRange())
             )
           );
+
+          if (
+            line instanceof JSONInstruction &&
+            line.getJSONStrings().length > 0
+          ) {
+            cmd.addChild(this.jsonInstruction2BashCommand(line));
+            break;
+          }
 
           // const cmdString = line
           //   .getRawArgumentsContent()
@@ -421,7 +471,6 @@ export class DockerParser {
           for (const arg of argus) {
             cmd.addChild(new DockerCmdArg(arg.getValue()));
           }
-          dockerfileAST.addChild(cmd);
           break;
         case "shell":
           const shell = new DockerShell().setPosition(position);

@@ -1,3 +1,4 @@
+import { BashCommand, Q } from "../lib/docker-type";
 import { parseDocker } from "../lib/parser/docker-parser";
 
 describe("Testing Docker parser", () => {
@@ -73,5 +74,13 @@ describe("Testing for loop", () => {
     gpg --keyserver pgp.mit.edu --recv-keys "$key"; \\
   done`);
     expect(root.toString(false)).toBe(root.position.file.content);
+  });
+  test("RUN [...]", () => {
+    const root = parseDocker(`FROM python:2.7.13
+ADD snippet.py snippet.py
+RUN ["pip", "install", "sqlalchemy"]
+CMD ["python", "snippet.py"]`);
+    expect(root.toString(false)).toBe(root.position.file.content);
+    expect(root.find(Q(BashCommand))).toHaveLength(2);
   });
 });
