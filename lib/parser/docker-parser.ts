@@ -79,21 +79,34 @@ export class DockerParser {
   private jsonInstruction2BashCommand(line: JSONInstruction) {
     const args = line.getJSONStrings();
     const bashCommand = new BashCommand();
+
+    const commandPositon = this.rangeToPos(args[0].getRange());
     bashCommand.addChild(
       new BashCommandCommand()
+        .setPosition(commandPositon)
         .addChild(
-          new BashWord().addChild(
-            new BashLiteral(args[0].getValue().replace(/"/g, ""))
-          )
+          new BashWord()
+            .setPosition(commandPositon)
+            .addChild(
+              new BashLiteral(args[0].getValue().replace(/"/g, "")).setPosition(
+                commandPositon
+              )
+            )
         )
-        .setPosition(this.rangeToPos(args[0].getRange()))
     );
     for (let i = 1; i < args.length; i++) {
+      const argPosition = this.rangeToPos(args[i].getRange());
       bashCommand.addChild(
         new BashCommandArgs()
-          .addChild(new BashLiteral(args[i].getValue().replace(/"/g, "")))
+          .setPosition(argPosition)
           .addChild(
-            new BashWord().setPosition(this.rangeToPos(args[i].getRange()))
+            new BashWord()
+              .setPosition(argPosition)
+              .addChild(
+                new BashLiteral(
+                  args[i].getValue().replace(/"/g, "")
+                ).setPosition(argPosition)
+              )
           )
       );
     }
