@@ -1,6 +1,6 @@
 {
   "name": "@tdurieux/dinghy",
-  "version": "0.7.2",
+  "version": "0.7.3",
   "description": "Dinghy is a tool to parse and manipulate Dockerfile",
   "keywords": [
     "docker",
