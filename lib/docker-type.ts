@@ -144,7 +144,7 @@ export interface QueryI {
   /**
    * The type of the node
    */
-  type: (new (t: void | string) => DockerOpsNode) | string;
+  type: (new (t: void | string) => DockerOpsNode) | string | QueryOperator;
   /**
    * The value of the node
    * @default undefined
@@ -473,6 +473,21 @@ export abstract class DockerOpsNode {
    * @returns true if this node matches the query
    */
   public match(query: QueryI) {
+    if (query.type instanceof QueryOperator) {
+      if (query.type instanceof QueryOperatorValue) {
+        return (
+          this instanceof DockerOpsValueNode &&
+          this.value === query.type.subQueries[0]
+        );
+      }
+      let ink = (subQuery: QueryType) => {
+        return this.match(Q(subQuery));
+      };
+      if (query.type instanceof QueryOperatorOR) {
+        return query.type.subQueries.some(ink);
+      }
+      return query.type.subQueries.every(ink);
+    }
     const type =
       typeof query.type === "string" ? query.type : new query.type().type;
 
@@ -1343,14 +1358,43 @@ export class BashArithmeticBinaryRhs extends DockerOpsNode {
 
 type TypeOfDockerOpsNode = new (t: any) => DockerOpsNode;
 
+type QueryType = TypeOfDockerOpsNode | string | QueryOperator;
+
+export class QueryOperator {
+  subQueries: QueryType[];
+  constructor(...types: QueryType[]) {
+    this.subQueries = types;
+  }
+}
+export class QueryOperatorOR extends QueryOperator {
+  constructor(...types: QueryType[]) {
+    super(...types);
+  }
+}
+
+export class QueryOperatorAND extends QueryOperator {
+  constructor(...types: QueryType[]) {
+    super(...types);
+  }
+}
+export class QueryOperatorValue extends QueryOperator {
+  constructor(value: string) {
+    super(value);
+  }
+}
+
+export const QOR = (...types: QueryType[]) => new QueryOperatorOR(...types);
+export const QAND = (...types: QueryType[]) => new QueryOperatorAND(...types);
+export const QValue = (value: string) => new QueryOperatorValue(value);
+
 /** Factory for queries */
 export const Q = (
-  type: TypeOfDockerOpsNode | string,
-  child?: string | Query | TypeOfDockerOpsNode,
-  ...children: Query[] | TypeOfDockerOpsNode[]
+  type: QueryType,
+  child?: QueryType | Query,
+  ...children: QueryType[] | Query[]
 ) => {
-  let parent: QueryI | null = null;
-  const oC: QueryI[] = [];
+  let parent: Query | null = null;
+  const oC: Query[] = [];
   let value: string = undefined;
   if (typeof child === "string") value = child;
   else if (child instanceof Query) oC.push(child);
@@ -1380,7 +1424,7 @@ export const Q = (
 export class Query implements QueryI {
   children: QueryI[] = [];
   constructor(
-    readonly type: TypeOfDockerOpsNode | string,
+    readonly type: QueryType,
     readonly value: string,
     ...children: QueryI[]
   ) {
