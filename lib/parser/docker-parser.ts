@@ -78,7 +78,9 @@ export class DockerParser {
 
   private jsonInstruction2BashCommand(line: JSONInstruction) {
     const args = line.getJSONStrings();
-    const bashCommand = new BashCommand();
+    const bashCommand = new BashCommand().setPosition(
+      this.rangeToPos(line.getRange())
+    );
 
     const commandPositon = this.rangeToPos(args[0].getRange());
     bashCommand.addChild(
