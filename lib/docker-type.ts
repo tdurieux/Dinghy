@@ -1055,6 +1055,8 @@ export class BashOp extends DockerOpsValueNode {
         return ":-";
       case "73":
         return ":?";
+      case "83":
+        return ",";
       case "85":
         return "/";
       case "72":
@@ -1073,19 +1075,31 @@ export class BashOp extends DockerOpsValueNode {
         return "##";
       case "87":
         return ":";
+      case "60":
+        return ">|";
+      case "61":
+        return "<<";
+      case "63":
+        return "<<<";
       case "64":
         return "&>";
+      case "65":
+        return "&>>";
       case "66":
         return "<";
       case "67":
       case "54":
         return ">";
+      case "43":
+        return ">=";
       case "55":
         return ">>";
       case "56":
         return "<";
       case "59":
         return "2>";
+      case "81":
+        return "^^";
       case "65":
       default:
         if (this.position?.file) {
