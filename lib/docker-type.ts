@@ -822,7 +822,7 @@ export class BashCommandPrefix extends DockerOpsNode {
 export class BashConcat extends DockerOpsNode {
   type: "BASH-CONCAT" = "BASH-CONCAT";
 }
-export class BashCondition extends DockerOpsNode {
+export class BashCondition extends BashStatement {
   type: "BASH-CONDITION" = "BASH-CONDITION";
 }
 export class BashConditionAnd extends DockerOpsNode {

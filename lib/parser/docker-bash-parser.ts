@@ -65,6 +65,9 @@ import {
   BashDeclClause,
   ParserErrors,
   ParserError,
+  BashConditionExp,
+  BashCondition,
+  BashStatement,
 } from "../docker-type";
 import File from "../file";
 
@@ -354,6 +357,23 @@ export class ShellParser {
             );
           }
           if (CallExpr.Args.length > 0) {
+            if (CallExpr.Args[0].Lit() == "[") {
+              const cond = new BashCondition().setPosition(cmd.position);
+              // get assignement from the command
+              cond.children = cmd.children;
+              for (let i = 1; i < CallExpr.Args.length; i++) {
+                const arg = CallExpr.Args[i];
+                if (arg.Lit() == "]") {
+                  continue;
+                }
+                cond.addChild(
+                  new BashConditionExp()
+                    .setPosition(this.pos(arg))
+                    .addChild(this.handleNode(arg))
+                );
+              }
+              return cond;
+            }
             cmd.addChild(
               new BashCommandCommand()
                 .setPosition(this.pos(CallExpr.Args[0]))
@@ -602,16 +622,20 @@ export class ShellParser {
             return redirects;
           }
 
-          let cmdStmt = this.handleNode(Stmt.Cmd) as BashCommand;
+          let cmdStmt = this.handleNode(Stmt.Cmd) as
+            | BashStatement
+            | BashStatement[];
           if (Array.isArray(cmdStmt)) {
             const tmp = new BashCommand()
               .setPosition(this.pos(node))
               .addChild(new BashBraceGroup().setPosition(this.pos(node)));
-            cmdStmt.map((i) => tmp.children[0].addChild(i));
+            cmdStmt.forEach((i) =>
+              tmp.children[0].addChild(i as DockerOpsNodeType)
+            );
             cmdStmt = tmp;
-            this.stackIn(cmdStmt);
+            this.stackIn(cmdStmt as BashCommand);
           } else {
-            this.stackIn(cmdStmt);
+            this.stackIn(cmdStmt as BashCommand);
           }
           if (cmdStmt == null) throw new Error("CMD cannot be null");
           if (redirects.length > 0) cmdStmt.addChild(redirects);
@@ -624,7 +648,7 @@ export class ShellParser {
           cmdStmt.isNegated = Stmt.Negated;
           cmdStmt.setPosition(this.pos(node));
 
-          this.handleNodes(Stmt.Comments, cmdStmt);
+          this.handleNodes(Stmt.Comments, cmdStmt as BashCommand);
           for (const comment of cmdStmt.getChildren(BashComment)) {
             if (!cmdStmt.isInside(comment)) {
               // the comment is not inside the command and need to me relocated
@@ -650,7 +674,7 @@ export class ShellParser {
             }
           }
           this.stackOut();
-          return cmdStmt;
+          return cmdStmt as BashCommand | BashCondition;
         case "StmtList":
           const StmtList = node as bashAST.StmtList;
           const bS = new BashScript().setPosition(this.pos(node));

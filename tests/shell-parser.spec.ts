@@ -1,4 +1,4 @@
-import { BashCommand, BashOp } from "../lib/docker-type";
+import { BashCommand, BashCondition, BashOp } from "../lib/docker-type";
 import { parseShell } from "../lib/parser/docker-bash-parser";
 import { parseDocker } from "../lib/parser/docker-parser";
 
@@ -58,5 +58,17 @@ puppet puppet-lint`);
     });
     expect(root.toString(false)).toBe(root.position.file.content);
     expect(root.toString(true)).toBe(root.position.file.content);
+  });
+  test("Condition", () => {
+    const root = parseShell(`if [ ! -z $GOARM ]; then
+  export GOARM=v$GOARM
+fi
+if [ "$stringvar" == "tux" ]; then
+  export GOARM=v$GOARM
+fi`);
+    expect(root.getElements(BashCommand)).toHaveLength(0);
+    expect(root.getElements(BashCondition)).toHaveLength(2);
+    expect(root.toString(true)).toBe(root.position.file.content);
+    expect(root.toString(false)).toBe(root.position.file.content);
   });
 });

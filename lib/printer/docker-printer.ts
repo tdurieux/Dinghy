@@ -2,6 +2,7 @@ import {
   BashCommandCommand,
   BashCommandPrefix,
   BashComment,
+  BashCondition,
   BashIfElse,
   BashIfExpression,
   BashLiteral,
@@ -169,6 +170,7 @@ export class Printer {
       case "BASH-SCRIPT":
       // this._previousNode[node.position?.file?.key || "new"] = null;
       case "BASH-ASSIGN-RHS":
+      case "BASH-CONDITION-EXP":
       case "BASH-CONDITION-BINARY-LHS":
       case "BASH-CONDITION-BINARY-RHS":
       case "BASH-CONDITION-BINARY-OP":
@@ -357,11 +359,11 @@ export class Printer {
         this._printLineUntilPreviousNode(tmpNode);
         this.append(ifChar).space();
         this.previousNode = tmpNode;
-
+        this.indent();
         this._generate(node.condition)
           ._generate(node.body)
           ._generate(node.else);
-
+        this.deindent();
         // dont print fi if elif, fi will be handled by the parent if
         if (node.getChild(BashIfElse) === null) {
           const tmpNode = new BashLiteral("fi").setPosition(node.fiPosition);
@@ -369,6 +371,11 @@ export class Printer {
           this.append("fi");
           this.previousNode = tmpNode;
         }
+        break;
+      case "BASH-CONDITION":
+        this.append("[").space();
+        node.iterate((i) => this._generate(i).space());
+        this.space().append("]");
         break;
       case "BASH-IF-CONDITION":
         node.iterate((i) => this._generate(i));
