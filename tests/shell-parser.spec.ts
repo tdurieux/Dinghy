@@ -1,11 +1,16 @@
-import { BashCommand, BashCondition, BashOp } from "../lib/docker-type";
-import { parseShell } from "../lib/parser/docker-bash-parser";
-import { parseDocker } from "../lib/parser/docker-parser";
+import { BashCommand, BashCondition, BashOp } from "../lib/shell/shell-types";
+import { parseShell } from "../lib/shell/shell-parser";
+import { parseDocker } from "../lib/docker/docker-parser";
 
 describe("Testing shell parser", () => {
   test("dollar", () => {
     const root = parseShell("${apt-mark showmanual}");
     expect(root.toString()).toBe("${apt-mark showmanual}");
+  });
+  test("dollar expression", () => {
+    const root =
+      parseShell(`\${steps_get-days-before-expiration_outputs_days}`);
+    expect(root.toString()).toBe(root.position.file?.content);
   });
   test("Reprint shell", () => {
     const root = parseShell(`apk update \
@@ -14,7 +19,7 @@ ruby ruby-dev ruby-json \
 && rm -f /var/cache/apk/* \
 && gem install -N \
 puppet puppet-lint`);
-    expect(root.toString()).toBe(root.position.file.content);
+    expect(root.toString()).toBe(root.position.file?.content);
   });
   test("BashOp :?", () => {
     const root = parseShell(
@@ -25,29 +30,29 @@ puppet puppet-lint`);
   });
   test("BashReplace", () => {
     let root = parseShell("${CUDA/./-}");
-    expect(root.toString(true)).toBe(root.position.file.content);
-    expect(root.toString(false)).toBe(root.position.file.content);
+    expect(root.toString(true)).toBe(root.position.file?.content);
+    expect(root.toString(false)).toBe(root.position.file?.content);
 
     root = parseShell("${CUDA//./-}");
-    expect(root.toString(true)).toBe(root.position.file.content);
-    expect(root.toString(false)).toBe(root.position.file.content);
+    expect(root.toString(true)).toBe(root.position.file?.content);
+    expect(root.toString(false)).toBe(root.position.file?.content);
   });
   test("BASH-PROC-SUB", () => {
     let root = parseShell('bash <(echo "ls")');
-    expect(root.toString(true)).toBe(root.position.file.content);
-    expect(root.toString(false)).toBe(root.position.file.content);
+    expect(root.toString(true)).toBe(root.position.file?.content);
+    expect(root.toString(false)).toBe(root.position.file?.content);
 
     root = parseShell('bash >(echo "ls")');
-    expect(root.toString(true)).toBe(root.position.file.content);
-    expect(root.toString(false)).toBe(root.position.file.content);
+    expect(root.toString(true)).toBe(root.position.file?.content);
+    expect(root.toString(false)).toBe(root.position.file?.content);
   });
   test("BASH-BRACE-EXPANSION", () => {
     const root = parseShell('"$(basename ${OPENWRT_SDK_URL%%.tar.*})"');
     root.getElements(BashCommand).forEach((node) => {
       node.isChanged = true;
     });
-    expect(root.toString(true)).toBe(root.position.file.content);
-    expect(root.toString(false)).toBe(root.position.file.content);
+    expect(root.toString(true)).toBe(root.position.file?.content);
+    expect(root.toString(false)).toBe(root.position.file?.content);
   });
   test("BASH-EXPRESSION", () => {
     const root = parseDocker(
@@ -56,8 +61,8 @@ puppet puppet-lint`);
     root.getElements(BashCommand).forEach((node) => {
       node.isChanged = true;
     });
-    expect(root.toString(false)).toBe(root.position.file.content);
-    expect(root.toString(true)).toBe(root.position.file.content);
+    expect(root.toString(false)).toBe(root.position.file?.content);
+    expect(root.toString(true)).toBe(root.position.file?.content);
   });
   test("Condition", () => {
     const root = parseShell(`if [ ! -z $GOARM ]; then
@@ -68,7 +73,7 @@ if [ "$stringvar" == "tux" ]; then
 fi`);
     expect(root.getElements(BashCommand)).toHaveLength(0);
     expect(root.getElements(BashCondition)).toHaveLength(2);
-    expect(root.toString(true)).toBe(root.position.file.content);
-    expect(root.toString(false)).toBe(root.position.file.content);
+    expect(root.toString(true)).toBe(root.position.file?.content);
+    expect(root.toString(false)).toBe(root.position.file?.content);
   });
 });

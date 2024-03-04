@@ -1,11 +1,9 @@
-import { DockerOpsValueNode } from "../lib/docker-type";
-import { parseDocker } from "../lib/parser/docker-parser";
+import { parseDocker } from "../lib/docker/docker-parser";
 
 function testPrint(original: string) {
   const root = parseDocker(original);
-  // root.isChanged = true;
   root.traverse((n) => {
-    if (n instanceof DockerOpsValueNode) n.isChanged = true;
+    if (n.isChanged !== undefined) n.isChanged = true;
   });
   expect(root.toString(true)).toBe(original);
 }

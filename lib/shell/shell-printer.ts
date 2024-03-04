@@ -1,157 +1,20 @@
 import {
   BashCommandCommand,
   BashCommandPrefix,
-  BashComment,
-  BashCondition,
   BashIfElse,
   BashIfExpression,
   BashLiteral,
   BashStatement,
   BashWord,
   BashWordIteration,
-  DockerFile,
-  DockerKeyword,
-  DockerLiteral,
-  DockerName,
-  DockerOpsNodeType,
-  DockerRun,
-  DockerShellArg,
-  DockerShellExecutable,
-  ParserError,
-} from "../docker-type";
+  ShellNodeTypes,
+} from "./shell-types";
 
-export class Printer {
-  _indentLevel = 0;
-  indentChar = "  ";
-  output: string = "";
-  _inCommand: boolean = false;
-  _previousNode: Record<string, DockerOpsNodeType> = {};
-  readonly errors: ParserError[] = [];
-  constructor(readonly root: DockerOpsNodeType) {}
+import { ParserError } from "../core/core-types";
+import { Printer } from "../core/printer";
 
-  inCommand() {
-    this._inCommand = true;
-    return this;
-  }
-  outCommand() {
-    this._inCommand = false;
-    return this;
-  }
-  get indentLevel() {
-    return this._indentLevel;
-  }
-  set indentLevel(value: number) {
-    this._indentLevel = Math.max(value, 0);
-  }
-
-  protected getIndent() {
-    return this.indentChar.repeat(this.indentLevel);
-  }
-  writeIndent() {
-    return this.append(this.getIndent());
-  }
-
-  newLine() {
-    const newLineAndIndent = "\n" + this.getIndent();
-
-    if (
-      this._inCommand &&
-      // && !this.output.endsWith("\n")
-      !this.output.trim().endsWith("\\")
-    ) {
-      this.space().append("\\");
-    } else if (this.output.endsWith(newLineAndIndent)) {
-      // remove indentation for empty lines
-      this.output = this.output.substring(
-        0,
-        this.output.length - this.indentChar.length * this.indentLevel
-      );
-    }
-
-    // remove unwanted space at the end of a line (can happen because of comments)
-    if (this.output.endsWith(" ")) {
-      this.output = this.output.substring(0, this.output.length - 1);
-    }
-    this.output += "\n";
-    this.writeIndent();
-    return this;
-  }
-
-  space() {
-    if (
-      this.output.length == 0 ||
-      this.output.charAt(this.output.length - 1) == " " ||
-      this.output.charAt(this.output.length - 1) == "\t"
-    )
-      return this;
-    this.output += " ";
-    return this;
-  }
-  indent() {
-    this.indentLevel++;
-    return this;
-  }
-  deindent() {
-    this.indentLevel--;
-    return this;
-  }
-
-  append(str: string) {
-    this.output += str;
-    return this;
-  }
-
-  trim() {
-    this.output = this.output.trimEnd();
-    return this;
-  }
-
-  trimSpace() {
-    this.output = this.output.replace(/ +$/, "");
-    return this;
-  }
-  _getPreviousNodePosition(node: DockerOpsNodeType) {
-    return this._getPreviousNode(node)?.position;
-  }
-  _getPreviousNode(node: DockerOpsNodeType) {
-    return this._previousNode[node?.position?.file?.key || "new"];
-  }
-  set previousNode(node: DockerOpsNodeType) {
-    this._previousNode[node?.position?.file?.key || "new"] = node;
-  }
-  _printLineUntilPreviousNode(
-    node: DockerOpsNodeType,
-    previousNode = this._getPreviousNode(node)
-  ) {
-    const previousNodePosition = previousNode?.position;
-    if (previousNodePosition?.lineEnd < node.position?.lineStart) {
-      let nbLines = Math.abs(
-        Math.abs(node.position?.lineStart) - previousNodePosition?.lineEnd
-      );
-      if (!node.position?.file?.key) {
-        nbLines = Math.min(nbLines, 1);
-      }
-      const inCommand = this._inCommand;
-      if (previousNode instanceof BashComment) {
-        this.outCommand();
-      }
-      for (let i = 0; i < nbLines; i++) {
-        this.newLine();
-      }
-      this._inCommand = inCommand;
-    } else if (node instanceof DockerRun && this.output.length > 0) {
-      this.newLine();
-    } else if (
-      this._getPreviousNode(node.getParent(DockerFile)) instanceof
-        BashComment &&
-      previousNode == undefined
-    ) {
-      // new element generated after a comment
-      this.newLine();
-    }
-  }
-
-  _generate(node: DockerOpsNodeType, printNewLine = true) {
+export class ShellPrinter extends Printer<ShellNodeTypes> {
+  _generate(node: ShellNodeTypes | null, printNewLine = true) {
     if (node == null) return this;
 
     if (printNewLine) {
@@ -188,53 +51,16 @@ export class Printer {
       case "BASH-BRACE-EXPANSION":
       case "BASH-UNTIL-CONDITION":
       case "BASH-UNTIL-BODY":
-      case "DOCKER-FILE":
         node.iterate((i) => this._generate(i));
         break;
-      case "DOCKER-IMAGE-NAME":
-      case "DOCKER-LITERAL":
       case "BASH-LITERAL":
       case "BASH-VARIABLE":
       case "BASH-CONDITION-UNARY-OP":
-      case "DOCKER-PATH":
-      case "DOCKER-PORT":
-      case "DOCKER-CMD-ARG":
       case "BASH-GLOB":
       case "BASH-EXT-GLOB":
       case "BASH-DOLLAR-SINGLE-QUOTED":
       case "BASH-CONDITION-OP":
-      case "DOCKER-ENTRYPOINT-EXECUTABLE":
-      case "DOCKER-SHELL-ARG":
-      case "DOCKER-SHELL-EXECUTABLE":
-      case "DOCKER-ENTRYPOINT-ARG":
         this.append(node.value.replace(/\n/g, "\\\n"));
-        break;
-      case "DOCKER-NAME":
-      case "DOCKER-KEYWORD":
-        this.append(node.value).space();
-        break;
-      case "DOCKER-FLAG":
-        this.append("--" + node.getChild(DockerName).value)
-          .append("=")
-          .append(node.getChild(DockerLiteral).value);
-        break;
-      case "DOCKER-IMAGE-REPO":
-        this.append(node.value + "/");
-        break;
-      case "DOCKER-IMAGE-DIGEST":
-        this.append("@" + node.value);
-        break;
-      case "DOCKER-IMAGE-ALIAS":
-        this.append(" as " + node.value);
-        break;
-      case "DOCKER-IMAGE-TAG":
-        this.append(":" + node.value);
-        break;
-      case "DOCKER-JSON-INSTRUCTION":
-        this.append("[");
-        const args = node.getElements(BashLiteral);
-        this.append(args.map((i) => `"${i.value}"`).join(", "));
-        this.append("]");
         break;
       case "BASH-COMMENT":
         this.append("#" + node.value);
@@ -503,15 +329,13 @@ export class Printer {
           this.append(node.value);
         }
         break;
-
-      case "DOCKER-ADD-SOURCE":
-      case "DOCKER-ADD-TARGET":
-      case "DOCKER-COPY-SOURCE":
-      case "DOCKER-COPY-TARGET":
       case "BASH-COMMAND-COMMAND":
       case "BASH-COMMAND-ARGS":
       case "BASH-COMMAND-PREFIX":
-        if (this.output.length > 0 && this.output.at(-1).match(/[\w\/\*;]/)) {
+        if (
+          this.writer.output.length > 0 &&
+          this.writer.output.at(-1).match(/[\w\/\*;]/)
+        ) {
           this.space();
         }
         node.iterate((node) => this._generate(node));
@@ -551,104 +375,14 @@ export class Printer {
             !(i instanceof BashCommandPrefix)
         );
         break;
-      case "DOCKER-COMMENT":
-        this.append("# " + node.value);
-        break;
-      case "DOCKER-RUN":
-        this.indentLevel = 0;
-        this._generate(node.keyword).space();
-        this.indent().inCommand();
-        node.iterate(
-          (node) => this._generate(node),
-          (node) => !(node instanceof DockerKeyword)
-        );
-        this.deindent().outCommand();
-        this.previousNode = node;
-        if (node.position?.file?.key) {
-          delete this._previousNode["new"];
-        }
-        break;
-      case "DOCKER-SHELL":
-        this.indentLevel = 0;
-        this.inCommand()._generate(node.keyword).space();
-        this.append("[").indent();
-        this._generate(node.getElement(DockerShellExecutable));
-        for (const i of node.getElements(DockerShellArg)) {
-          this.append(", ")._generate(i);
-        }
-        this.deindent().append("]").outCommand();
-        break;
-      case "DOCKER-FROM":
-      case "DOCKER-ADD":
-      case "DOCKER-COPY":
-      case "DOCKER-WORKDIR":
-      case "DOCKER-ENV":
-      case "DOCKER-EXPOSE":
-      case "DOCKER-STOPSIGNAL":
-      case "DOCKER-LABEL":
-      case "DOCKER-MAINTAINER":
-      case "DOCKER-ONBUILD":
-      case "DOCKER-CMD":
-        this.indentLevel = 0;
-        this.indent().inCommand();
-        node.iterate((i) => this._generate(i));
-        this.deindent().outCommand();
-        break;
-      case "DOCKER-ENTRYPOINT":
-        this.indentLevel = 0;
-        this.inCommand()._generate(node.keyword).space().append("[");
-        node.iterate(
-          (i, index) => {
-            if (index > 0) this.append(", ");
-            this._generate(i);
-          },
-          (node) => !(node instanceof DockerKeyword)
-        );
-        this.append("]").outCommand();
-        break;
-      case "DOCKER-VOLUME":
-      case "DOCKER-HEALTHCHECK":
-        this.indentLevel = 0;
-        this._generate(node.keyword).space();
-        node.iterate(
-          (i, index) => {
-            if (index > 0) this.append(" ");
-            this._generate(i);
-          },
-          (node) => !(node instanceof DockerKeyword)
-        );
-        break;
-      case "DOCKER-ARG":
-        this.indentLevel = 0;
-        this.append("ARG ").inCommand();
-        node.iterate(
-          (i, index) => {
-            if (index > 0) this.append("=");
-            this._generate(i);
-          },
-          (node) => !(node instanceof DockerKeyword)
-        );
-        this.outCommand();
-        break;
-      case "DOCKER-USER":
-        this.indentLevel = 0;
-        this.append("USER ");
-        node.iterate(
-          (i, index) => {
-            if (index > 0) this.append(", ");
-            this._generate(i);
-          },
-          (node) => !(node instanceof DockerKeyword)
-        );
-        break;
-      case "UNKNOWN":
-        this.errors.push(
-          new ParserError(
-            "Type not supported: " + node.children[0].toString(),
-            node
-          )
-        );
-        break;
+      // case "UNKNOWN":
+      //   this.errors.push(
+      //     new ParserError(
+      //       "Type not supported: " + node.children[0].toString(),
+      //       node
+      //     )
+      //   );
+      //   break;
       default:
         this.errors.push(
           new ParserError("Type not supported: " + node.type, node)
@@ -677,11 +411,11 @@ export class Printer {
 
   print(): string {
     this._generate(this.root);
-    this.trimSpace();
-    return this.output;
+    this.writer.trimSpace();
+    return this.writer.output;
   }
 }
 
-export function print(node: DockerOpsNodeType) {
-  return new Printer(node).print();
+export function shellPrint(node: ShellNodeTypes) {
+  return new ShellPrinter(node).print();
 }

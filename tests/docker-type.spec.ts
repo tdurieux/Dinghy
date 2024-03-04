@@ -1,13 +1,7 @@
-import { parseDocker } from "../lib/parser/docker-parser";
-import {
-  BashLiteral,
-  BashScript,
-  BashWord,
-  DockerFile,
-  DockerOpsNodeType,
-  DockerRun,
-  Q,
-} from "../lib/docker-type";
+import { parseDocker } from "../lib/docker/docker-parser";
+import { Q } from "../lib/core/core-types";
+import { BashLiteral, BashScript, BashWord } from "../lib/shell/shell-types";
+import { AllDockerNodes, DockerFile, DockerRun } from "../lib/docker/docker-types";
 
 describe("Testing docker-types", () => {
   test("match", () => {
@@ -49,7 +43,7 @@ describe("Testing docker-types", () => {
   test("iterate", () => {
     const root = parseDocker("RUN wget localhost");
 
-    const elements: DockerOpsNodeType[] = [];
+    const elements: AllDockerNodes[] = [];
     root.iterate((node) => elements.push(node));
     expect(elements).toHaveLength(1);
   });
@@ -57,7 +51,7 @@ describe("Testing docker-types", () => {
   test("traverse", () => {
     const root = parseDocker("RUN wget localhost");
 
-    const elements: DockerOpsNodeType[] = [];
+    const elements: AllDockerNodes[] = [];
     root.traverse((node) => {
       elements.push(node);
     });

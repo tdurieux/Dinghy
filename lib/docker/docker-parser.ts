@@ -15,8 +15,8 @@ import {
   Copy,
 } from "@tdurieux/dockerfile-ast";
 import { existsSync } from "fs";
-import File from "../file";
-import { ShellParser } from "./docker-bash-parser";
+import File from "../core/file";
+import { ShellParser } from "../shell/shell-parser";
 import {
   DockerAdd,
   DockerAddSource,
@@ -55,24 +55,24 @@ import {
   DockerUser,
   DockerVolume,
   DockerWorkdir,
-  Position,
-  Unknown,
   DockerLabel,
   DockerMaintainer,
   DockerFlag,
-  DockerOpsNode,
-  ParserErrors,
-  ParserError,
-  BashCommand,
-  BashCommandCommand,
-  BashWord,
-  BashLiteral,
-  BashCommandArgs,
   DockerJSONInstruction,
-} from "../docker-type";
+  AllDockerNodes,
+  DockerNodeTypes,
+} from "./docker-types";
+import { ParserError, ParserErrors, Position, Unknown } from "../core/core-types";
+import {
+  BashCommand,
+  BashCommandArgs,
+  BashCommandCommand,
+  BashLiteral,
+  BashWord,
+} from "../shell/shell-types";
 
 export class DockerParser {
-  public readonly errors: ParserError[] = [];
+  public readonly errors: ParserError<AllDockerNodes>[] = [];
 
   constructor(public readonly file: File) {}
 
@@ -131,22 +131,22 @@ export class DockerParser {
 
   private addFlag2Node(
     instruction: ModifiableInstruction,
-    node: DockerOpsNode
+    node: DockerNodeTypes
   ) {
     instruction.getFlags().forEach((flag) => {
-      node.addChild(
-        new DockerFlag()
-          .setPosition(this.rangeToPos(flag.getRange()))
-          .addChild(
-            new DockerName(flag.getName()).setPosition(
-              this.rangeToPos(flag.getValueRange())
-            )
-          )
-          .addChild(
-            new DockerLiteral(flag.getValue()).setPosition(
-              this.rangeToPos(flag.getValueRange())
-            )
-          )
+      const dFlag: DockerFlag = new DockerFlag().setPosition(
+        this.rangeToPos(flag.getRange())
+      );
+      node.addChild(dFlag);
+      dFlag.addChild(
+        new DockerName(flag.getName()).setPosition(
+          this.rangeToPos(flag.getValueRange())
+        )
+      );
+      dFlag.addChild(
+        new DockerLiteral(flag.getValue()).setPosition(
+          this.rangeToPos(flag.getValueRange())
+        )
       );
     });
   }

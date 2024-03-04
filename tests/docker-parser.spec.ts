@@ -1,5 +1,6 @@
-import { BashCommand, Q } from "../lib/docker-type";
-import { parseDocker } from "../lib/parser/docker-parser";
+import { BashCommand } from "../lib/shell/shell-types";
+import { parseDocker } from "../lib/docker/docker-parser";
+import { Q } from "../lib/core/core-types";
 
 describe("Testing Docker parser", () => {
   test("parse Dockerfile with empty line", () => {
@@ -12,7 +13,7 @@ describe("Testing Docker parser", () => {
   && npm install -g yarn \\
   && chown -R www-data:www-data /var/www/.composer \\
   && rm -rf /var/lib/apt/lists/* /var/cache/apt/*`);
-    expect(root.toString()).toBe(root.position.file.content);
+    expect(root.toString()).toBe(root.position.file?.content);
   });
   test("parse Dockerfile with multiple empty lines", () => {
     const root =
@@ -20,7 +21,7 @@ describe("Testing Docker parser", () => {
 
 
   && wget http://repo.ajenti.org/debian/key -O- | apt-key add -`);
-    expect(root.toString()).toBe(root.position.file.content);
+    expect(root.toString()).toBe(root.position.file?.content);
   });
   test("parse gemrc configuration", () => {
     const root = parseDocker(
@@ -30,22 +31,22 @@ describe("Testing Docker parser", () => {
     echo 'update: --no-document'; \\
   } >> /usr/local/etc/gemrc`
     );
-    expect(root.toString()).toBe(root.position.file.content);
+    expect(root.toString()).toBe(root.position.file?.content);
   });
 
   test("parse instruction tag", () => {
     const root = parseDocker(`COPY --from=test source destination`);
-    expect(root.toString()).toBe(root.position.file.content);
+    expect(root.toString(false)).toBe(root.position.file?.content);
   });
   test("parse run json format", () => {
     const root = parseDocker(`RUN ["apt", "install", "wget"]`);
-    expect(root.toString()).toBe(root.position.file.content);
+    expect(root.toString(false)).toBe(root.position.file?.content);
   });
 
   test("parse dockerfile with space after backslash", () => {
-    const root = parseDocker(`RUN	apt-get install -y apt-transport-https \\	
-&& apt-get update`);
-    expect(root.toString()).toBe(`RUN apt-get install -y apt-transport-https \\
+    const root = parseDocker(`RUN apt-get install -y apt-transport-https \\	
+  && apt-get update`);
+    expect(root.toString(false)).toBe(`RUN apt-get install -y apt-transport-https \\
   && apt-get update`);
   });
 });
@@ -57,7 +58,7 @@ describe("Testing for loop", () => {
   do \\
     gpg --keyserver pgp.mit.edu --recv-keys "$key"; \\
   done`);
-    expect(root.toString(false)).toBe(root.position.file.content);
+    expect(root.toString(false)).toBe(root.position.file?.content);
   });
   test("for loop two elements", () => {
     const root = parseDocker(`RUN for file in \\
@@ -65,7 +66,7 @@ describe("Testing for loop", () => {
   do \\
     gpg --keyserver pgp.mit.edu --recv-keys "$key"; \\
   done`);
-    expect(root.toString(false)).toBe(root.position.file.content);
+    expect(root.toString(false)).toBe(root.position.file?.content);
   });
   test("for loop range", () => {
     const root = parseDocker(`RUN for i in \\
@@ -73,14 +74,14 @@ describe("Testing for loop", () => {
   do \\
     gpg --keyserver pgp.mit.edu --recv-keys "$key"; \\
   done`);
-    expect(root.toString(false)).toBe(root.position.file.content);
+    expect(root.toString(false)).toBe(root.position.file?.content);
   });
   test("RUN [...]", () => {
     const root = parseDocker(`FROM python:2.7.13
 ADD snippet.py snippet.py
 RUN ["pip", "install", "sqlalchemy"]
 CMD ["python", "snippet.py"]`);
-    expect(root.toString(false)).toBe(root.position.file.content);
+    expect(root.toString(false)).toBe(root.position.file?.content);
     expect(root.find(Q(BashCommand))).toHaveLength(2);
   });
 });

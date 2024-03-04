@@ -1,5 +1,5 @@
 import { readFileSync } from "fs";
-import { DockerOpsNodeType, Position } from "./docker-type";
+import { AbstractNode, Position } from "./core-types";
 
 /**
  * Define a docker file
@@ -20,7 +20,7 @@ export default class File {
    * return the string representation of the node from the file
    * @param node
    */
-  contentOfNode(node: DockerOpsNodeType): string {
+  contentOfNode(node: AbstractNode<any>): string {
     if (!node.position) return "";
     return this.contentAtPosition(
       node.position,

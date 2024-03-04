@@ -44,12 +44,9 @@ import {
   BashVariable,
   BashWhileExpression,
   BashWord,
-  DockerOpsNodeType,
   BashCommand,
-  Unknown,
   BashFunctionName,
   BashFunctionBody,
-  Position,
   BashComment,
   BashBraceGroup,
   BashBraceExpansion,
@@ -63,30 +60,30 @@ import {
   BashArithmeticExpression,
   BashWordIteration as BashWordIteration,
   BashDeclClause,
-  ParserErrors,
-  ParserError,
   BashConditionExp,
   BashCondition,
   BashStatement,
-} from "../docker-type";
-import File from "../file";
+  ShellNodeTypes,
+} from "./shell-types";
+import File from "../core/file";
+import { ParserError, ParserErrors, Position, Unknown } from "../core/core-types";
 
 export class ShellParser {
   /**
    * Contains all errors that occurred during parsing
    */
-  readonly errors: ParserError[] = [];
+  readonly errors: ParserError<ShellNodeTypes>[] = [];
   /**
    * Contains the current parsing stack
    */
-  private stack: DockerOpsNodeType[] = [];
+  private stack: ShellNodeTypes[] = [];
 
   constructor(
     readonly scriptString: string,
     readonly originalPosition: Position = new Position(0, 0)
   ) {}
 
-  private stackIn(node: DockerOpsNodeType) {
+  private stackIn(node: ShellNodeTypes) {
     this.stack.push(node);
   }
   private stackOut() {
@@ -150,7 +147,7 @@ export class ShellParser {
     return out;
   }
 
-  private handleNodes(node: bashAST.Node[], current: DockerOpsNodeType) {
+  private handleNodes(node: bashAST.Node[], current: ShellNodeTypes) {
     for (const child of node) {
       current.addChild(this.handleNode(child));
     }
@@ -159,7 +156,7 @@ export class ShellParser {
 
   private handleNode(
     node: bashAST.Node
-  ): DockerOpsNodeType | DockerOpsNodeType[] {
+  ): ShellNodeTypes | ShellNodeTypes[] {
     if (node == null) {
       throw new Error("node is null");
     }
@@ -343,7 +340,7 @@ export class ShellParser {
           const Block = node as bashAST.Block;
           return Block.Stmts.map((e) =>
             this.handleNode(e)
-          ) as DockerOpsNodeType[];
+          ) as ShellNodeTypes[];
         case "CallExpr":
           const CallExpr = node as bashAST.CallExpr;
           const cmd = new BashCommand().setPosition(this.pos(node));
@@ -616,7 +613,7 @@ export class ShellParser {
           const Stmt = node as bashAST.Stmt;
           const redirects = Stmt.Redirs.map((e) =>
             this.handleNode(e)
-          ) as DockerOpsNodeType[];
+          ) as ShellNodeTypes[];
 
           if (!Stmt.Cmd) {
             return redirects;
@@ -630,7 +627,7 @@ export class ShellParser {
               .setPosition(this.pos(node))
               .addChild(new BashBraceGroup().setPosition(this.pos(node)));
             cmdStmt.forEach((i) =>
-              tmp.children[0].addChild(i as DockerOpsNodeType)
+              tmp.children[0].addChild(i as ShellNodeTypes)
             );
             cmdStmt = tmp;
             this.stackIn(cmdStmt as BashCommand);
@@ -863,7 +860,7 @@ export class ShellParser {
     }
   }
 
-  parse(variant: number = syntax.LangBash): DockerOpsNodeType {
+  parse(variant: number = syntax.LangBash): ShellNodeTypes {
     const parser: bashAST.Parser = syntax.NewParser(
       syntax.KeepComments(true),
       syntax.Variant(variant)

@@ -1,5 +1,5 @@
 import { parseDocker } from "../lib";
-import { Q, QAND, QOR, QValue } from "../lib/docker-type";
+import { Q, QAND, QOR, QValue } from "../lib/core/core-types";
 
 describe("Query", () => {
   test("QOR", () => {

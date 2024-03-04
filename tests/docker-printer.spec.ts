@@ -1,4 +1,4 @@
-import { parseDocker } from "../lib/parser/docker-parser";
+import { parseDocker } from "../lib/docker/docker-parser";
 
 function testPrint(original: string) {
   const root = parseDocker(original);
