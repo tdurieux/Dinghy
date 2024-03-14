@@ -1,0 +1,10 @@
+command:
+  providerFor:
+    - printf
+  categories:
+    - PRINT
+  prefix: SC-PRINTF
+  scenarios:
+    - cmd: $0 <format> [ARGS...]
+      options: {}
+      name: SC-PRINTF

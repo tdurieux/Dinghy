@@ -1,0 +1,52 @@
+command:
+  providerFor:
+    - python
+    - python2
+    - python2.7
+    - python3
+    - python3.4
+    - python.exe
+  categories:
+    - DEVELOPMENT
+  prefix: SC-PYTHON
+  options: &options
+    booleans:
+      - -b
+      - -B
+      - -d
+      - -E
+      - -i
+      - -I
+      - -O
+      - -OO
+      - -P
+      - -q
+      - -s
+      - -S
+      - -u
+      - -v
+      - -V, --version
+      - -x
+      - -h, --help
+    strings:
+      - -c
+      - -m
+      - -W
+      - -X
+  scenarios:
+    - cmd: $0 [args...]
+      options: *options
+      name: SC-PYTHON-MODULE
+      mustHave:
+        - -m
+      captureAllAfter:
+        match: ["-m"]
+        name: args
+      captureAfterFirstNonOption: args
+      postProcess:
+        - subCommand: args
+    - cmd: $0
+      options: *options
+      captureAfterFirstNonOption: args
+      fixupNonSpacedArgs: true
+      name: SC-PYTHON

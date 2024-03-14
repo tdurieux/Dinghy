@@ -1,0 +1,10 @@
+command:
+  providerFor:
+    - exit
+  categories:
+    - CONTROL_FLOW
+  prefix: SC-EXIT
+  scenarios:
+    - cmd: $0 <code>
+      options: {}
+      name: SC-EXIT

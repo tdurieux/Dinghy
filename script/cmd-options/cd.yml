@@ -1,0 +1,16 @@
+command:
+  providerFor:
+    - cd
+  categories:
+    - NAVIGATION
+    - FILE_SYSTEM
+  prefix: SC-CD
+  scenarios:
+    - cmd: $0 <path>
+      options: {}
+      name: SC-CD
+      replaceEmptyArgsWith: [ '~' ]
+      postProcess:
+        - tagLastElement:
+            source: path
+            tag: BASH-PATH

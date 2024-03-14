@@ -91,6 +91,7 @@ export class Writer {
     return this.append(this.indenter.getIndent());
   }
 }
+
 export abstract class Printer<T extends AbstractNode<any>> {
   public writer = new Writer();
 
@@ -170,4 +171,10 @@ export abstract class Printer<T extends AbstractNode<any>> {
   }
 
   abstract _generate(node: T | null, printNewLine?: boolean): void;
+}
+
+export class NoPrinter extends Printer<any> {
+  _generate(node: AbstractNode<any>, printNewLine?: boolean): void {
+    throw new Error("Method not implemented.");
+  }
 }

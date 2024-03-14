@@ -1,0 +1,24 @@
+command:
+  providerFor:
+    - mkdir
+  categories:
+    - FILE_SYSTEM
+  prefix: SC-MKDIR
+  options: &options
+    booleans:
+      - -p, --parents
+      - -v, --verbose
+      - -Z
+      - --help
+      - --version
+    strings:
+      - -m, --mode
+      - --context
+  scenarios:
+    - cmd: $0 [paths...]
+      options: *options
+      name: SC-MKDIR
+      postProcess:
+        - tagLastElement:
+            source: paths
+            tag: BASH-PATH
