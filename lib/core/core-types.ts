@@ -121,6 +121,7 @@ export class ParserErrors<T extends AbstractNode<T>> extends Error {
 }
 export class Position {
   public file: File | null = null;
+
   constructor(
     public lineStart: number,
     public columnStart: number,
@@ -156,6 +157,15 @@ export class Position {
         ? ` to ${this.lineEnd + 1}:${this.columnEnd}`
         : "")
     );
+  }
+
+  toJSON() {
+    return {
+      lineStart: this.lineStart,
+      columnStart: this.columnStart,
+      lineEnd: this.lineEnd,
+      columnEnd: this.columnEnd,
+    };
   }
 }
 
@@ -628,6 +638,25 @@ export abstract class AbstractNode<T extends AbstractNode<T>> {
       }
     }
     return cloneObj;
+  }
+
+  toJSON() {
+    const out: {
+      type: string;
+      position: ReturnType<Position["toJSON"]>;
+      children?: ReturnType<AbstractNode<any>["toJSON"]>[];
+      value?: string;
+    } = {
+      type: this.type,
+      position: this.position.toJSON(),
+      children: undefined,
+      value: undefined,
+    };
+    if (this instanceof AbstractValueNode) out.value = this.value;
+    if (this.children.length > 0) {
+      out.children = this.children.map((e) => e.toJSON());
+    }
+    return out;
   }
 
   /**
