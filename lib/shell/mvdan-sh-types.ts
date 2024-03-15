@@ -179,16 +179,6 @@ export interface IfClause extends Node {
   ThenLast: Comment[]; // comments on the "fi"
   Last: Comment[]; // comments on the "fi"
 }
-export interface LangError extends Node {
-  Filename: string;
-  Feature: string;
-  Langs: LangVariant[];
-
-  Error(): string;
-}
-export interface LangVariant extends Node {
-  String();
-}
 export interface LetClause extends Node {
   Let: Pos;
   Exprs: ArithmExpr[];
@@ -242,9 +232,6 @@ export interface Parser extends Node {
   Incomplete(): boolean;
   Interactive(src: string, walker: (statement: Stmt[]) => boolean): void;
   Parse(src: string, filename: string): File;
-}
-export interface Printer extends Node {
-  Print(): string;
 }
 export interface ProcSubst extends Node {
   OpPos: Pos;

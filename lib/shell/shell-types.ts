@@ -99,8 +99,7 @@ export type ShellNodeTypes =
   | BashFunctionBody
   | BashFunctionName
   | BashComment
-  | BashReplace
-  | Unknown;
+  | BashReplace;
 
 export abstract class ShellAbstractNode extends AbstractNode<ShellNodeTypes> {
   type: Extract<ShellNodeTypes["type"], {}>;

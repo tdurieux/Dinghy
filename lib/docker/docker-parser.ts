@@ -62,7 +62,12 @@ import {
   AllDockerNodes,
   DockerNodeTypes,
 } from "./docker-types";
-import { ParserError, ParserErrors, Position, Unknown } from "../core/core-types";
+import {
+  ParserError,
+  ParserErrors,
+  Position,
+  Unknown,
+} from "../core/core-types";
 import {
   BashCommand,
   BashCommandArgs,
@@ -620,7 +625,7 @@ export class DockerParser {
           dockerfileAST.addChild(
             new Unknown()
               .setPosition(position)
-              .addChild(new DockerLiteral(command))
+              .addChild(new DockerLiteral(command)) as any
           );
       }
     }
