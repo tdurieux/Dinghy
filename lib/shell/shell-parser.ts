@@ -66,7 +66,12 @@ import {
   ShellNodeTypes,
 } from "./shell-types";
 import File from "../core/file";
-import { ParserError, ParserErrors, Position, Unknown } from "../core/core-types";
+import {
+  ParserError,
+  ParserErrors,
+  Position,
+  Unknown,
+} from "../core/core-types";
 
 export class ShellParser {
   /**
@@ -154,9 +159,7 @@ export class ShellParser {
     return current;
   }
 
-  private handleNode(
-    node: bashAST.Node
-  ): ShellNodeTypes | ShellNodeTypes[] {
+  private handleNode(node: bashAST.Node): ShellNodeTypes | ShellNodeTypes[] {
     if (node == null) {
       throw new Error("node is null");
     }
@@ -338,9 +341,7 @@ export class ShellParser {
           return bashConditionBinary;
         case "Block":
           const Block = node as bashAST.Block;
-          return Block.Stmts.map((e) =>
-            this.handleNode(e)
-          ) as ShellNodeTypes[];
+          return Block.Stmts.map((e) => this.handleNode(e)) as ShellNodeTypes[];
         case "CallExpr":
           const CallExpr = node as bashAST.CallExpr;
           const cmd = new BashCommand().setPosition(this.pos(node));
@@ -854,7 +855,7 @@ export class ShellParser {
           const UnaryTest = node as bashAST.UnaryTest;
       }
       this.errors.push(new ParserError(`Unhandled bash type: ${type}`, node));
-      return new Unknown().addChild(new BashLiteral(nodeType));
+      return new Unknown().addChild(new BashLiteral(nodeType)) as any;
     } catch (error) {
       this.errors.push(new ParserError(error.message, node, error));
     }
