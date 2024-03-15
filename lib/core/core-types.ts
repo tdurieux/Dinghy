@@ -1,7 +1,6 @@
 import File from "./file";
 import { NoPrinter, Printer } from "./printer";
 import { print as prettyPrint } from "./docker-pretty-printer";
-import { ShellPrinter } from "../shell/shell-printer";
 
 export interface QueryI {
   /**
@@ -201,8 +200,8 @@ export abstract class AbstractNode<T extends AbstractNode<T>> {
    * @param child the child to add
    * @returns this
    */
-  addChild(child: T | T[]) {
-    if (child == null) return this;
+  addChild(child: null | undefined | T | T[]) {
+    if (child === null || child === undefined) return this;
     if (Array.isArray(child)) {
       for (const c of child) {
         if (c == null) continue;
