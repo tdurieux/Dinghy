@@ -1,18 +1,21 @@
-export * as coreTypes from "./core/core-types";
-export * as prettyPrinter from "./core/docker-pretty-printer";
+// Core
+export * from "./core/core-types";
 export { default as File } from "./core/file";
+export * as prettyPrinter from "./core/docker-pretty-printer";
 export { PrettyPrinter } from "./core/docker-pretty-printer";
 export { Printer } from "./core/printer";
 
-export * as shellTypes from "./shell/shell-types";
+// Shell
+export * from "./shell/shell-types";
 export * as shellParser from "./shell/shell-parser";
-export { ShellParser, parseShell } from "./shell/shell-parser";
 export * as shellPrinter from "./shell/shell-printer";
-export { ShellPrinter } from "./shell/shell-printer";
 export * as enricher from "./shell/enricher";
+export { ShellParser, parseShell } from "./shell/shell-parser";
+export { ShellPrinter } from "./shell/shell-printer";
 
-export * as dockerTypes from "./docker/docker-types";
+// Docker
+export * from "./docker/docker-types";
 export * as dockerfileParser from "./docker/docker-parser";
-export { DockerParser, parseDocker } from "./docker/docker-parser";
 export * as dockerPrinter from "./docker/docker-printer";
+export { DockerParser, parseDocker } from "./docker/docker-parser";
 export { DockerPrinter } from "./docker/docker-printer";

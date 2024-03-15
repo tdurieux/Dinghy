@@ -1,7 +1,5 @@
 import { readFileSync } from "fs";
-import { File } from "../lib/";
-import { Position } from "../lib/core/core-types";
-import { BashLiteral } from "../lib/shell/shell-types";
+import { File, Position, BashLiteral } from "../lib/";
 
 describe("Testing file", () => {
   test("undifined paramater", () => {
