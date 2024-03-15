@@ -1,6 +1,12 @@
 import File from "./file";
 import { NoPrinter, Printer } from "./printer";
 import { print as prettyPrint } from "./docker-pretty-printer";
+import {
+  ASTData,
+  ASTDataSerDes,
+  SemanticDiff,
+  defaultDiffOptions,
+} from "@tdurieux/dinghy-diff/dist";
 
 export interface QueryI {
   /**
@@ -638,6 +644,18 @@ export abstract class AbstractNode<T extends AbstractNode<T>> {
       }
     }
     return cloneObj;
+  }
+
+  /**
+   * Diff this node with another node
+   * @param other the other node to diff with
+   * @returns the diff between this node and the other node
+   */
+  diff(other: T) {
+    const tNodeSerDes = new ASTDataSerDes();
+    const oldTree = tNodeSerDes.parseAST(this as any);
+    const newTree = tNodeSerDes.parseAST(other as any);
+    return new SemanticDiff<ASTData>(defaultDiffOptions).diff(oldTree, newTree);
   }
 
   toJSON() {
