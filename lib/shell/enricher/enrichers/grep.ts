@@ -13,7 +13,7 @@ export default {
       name: "SC-GREP",
       prefix: "SC-GREP",
       paths: ["f","file","exclude-from"],
-      booleans: ["E","extended-regexp","F","fixed-strings","G","basic-regexp","P","perl-regexp","i","ignore-case","w","word-regexp","x","line-regexp","z","null-data","s","no-messages","v","invert-match","V","version","help","b","byte-offset","n","line-number","lin-buffered","H","with-filename","h","no-filename","o","only-matching","q","quiet","q","silent","a","text","I","r","recursive","R","dereference-recursive","L","files-without-match","l","files-with-match","c","count","T","initial-tab","Z","null","U","binary","u","unix-bytes-offsets","e","regexp"],
+      booleans: ["E","extended-regexp","F","fixed-strings","G","basic-regexp","P","perl-regexp","i","ignore-case","w","word-regexp","x","line-regexp","z","null-data","s","no-messages","v","invert-match","V","version","help","b","byte-offset","n","line-number","lin-buffered","H","with-filename","h","no-filename","o","only-matching","q","quiet","Q","silent","a","text","I","r","recursive","R","dereference-recursive","L","files-without-match","l","files-with-match","c","count","T","initial-tab","Z","null","U","binary","u","unix-bytes-offsets","e","regexp"],
       strings: ["label","binary-files","include","exclude","exclude-dir","C","context","B","before-context","A","after-context"],
       argv: () => {
         return (yargs() as Argv)
@@ -48,7 +48,7 @@ export default {
           .option("h", {"alias":"no-filename","type":"boolean"})
           .option("o", {"alias":"only-matching","type":"boolean"})
           .option("q", {"alias":"quiet","type":"boolean"})
-          .option("q", {"alias":"silent","type":"boolean"})
+          .option("Q", {"alias":"silent","type":"boolean"})
           .option("a", {"alias":"text","type":"boolean"})
           .option("I", {"type":"boolean"})
           .option("r", {"alias":"recursive","type":"boolean"})

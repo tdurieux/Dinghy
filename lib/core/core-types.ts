@@ -1,6 +1,6 @@
 import File from "./file";
 import { NoPrinter, Printer } from "./printer";
-import { print as prettyPrint } from "./docker-pretty-printer";
+import { print as prettyPrint } from "./pretty-printer";
 import {
   ASTData,
   ASTDataSerDes,

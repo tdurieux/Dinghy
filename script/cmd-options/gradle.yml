@@ -8,21 +8,27 @@ command:
   scenarios:
     - cmd: $0 install
       name: SC-GRADLE-INSTALL
+      allowMultiScenarios: true
       categories:
         - INSTALL_PACKAGES
     - cmd: $0 build
       name: SC-GRADLE-BUILD
+      allowMultiScenarios: true
       categories:
         - BUILD_PACKAGES
     - cmd: $0 clean
       name: SC-GRADLE-CLEAN
+      allowMultiScenarios: true
     - cmd: $0 test
       name: SC-GRADLE-TEST
+      allowMultiScenarios: true
       categories:
         - TEST_PACKAGES
     - cmd: $0 assemble
       name: SC-GRADLE-ASSEMBLE
+      allowMultiScenarios: true
     - cmd: $0 publish
       name: SC-GRADLE-PUBLISH
+      allowMultiScenarios: true
       categories:
         - PUBLISH_PACKAGES

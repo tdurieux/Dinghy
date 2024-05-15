@@ -9,9 +9,14 @@
     "noImplicitAny": false,
     "removeComments": true,
     "preserveConstEnums": true,
-    "outDir": "./build"
+    "outDir": "./build",
+    "incremental": true
     // "moduleResolution": "node"
   },
   "include": ["lib/index.ts"],
-  "exclude": []
+  "exclude": [],
+  "ts-node": {
+    "swc": true,
+    "transpileOnly": true
+  }
 }

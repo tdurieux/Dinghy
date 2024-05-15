@@ -336,7 +336,12 @@ function parseArgWithScenario(commandArgsString: string[], scenario: Scenario) {
       .filter(
         (x) => !x.startsWith("$") && !x.startsWith("[") && !x.startsWith("<")
       )
-      .some((x) => results[x.trim()] !== true && results[x.trim()] != x.trim())
+      .some(
+        (x) =>
+          results[x.trim()] !== true &&
+          results[x.trim()] != x.trim() &&
+          !scenario.allowMultiScenarios
+      )
   ) {
     return;
   }
@@ -793,7 +798,9 @@ export function enrich<T extends AbstractNode<any>>(root: T) {
                   scenario,
                   parseResult
                 );
-                break;
+                if (!scenario.allowMultiScenarios) {
+                  break;
+                }
               } catch (error) {
                 // scenario failed to parse
                 console.error(error);

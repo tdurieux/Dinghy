@@ -52,28 +52,34 @@ command:
     - cmd: $0 install
       options: *options
       name: SC-MVN-INSTALL
+      allowMultiScenarios: true
       categories:
         - INSTALL_PACKAGES
     - cmd: $0 clean
       options: *options
       name: SC-MVN-CLEAN
+      allowMultiScenarios: true
     - cmd: $0 compile
       options: *options
       name: SC-MVN-COMPILE
+      allowMultiScenarios: true
       categories:
         - BUILD_PACKAGES
     - cmd: $0 test
       options: *options
       name: SC-MVN-TEST
+      allowMultiScenarios: true
       categories:
         - TEST_PACKAGES
     - cmd: $0 package
       options: *options
+      allowMultiScenarios: true
       name: SC-MVN-PACKAGE
       categories:
         - BUILD_PACKAGES
     - cmd: $0 deploy
       options: *options
       name: SC-MVN-DEPLOY
+      allowMultiScenarios: true
       categories:
         - DEPLOY_PACKAGES

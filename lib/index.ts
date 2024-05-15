@@ -1,8 +1,8 @@
 // Core
 export * from "./core/core-types";
 export { default as File } from "./core/file";
-export * as prettyPrinter from "./core/docker-pretty-printer";
-export { PrettyPrinter } from "./core/docker-pretty-printer";
+export * as prettyPrinter from "./core/pretty-printer";
+export { PrettyPrinter } from "./core/pretty-printer";
 export { Printer } from "./core/printer";
 
 // Shell

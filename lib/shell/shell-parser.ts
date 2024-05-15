@@ -881,11 +881,28 @@ export class ShellParser {
     } catch (error) {
       if (error.Error) {
         error.message = (error as bashAST.ParseError).Error();
-        if (
-          error.message.includes("bash/mksh feature") &&
-          variant != syntax.LangBash
-        ) {
+        if (error.message.includes("bash") && variant != syntax.LangBash) {
           const ast = this.parse(syntax.LangBash);
+          if (this.errors.length > 0) {
+            throw new ParserErrors(
+              "Errors occurred during parsing",
+              ast,
+              this.errors
+            );
+          }
+          return ast;
+        } else if (error.message.includes("mksh")) {
+          const ast = this.parse(syntax.LangMirBSDKorn);
+          if (this.errors.length > 0) {
+            throw new ParserErrors(
+              "Errors occurred during parsing",
+              ast,
+              this.errors
+            );
+          }
+          return ast;
+        } else if (error.message.includes("posix")) {
+          const ast = this.parse(syntax.LangPOSIX);
           if (this.errors.length > 0) {
             throw new ParserErrors(
               "Errors occurred during parsing",

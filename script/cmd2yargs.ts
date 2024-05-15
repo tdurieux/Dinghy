@@ -99,6 +99,7 @@ export default {
           "cmd",
           "name",
           "categories",
+          "allowMultiScenarios",
         ];
         output += `    {\n`;
         for (const key of toCopy) {

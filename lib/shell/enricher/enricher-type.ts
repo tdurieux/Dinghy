@@ -24,6 +24,7 @@ export interface Scenario {
   replaceEmptyArgsWith?: string[];
   fixupBadFlag?: boolean;
   fixupNonSpacedArgs?: boolean;
+  allowMultiScenarios?: boolean;
   stealFromArrayFor?: {
     array: string;
     for: string;

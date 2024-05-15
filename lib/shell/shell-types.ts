@@ -1,4 +1,4 @@
-import { print as prettyPrint } from "../core/docker-pretty-printer";
+import { print as prettyPrint } from "../core/pretty-printer";
 import { ShellPrinter } from "./shell-printer";
 import {
   Position,

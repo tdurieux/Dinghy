@@ -20,6 +20,16 @@ describe("Testing enrich", () => {
       expect(r.find(Q("SC-MV-DESTINATION"))).toHaveLength(1);
     });
   });
+  describe("multiple subcommands", () => {
+    test("gradle clean build test", () => { 
+      const root = parseShell("gradle clean build test");
+      const r = enrich(root);
+      // expect(r.find(Q("SC-GRADLE"))).toHaveLength(1);
+      expect(r.find(Q("SC-GRADLE-CLEAN"))).toHaveLength(1);
+      expect(r.find(Q("SC-GRADLE-BUILD"))).toHaveLength(1);
+      expect(r.find(Q("SC-GRADLE-TEST"))).toHaveLength(1);
+    });
+  });
   describe("python", () => {
     test("python -m pip install -r requirements", () => {
       const root = parseShell("python -m pip install -r requirements");

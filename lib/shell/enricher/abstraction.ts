@@ -9,7 +9,7 @@ import {
 export const abtractionRegex = {
   "ABS-SINGLE-SPACE": new RegExp("^[^ ]* [^ ]*$"),
   "ABS-DOUBLE-SPACE": /  /,
-  "ABS-NEW-LINE": /\n/,
+  "ABS-NEW-LINE": /\n/m,
   "ABS-TAB": /\t/,
   "ABS-URL-PROTOCOL-HTTP": /http:\/\//,
   "ABS-URL-PROTOCOL-HTTPS": /https:\/\//,
