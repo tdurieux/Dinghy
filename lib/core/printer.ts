@@ -41,7 +41,12 @@ export class Writer {
     if (
       this._inCommand &&
       // && !this.output.endsWith("\n")
-      !this.output.trim().endsWith("\\")
+      !this.output.trim().endsWith("\\") &&
+      // not in comment
+      !this.output
+        .substring(this.output.lastIndexOf("\n"))
+        .trim()
+        .startsWith("#")
     ) {
       this.space().append("\\");
     } else if (this.output.endsWith(newLineAndIndent)) {

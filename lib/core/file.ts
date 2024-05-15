@@ -24,7 +24,7 @@ export default class File {
     if (!node.position) return "";
     return this.contentAtPosition(
       node.position,
-      node.position.columnEnd === undefined ? node.toString().length : 0
+      node.position.columnEnd === undefined ? node.toString(false).length : 0
     );
   }
 

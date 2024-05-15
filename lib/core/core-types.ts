@@ -414,7 +414,8 @@ export abstract class AbstractNode<T extends AbstractNode<T>> {
   remove() {
     if (this.parent) {
       const indexInParent = this.parent.children.indexOf(this as unknown as T);
-      delete this.parent.children[indexInParent];
+      this.parent.children.splice(indexInParent, 1);
+      this.parent.isChanged = true;
     }
     this.isChanged = true;
     return this;

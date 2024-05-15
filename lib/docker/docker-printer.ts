@@ -131,7 +131,7 @@ export class DockerPrinter extends Printer<AllDockerNodes> {
       case "DOCKER-CMD":
         this.writer.indenter.reset();
         this.indent().inCommand();
-        node.iterate((i) => this._generate(i));
+        node.iterate((i) => this._generate(i).space());
         this.deindent().outCommand();
         break;
       case "DOCKER-ENTRYPOINT":

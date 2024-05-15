@@ -402,7 +402,7 @@ export class ShellPrinter extends Printer<ShellNodeTypes> {
         } else if (node.isCoprocess) {
           this.space().append("|&").space();
         } else {
-          this.append(";").space();
+          this.writer.trimSpace().append(";").space();
         }
       }
     }

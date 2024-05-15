@@ -88,7 +88,7 @@ export function abstract(node: AbstractNode<any>) {
       if (node.position?.file) {
         value = node.position.file.contentOfNode(node);
       } else {
-        value = node.toString();
+        value = node.toString(false);
       }
       for (const r in abtractionRegex) {
         if (!Array.isArray(abtractionRegex[r])) {
@@ -116,7 +116,7 @@ export function abstract(node: AbstractNode<any>) {
       if (node.position?.file) {
         value = node.position.file.contentOfNode(node);
       } else {
-        value = node.toString();
+        value = node.toString(false);
       }
       for (const r in abtractionRegex) {
         if (!Array.isArray(abtractionRegex[r])) {
