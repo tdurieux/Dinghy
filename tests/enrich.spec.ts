@@ -21,7 +21,7 @@ describe("Testing enrich", () => {
     });
   });
   describe("multiple subcommands", () => {
-    test("gradle clean build test", () => { 
+    test("gradle clean build test", () => {
       const root = parseShell("gradle clean build test");
       const r = enrich(root);
       // expect(r.find(Q("SC-GRADLE"))).toHaveLength(1);
@@ -195,6 +195,233 @@ describe("Testing enrich", () => {
     const root = parseShell("sudo apt-get -f install;");
     const r = enrich(root);
     expect(r.toString()).toEqual("sudo apt-get -f install;");
+  });
+  test("yum", () => {
+    let ast = enrich(parseShell("yum install -y wget"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("yum remove -y wget"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("yum erase -y wget"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("yum clean all"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("yum update wget"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("yum localinstall -y wget"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("yum groupinstall -y wget"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("yum versionlock add wget"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("yum makecache"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+  });
+  test("yarn", () => {
+    let ast = enrich(parseShell("yarn install"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("yarn add wget"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("yarn audit"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("yarn autoclean"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("yarn bin wget"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("yarn lint"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("yarn cache list"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("yarn cache clean"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("yarn cache dir"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("yarn global add wget"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("yarn remove wget"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("yarn prune"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("yarn publish"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("yarn run build"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("yarn test"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("yarn unlink wget"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("yarn upgrade"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+  });
+  test("useradd", () => {
+    let ast = enrich(parseShell("useradd -G sudo -G test oddee;"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+
+    ast = enrich(parseShell("useradd -D -G sudo oddee;"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("useradd --defaults -G sudo;"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("useradd oddee;"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("useradd -D oddee;"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("useradd --defaults oddee;"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+  });
+  test("sed", () => {
+    const root = parseShell("sed -i 's/old/new/g' file");
+    const r = enrich(root);
+    expect(r.toString()).toEqual(root.position.file?.content);
+  });
+  test("rustup", () => {
+    const root = parseShell("rustup show");
+    const r = enrich(root);
+    expect(r.toString()).toEqual(root.position.file?.content);
+  });
+  test("rpm", () => {
+    let ast = enrich(parseShell("rpm --erase express"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("rpm --freshen express"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("rpm --upgrade express"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("rpm --install express"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("rpm --verify"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("rpm --query express"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+  });
+  test("npm", () => {
+    let ast = enrich(parseShell("npm install; npm test"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("npm upgrade"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("npm prune --production express"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("npm link express"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("npm config set express"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("npm config get express"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("npm config delete express"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("npm cache clean --force"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("npm cache rm express"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("npm cache clear --force"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("npm run-script build"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("npm run docs"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("npm test"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("npm publish"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("npm audit"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("npm remove express"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("npm uninstall express"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("npm ci"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("npm add express"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+    ast = enrich(parseShell("npm i"));
+    expect(ast.toString()).toEqual(ast.position.file?.content);
+  });
+  test("mvn", () => {
+    const root = parseShell("mvn clean install");
+    const r = enrich(root);
+    expect(r.toString()).toEqual(root.position.file?.content);
+  });
+  test("ln", () => {
+    const root = parseShell("ln -s source dest");
+    const r = enrich(root);
+    expect(r.toString()).toEqual(root.position.file?.content);
+  });
+  test("go", () => {
+    const root = parseShell("go build");
+    const r = enrich(root);
+    expect(r.toString()).toEqual(root.position.file?.content);
+  });
+  test("git", () => {
+    const root = parseShell("git checkout -b branch");
+    const r = enrich(root);
+    expect(r.toString()).toEqual(root.position.file?.content);
+  });
+  test("gh", () => {
+    const root = parseShell("gh pr checkout 123");
+    const r = enrich(root);
+    expect(r.toString()).toEqual(root.position.file?.content);
+  });
+  test("gem", () => {
+    const root = parseShell("gem install bundler");
+    const r = enrich(root);
+    expect(r.toString()).toEqual(root.position.file?.content);
+  });
+  test("dotnet", () => {
+    const root = parseShell("dotnet build");
+    const r = enrich(root);
+    expect(r.toString()).toEqual(root.position.file?.content);
+  });
+  test("docker", () => {
+    const root = parseShell("docker build -t myimage .");
+    const r = enrich(root);
+    expect(r.toString()).toEqual(root.position.file?.content);
+  });
+  test("dockercompose", () => {
+    const root = parseShell("docker-compose up");
+    const r = enrich(root);
+    expect(r.toString()).toEqual(root.position.file?.content);
+  });
+  test("dnf", () => {
+    const root = parseShell("dnf install -y wget");
+    const r = enrich(root);
+    expect(r.toString()).toEqual(root.position.file?.content);
+  });
+  test("conda", () => {
+    const root = parseShell("conda install -y numpy");
+    const r = enrich(root);
+    expect(r.toString()).toEqual(root.position.file?.content);
+  });
+  test("cmake", () => {
+    const root = parseShell("cmake .");
+    const r = enrich(root);
+    expect(r.toString()).toEqual(root.position.file?.content);
+  });
+  test("cargo", () => {
+    const root = parseShell("cargo build");
+    const r = enrich(root);
+    expect(r.toString()).toEqual(root.position.file?.content);
+  });
+  test("bundle", () => {
+    const root = parseShell("bundle install");
+    const r = enrich(root);
+    expect(r.toString()).toEqual(root.position.file?.content);
+  });
+  test("apt", () => {
+    const root = parseShell("apt install -y wget");
+    const r = enrich(root);
+    expect(r.toString()).toEqual(root.position.file?.content);
+  });
+  test("apt-key", () => {
+    const root = parseShell("apt-key add key");
+    const r = enrich(root);
+    expect(r.toString()).toEqual(root.position.file?.content);
+  });
+  test("apt-get", () => {
+    const root = parseShell("apt-get install -y wget");
+    const r = enrich(root);
+    expect(r.toString()).toEqual(root.position.file?.content);
+  });
+  test("apk", () => {
+    const root = parseShell("apk add wget");
+    const r = enrich(root);
+    expect(r.toString()).toEqual(root.position.file?.content);
   });
 
   describe("Real case", () => {
